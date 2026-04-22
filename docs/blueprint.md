@@ -1,0 +1,20 @@
+# **App Name**: MUTAMBUKE
+
+## Core Features:
+
+- User Authentication & Profile: Users can register and log in as either a passenger or driver. Each user can view and manage their basic profile information, with all user data stored securely in Firestore (userId, name, email, role, createdAt).
+- Driver Availability Control: Drivers can easily toggle their online/offline status through the app interface. This action triggers real-time updates to their availability status, current location, and 'updatedAt' timestamp in Firestore, making them visible for ride requests or removing them from active service.
+- Ride Request & Driver Matching: Passengers can request a ride by specifying their pickup location and desired destination using an interactive map interface. A Cloud Function acts as an AI 'tool' to automatically search the Firestore 'drivers' collection for the nearest online driver, assigning them to the ride request and updating the 'rides' document in Firestore with essential details like passengerId, driverId, locations, and initial status.
+- Real-Time Ride Progress Tracking: Both passengers and drivers receive live, on-map updates for the driver's current location, estimated arrival times, and critical changes in ride status (e.g., 'requested', 'accepted', 'started', 'completed'). This functionality leverages Firestore listeners for continuous, real-time data synchronization.
+- Driver Ride Management: Drivers can directly interact with incoming ride requests through their app. They have the option to accept or reject rides, and upon arrival at the pickup point, can initiate the 'Start Ride' action. Once the trip concludes, drivers can mark the ride as 'Completed', with all status changes updating the 'rides' collection in Firestore.
+- Past Ride History: Both passengers and drivers have access to a dedicated section within the app to view a comprehensive history of their past rides. This feature queries the 'rides' collection in Firestore, filtering records based on the user's ID to display relevant trip details such as routes, timestamps, and ride statuses.
+
+## Style Guidelines:
+
+- Primary color: A deep, professional blue (#2626D8), chosen to evoke reliability and trust while hinting at motion and technology. This hue is versatile enough for interactive elements and prominent branding.
+- Background color: A very light, muted blue-gray (#F0F0F4), providing a clean and calm canvas that highlights content without visual distraction. It maintains a subtle connection to the primary color's hue.
+- Accent color: A brighter, more dynamic blue (#5299E0) that complements the primary color. Its increased brightness and slight hue shift create a distinct contrast, perfect for call-to-action buttons, notifications, and interactive map elements.
+- Body and headline font: 'PT Sans' (sans-serif) for its modern, humanist design, offering excellent readability for both large titles and extensive text. It brings a touch of warmth while remaining clear and objective for crucial ride information.
+- Use clear, concise outline-style icons with occasional solid fills for key status indicators or interactive map elements. The icons should be intuitive and quickly convey information related to locations, actions (e.g., accept/reject), and user roles (passenger/driver).
+- Adopt a clean, card-based layout structure with ample whitespace to ensure clear information hierarchy and an uncluttered user experience. Map views should be central to ride-related screens, complemented by easily accessible control panels and detail overlays.
+- Incorporate smooth, subtle animations for map updates, route recalculations, and status changes to visually guide the user and enhance the feeling of real-time responsiveness. Transitions between different screens should be fluid and unintrusive.

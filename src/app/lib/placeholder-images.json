@@ -1,0 +1,10 @@
+{
+  "placeholderImages": [
+    {
+      "id": "hero-image",
+      "description": "Abstract technological background",
+      "imageUrl": "https://picsum.photos/seed/studio/1200/600",
+      "imageHint": "abstract technology"
+    }
+  ]
+}
