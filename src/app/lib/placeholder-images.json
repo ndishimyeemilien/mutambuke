@@ -1,4 +1,3 @@
-
 {
   "placeholderImages": [
     {
@@ -12,6 +11,12 @@
       "description": "GPS Navigation Map",
       "imageUrl": "https://picsum.photos/seed/map/600/400",
       "imageHint": "navigation map"
+    },
+    {
+      "id": "auth-illustration",
+      "description": "Smart Moto characters illustration",
+      "imageUrl": "https://picsum.photos/seed/auth/400/200",
+      "imageHint": "motorcycle characters"
     }
   ]
 }
