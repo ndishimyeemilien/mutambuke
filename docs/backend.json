@@ -3,14 +3,14 @@
   "entities": {
     "UserProfile": {
       "title": "User Profile",
-      "description": "User account information for passengers and riders.",
+      "description": "User account information for passengers, riders, and admins.",
       "type": "object",
       "properties": {
         "userId": { "type": "string" },
         "name": { "type": "string" },
         "email": { "type": "string", "format": "email" },
         "phone": { "type": "string" },
-        "role": { "type": "string", "enum": ["passenger", "driver"] },
+        "role": { "type": "string", "enum": ["passenger", "driver", "admin"] },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "name", "email", "phone", "role"]

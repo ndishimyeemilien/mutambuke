@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -6,14 +7,13 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Bike, Mail, Lock, User, Phone, ArrowLeft } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Bike, Mail, Lock, User, Phone, ArrowLeft, Loader2 } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import Link from 'next/link';
@@ -21,10 +21,11 @@ import Link from 'next/link';
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [role, setRole] = useState<'passenger' | 'driver'>('passenger');
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState(''); // Email or Phone
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   
@@ -40,18 +41,34 @@ export default function AuthPage() {
     setIsLoading(true);
     try {
       if (isLogin) {
-        await signInWithEmailAndPassword(auth, email, password);
+        let loginEmail = identifier;
+        
+        // Check if identifier is a phone number (simple check: no @ symbol)
+        if (!identifier.includes('@')) {
+          const q = query(collection(db, 'users'), where('phone', '==', identifier), limit(1));
+          const snapshot = await getDocs(q);
+          if (!snapshot.empty) {
+            loginEmail = snapshot.docs[0].data().email;
+          } else {
+            throw new Error('No user found with this phone number.');
+          }
+        }
+
+        await signInWithEmailAndPassword(auth, loginEmail, password);
         router.push('/');
       } else {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
+
+        // Special Admin handling based on requested email
+        const userRole = email === 'adimini@gmail.com' ? 'admin' : role;
 
         const userData = {
           userId: user.uid,
           name: name,
           email: email,
           phone: phone,
-          role: role,
+          role: userRole,
           createdAt: serverTimestamp(),
         };
 
@@ -64,7 +81,7 @@ export default function AuthPage() {
             }));
           });
 
-        if (role === 'driver') {
+        if (userRole === 'driver') {
           const driverData = {
             driverId: user.uid,
             status: 'offline',
@@ -85,6 +102,7 @@ export default function AuthPage() {
       }
     } catch (error: any) {
       console.error(error);
+      alert(error.message);
     } finally {
       setIsLoading(false);
     }
@@ -136,16 +154,15 @@ export default function AuthPage() {
             <form onSubmit={handleAuth} className="space-y-4">
               <TabsContent value="login" className="space-y-4 mt-0">
                 <div className="space-y-1">
-                  <Label className="text-xs font-black text-slate-400 tracking-widest">EMAIL ADDRESS</Label>
+                  <Label className="text-xs font-black text-slate-400 tracking-widest">EMAIL OR PHONE NUMBER</Label>
                   <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
                     <Input 
-                      placeholder="name@example.com" 
+                      placeholder="Email or +250..." 
                       className="pl-12 h-14 rounded-2xl border-slate-100 bg-slate-50 focus:bg-white transition-colors" 
-                      type="email" 
                       required 
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      value={identifier}
+                      onChange={(e) => setIdentifier(e.target.value)}
                     />
                   </div>
                 </div>
@@ -213,7 +230,7 @@ export default function AuthPage() {
               </TabsContent>
 
               <Button type="submit" className={`w-full h-16 rounded-2xl text-xl font-black shadow-lg transition-transform active:scale-95 ${role === 'driver' && !isLogin ? 'bg-secondary hover:bg-secondary/90' : 'bg-primary hover:bg-primary/90'}`} disabled={isLoading}>
-                {isLoading ? 'PROCESSING...' : (isLogin ? 'LOGIN' : 'SIGN UP')}
+                {isLoading ? <Loader2 className="animate-spin" /> : (isLogin ? 'LOGIN' : 'SIGN UP')}
               </Button>
             </form>
           </Tabs>

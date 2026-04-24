@@ -15,7 +15,9 @@ export default function RootPage() {
     if (!authLoading && !user) {
       router.push('/landing');
     } else if (!authLoading && !profileLoading && profile) {
-      if (profile.role === 'driver') {
+      if (profile.role === 'admin') {
+        router.push('/dashboard/admin');
+      } else if (profile.role === 'driver') {
         router.push('/dashboard/driver');
       } else {
         router.push('/dashboard/passenger');
