@@ -1,0 +1,69 @@
+
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "User account information for passengers and drivers.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["passenger", "driver"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "email", "role"]
+    },
+    "DriverProfile": {
+      "title": "Driver Status",
+      "description": "Real-time status and location of a driver.",
+      "type": "object",
+      "properties": {
+        "driverId": { "type": "string" },
+        "status": { "type": "string", "enum": ["online", "offline"] },
+        "currentLocation": {
+          "type": "object",
+          "properties": {
+            "lat": { "type": "number" },
+            "lng": { "type": "number" },
+            "address": { "type": "string" }
+          }
+        },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["driverId", "status"]
+    },
+    "RideRequest": {
+      "title": "Ride Request",
+      "description": "Details of a ride from request to completion.",
+      "type": "object",
+      "properties": {
+        "rideId": { "type": "string" },
+        "passengerId": { "type": "string" },
+        "driverId": { "type": "string" },
+        "pickupLocation": { "type": "string" },
+        "destination": { "type": "string" },
+        "status": { "type": "string", "enum": ["requested", "accepted", "started", "completed", "cancelled"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["rideId", "passengerId", "pickupLocation", "destination", "status"]
+    }
+  },
+  "auth": {
+    "providers": ["google", "password"]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Storage for user profiles."
+    },
+    "/drivers/{driverId}": {
+      "schema": { "$ref": "#/entities/DriverProfile" },
+      "description": "Storage for driver availability and location."
+    },
+    "/rides/{rideId}": {
+      "schema": { "$ref": "#/entities/RideRequest" },
+      "description": "Storage for ride lifecycle data."
+    }
+  }
+}

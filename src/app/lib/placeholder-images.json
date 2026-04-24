@@ -1,10 +1,17 @@
+
 {
   "placeholderImages": [
     {
-      "id": "hero-image",
-      "description": "Abstract technological background",
-      "imageUrl": "https://picsum.photos/seed/studio/1200/600",
-      "imageHint": "abstract technology"
+      "id": "hero-moto",
+      "description": "Smart Moto Rider with Helmet",
+      "imageUrl": "https://picsum.photos/seed/moto1/800/600",
+      "imageHint": "motorcycle rider"
+    },
+    {
+      "id": "map-preview",
+      "description": "GPS Navigation Map",
+      "imageUrl": "https://picsum.photos/seed/map/600/400",
+      "imageHint": "navigation map"
     }
   ]
 }
