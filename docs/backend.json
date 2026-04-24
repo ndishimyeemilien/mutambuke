@@ -11,6 +11,7 @@
         "email": { "type": "string", "format": "email" },
         "phone": { "type": "string" },
         "role": { "type": "string", "enum": ["passenger", "driver", "admin"] },
+        "language": { "type": "string", "enum": ["rw", "en", "fr"] },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "name", "email", "phone", "role"]
@@ -23,13 +24,7 @@
         "driverId": { "type": "string" },
         "status": { "type": "string", "enum": ["online", "offline"] },
         "isVerified": { "type": "boolean" },
-        "motorcycleInfo": {
-          "type": "object",
-          "properties": {
-            "model": { "type": "string" },
-            "plate": { "type": "string" }
-          }
-        },
+        "vehicleType": { "type": "string", "enum": ["moto", "taxi"] },
         "currentLocation": {
           "type": "object",
           "properties": {
@@ -40,7 +35,7 @@
         },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["driverId", "status"]
+      "required": ["driverId", "status", "vehicleType"]
     },
     "RideRequest": {
       "title": "Ride Request",
@@ -51,6 +46,7 @@
         "passengerId": { "type": "string" },
         "passengerName": { "type": "string" },
         "driverId": { "type": "string" },
+        "vehicleType": { "type": "string" },
         "pickupLocation": { "type": "string" },
         "destination": { "type": "string" },
         "status": { "type": "string", "enum": ["requested", "accepted", "started", "completed", "cancelled"] },
