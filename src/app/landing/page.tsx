@@ -1,120 +1,114 @@
-
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
-import { Card, CardContent } from "@/components/ui/card";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { MapPin, ShieldCheck, Smartphone, Star, CheckCircle2, UserCircle2, Bike } from "lucide-react";
+import { Bike, ShieldCheck, Clock, MapPin, Star } from "lucide-react";
 import Link from "next/link";
 
 export default function LandingPage() {
   const heroImage = PlaceHolderImages.find(img => img.id === 'hero-moto');
-  const mapImage = PlaceHolderImages.find(img => img.id === 'map-preview');
 
   return (
-    <div className="flex flex-col min-h-screen font-body">
-      {/* Navigation */}
-      <header className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b">
+    <div className="flex flex-col min-h-screen font-body bg-white">
+      {/* Navbar */}
+      <header className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b">
         <Container className="flex h-16 items-center justify-between">
-          <div className="flex items-center gap-2 font-bold text-xl text-primary">
+          <div className="flex items-center gap-2 font-black text-2xl text-primary italic">
             <Bike className="size-8" />
             <span>MUTAMBUKE</span>
           </div>
-          <div className="flex gap-2">
-            <Link href="/auth">
-              <Button variant="outline" size="sm">Login</Button>
-            </Link>
-            <Link href="/auth">
-              <Button size="sm">Register</Button>
-            </Link>
-          </div>
+          <Link href="/auth">
+            <Button size="sm" className="rounded-full bg-secondary hover:bg-secondary/90 text-white font-bold">
+              GET STARTED
+            </Button>
+          </Link>
         </Container>
       </header>
 
-      <main className="flex-1 pt-16">
+      <main className="flex-1">
         {/* Hero Section */}
-        <section className="relative bg-gradient-to-b from-primary/10 to-transparent py-20 lg:py-32">
+        <section className="pt-24 pb-12 md:pt-32 md:pb-24">
           <Container className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-8">
+            <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-700">
               <div className="space-y-4">
-                <h1 className="text-5xl font-extrabold tracking-tight text-primary lg:text-6xl">
-                  Mutambuke Transport System
+                <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest">
+                  <Star className="size-3" /> Real-time Moto Hailing
+                </div>
+                <h1 className="text-6xl font-black tracking-tight text-slate-900 leading-[0.9] md:text-8xl italic">
+                  SMART <br /> <span className="text-secondary">URBAN</span> <br /> TRAVEL.
                 </h1>
-                <p className="text-xl text-muted-foreground">
-                  Connecting Passengers with Trusted Motorcycle Riders in Real-Time.
+                <p className="text-lg text-slate-600 max-w-md">
+                  Experience the fastest way to navigate the city. Reliable riders, transparent pricing, and instant bookings.
                 </p>
               </div>
-              <div className="flex flex-wrap gap-4">
-                <Link href="/auth">
-                  <Button size="lg" className="px-8 bg-primary hover:bg-primary/90">Book a Ride</Button>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link href="/auth" className="flex-1">
+                  <Button size="lg" className="w-full rounded-2xl h-16 bg-primary hover:bg-primary/90 text-white text-xl font-black shadow-xl">
+                    BOOK RIDE
+                  </Button>
                 </Link>
-                <Link href="/auth">
-                  <Button size="lg" className="px-8 bg-secondary hover:bg-secondary/90 text-white">Become a Rider</Button>
+                <Link href="/auth" className="flex-1">
+                  <Button size="lg" variant="outline" className="w-full rounded-2xl h-16 border-2 text-xl font-black hover:bg-slate-50">
+                    BECOME RIDER
+                  </Button>
                 </Link>
               </div>
             </div>
-            <div className="relative aspect-square lg:aspect-[4/5] rounded-3xl overflow-hidden shadow-2xl">
+            
+            <div className="relative aspect-square md:aspect-[4/5] rounded-[3rem] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-700">
               {heroImage && (
                 <Image
                   src={heroImage.imageUrl}
                   alt={heroImage.description}
                   fill
                   className="object-cover"
-                  data-ai-hint={heroImage.imageHint}
                   priority
                 />
               )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              <div className="absolute bottom-8 left-8 right-8 text-white">
+                <div className="flex gap-4">
+                  <div className="bg-white/20 backdrop-blur-lg p-4 rounded-2xl flex-1">
+                    <p className="text-xs opacity-80">Active Riders</p>
+                    <p className="text-2xl font-black">2.4k+</p>
+                  </div>
+                  <div className="bg-white/20 backdrop-blur-lg p-4 rounded-2xl flex-1">
+                    <p className="text-xs opacity-80">Avg. Response</p>
+                    <p className="text-2xl font-black">3 min</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </Container>
         </section>
 
-        {/* Workflow Info (from image) */}
-        <section className="py-24 bg-white">
-          <Container className="grid md:grid-cols-2 gap-12">
-            <Card className="shadow-lg border-none bg-blue-50/50">
-              <CardContent className="p-8 space-y-6">
-                <h3 className="text-2xl font-bold text-primary text-center">How Passengers Use Mutambuke</h3>
-                <ol className="space-y-4">
-                  {[
-                    "Register Account",
-                    "Login",
-                    "See Nearby Riders on Map",
-                    "Request Ride",
-                    "Track Rider",
-                    "Payment After Trip"
-                  ].map((step, i) => (
-                    <li key={i} className="flex items-center gap-4 bg-white p-4 rounded-xl shadow-sm">
-                      <div className="size-8 rounded-full bg-primary text-white flex items-center justify-center font-bold">{i+1}</div>
-                      <span className="font-medium">{step}</span>
-                    </li>
-                  ))}
-                </ol>
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-lg border-none bg-orange-50/50">
-              <CardContent className="p-8 space-y-6">
-                <h3 className="text-2xl font-bold text-secondary text-center">How Riders Use Mutambuke</h3>
-                <ol className="space-y-4">
-                  {[
-                    "Register Account",
-                    "Submit Documents",
-                    "Go Online",
-                    "Accept Requests",
-                    "Start Trip",
-                    "Receive Payment"
-                  ].map((step, i) => (
-                    <li key={i} className="flex items-center gap-4 bg-white p-4 rounded-xl shadow-sm">
-                      <div className="size-8 rounded-full bg-secondary text-white flex items-center justify-center font-bold">{i+1}</div>
-                      <span className="font-medium">{step}</span>
-                    </li>
-                  ))}
-                </ol>
-              </CardContent>
-            </Card>
+        {/* Features */}
+        <section className="py-24 bg-slate-50">
+          <Container>
+            <div className="grid md:grid-cols-3 gap-8">
+              {[
+                { icon: ShieldCheck, title: "Verified Riders", desc: "Every rider undergoes a strict document verification process.", color: "text-blue-600" },
+                { icon: Clock, title: "Instant Pickup", desc: "Get matched with the nearest rider in seconds.", color: "text-orange-500" },
+                { icon: MapPin, title: "Live Tracking", desc: "Follow your rider's movement in real-time on the map.", color: "text-green-600" }
+              ].map((feature, i) => (
+                <div key={i} className="bg-white p-8 rounded-[2rem] shadow-sm hover:shadow-md transition-shadow group">
+                  <div className={`size-14 rounded-2xl bg-slate-50 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform ${feature.color}`}>
+                    <feature.icon className="size-8" />
+                  </div>
+                  <h3 className="text-xl font-black mb-2">{feature.title}</h3>
+                  <p className="text-slate-500 leading-relaxed">{feature.desc}</p>
+                </div>
+              ))}
+            </div>
           </Container>
         </section>
       </main>
+
+      <footer className="py-12 border-t">
+        <Container className="text-center text-slate-400 text-sm">
+          <p>© 2024 MUTAMBUKE TRANSPORT SYSTEM. ALL RIGHTS RESERVED.</p>
+        </Container>
+      </footer>
     </div>
   );
 }

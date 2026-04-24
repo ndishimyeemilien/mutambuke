@@ -1,12 +1,11 @@
-
 'use client';
 
-// This is a public configuration object. Security is enforced by Firestore Security Rules.
 export const firebaseConfig = {
-  apiKey: "AIzaSyDummyKey_For_Scaffolding_Only",
-  authDomain: "mutambuke-ride.firebaseapp.com",
-  projectId: "mutambuke-ride",
-  storageBucket: "mutambuke-ride.appspot.com",
-  messagingSenderId: "1234567890",
-  appId: "1:1234567890:web:abcdef123456"
+  apiKey: 'AIzaSyCwW3o65Apt1Rpjg65JpPmQnGXuwfwNKx8',
+  authDomain: 'urugendo-e72f2.firebaseapp.com',
+  projectId: 'urugendo-e72f2',
+  storageBucket: 'urugendo-e72f2.firebasestorage.app',
+  messagingSenderId: '418797391221',
+  appId: '1:418797391221:web:67c99a7408471e4bbf173c',
+  measurementId: 'G-SGM0E9NXGD',
 };

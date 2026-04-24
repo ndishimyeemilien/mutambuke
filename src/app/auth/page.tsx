@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState } from 'react';
@@ -10,13 +9,14 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Bike, Mail, Lock, User, Phone, MapPin } from 'lucide-react';
+import { Bike, Mail, Lock, User, Phone, ArrowLeft } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import Link from 'next/link';
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -31,7 +31,7 @@ export default function AuthPage() {
   const auth = useAuth();
   const db = useFirestore();
 
-  const authIllustration = PlaceHolderImages.find(img => img.id === 'auth-illustration');
+  const authImage = PlaceHolderImages.find(img => img.id === 'auth-illustration');
 
   async function handleAuth(e: React.FormEvent) {
     e.preventDefault();
@@ -91,111 +91,138 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f4f7fa] flex flex-col items-center">
-      <div className="w-full h-48 auth-header-gradient relative flex flex-col items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 cloud-bg" />
-        <div className="relative z-10 flex items-center gap-2 text-white font-bold text-3xl italic tracking-tighter">
-          <div className="bg-white/20 p-2 rounded-full">
-            <Bike className="size-8" />
-          </div>
-          MUTAMBUKE
+    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
+      {/* Left side: Visual Content */}
+      <div className="hidden md:flex md:w-1/2 relative bg-primary overflow-hidden">
+        {authImage && (
+          <Image
+            src={authImage.imageUrl}
+            alt="Auth illustration"
+            fill
+            className="object-cover opacity-60 mix-blend-overlay"
+          />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/80 to-transparent flex flex-col justify-center p-20 text-white z-10">
+          <Bike className="size-20 mb-8" />
+          <h1 className="text-7xl font-black italic mb-6 leading-none">JOIN THE <br /> MOVEMENT.</h1>
+          <p className="text-xl font-medium opacity-90 max-w-md italic">
+            Connecting thousands of riders and passengers across the city every day.
+          </p>
         </div>
       </div>
 
-      <Card className="w-full max-w-md -mt-16 relative z-20 shadow-xl border-none overflow-hidden mb-12">
-        <CardContent className="p-0">
-          <Tabs value={isLogin ? 'login' : 'register'} onValueChange={(v) => setIsLogin(v === 'login')}>
-            <div className="p-8">
-              <TabsContent value="login" className="mt-0 space-y-6">
-                <div className="text-center space-y-1">
-                  <h1 className="text-2xl font-bold text-primary">Login to Mutambuke</h1>
-                  <p className="text-muted-foreground text-sm">Welcome back!</p>
-                </div>
+      {/* Right side: Form */}
+      <div className="flex-1 flex flex-col justify-center p-6 md:p-12 bg-white">
+        <div className="max-w-md w-full mx-auto space-y-8">
+          <Link href="/landing" className="inline-flex items-center gap-2 text-slate-400 hover:text-primary transition-colors font-bold text-sm">
+            <ArrowLeft className="size-4" /> BACK TO HOME
+          </Link>
 
-                <form onSubmit={handleAuth} className="space-y-4">
+          <div className="space-y-2">
+            <h2 className="text-4xl font-black italic text-slate-900">
+              {isLogin ? 'WELCOME BACK' : 'CREATE ACCOUNT'}
+            </h2>
+            <p className="text-slate-500">
+              {isLogin ? 'Enter your details to access your dashboard' : 'Join the fastest urban transport network'}
+            </p>
+          </div>
+
+          <Tabs value={isLogin ? 'login' : 'register'} onValueChange={(v) => setIsLogin(v === 'login')} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 rounded-2xl h-12 bg-slate-100 p-1 mb-8">
+              <TabsTrigger value="login" className="rounded-xl font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">LOGIN</TabsTrigger>
+              <TabsTrigger value="register" className="rounded-xl font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">SIGN UP</TabsTrigger>
+            </TabsList>
+
+            <form onSubmit={handleAuth} className="space-y-4">
+              <TabsContent value="login" className="space-y-4 mt-0">
+                <div className="space-y-1">
+                  <Label className="text-xs font-black text-slate-400 tracking-widest">EMAIL ADDRESS</Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-3 size-4 text-muted-foreground" />
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
                     <Input 
-                      placeholder="Email Address" 
-                      className="pl-10 bg-muted/30 h-12" 
+                      placeholder="name@example.com" 
+                      className="pl-12 h-14 rounded-2xl border-slate-100 bg-slate-50 focus:bg-white transition-colors" 
                       type="email" 
                       required 
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                     />
                   </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs font-black text-slate-400 tracking-widest">PASSWORD</Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-3 size-4 text-muted-foreground" />
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
                     <Input 
-                      placeholder="Password" 
-                      className="pl-10 bg-muted/30 h-12" 
+                      placeholder="••••••••" 
+                      className="pl-12 h-14 rounded-2xl border-slate-100 bg-slate-50 focus:bg-white transition-colors" 
                       type="password" 
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                     />
                   </div>
-                  <Button type="submit" className="w-full bg-secondary hover:bg-secondary/90 h-12 text-lg font-bold" disabled={isLoading}>
-                    {isLoading ? 'Logging in...' : 'Login'}
-                  </Button>
-                </form>
-
-                <div className="text-center text-sm">
-                  No account? <button onClick={() => setIsLogin(false)} className="text-secondary font-bold hover:underline">Create Account</button>
                 </div>
               </TabsContent>
 
-              <TabsContent value="register" className="mt-0 space-y-6">
-                <div className="text-center space-y-1">
-                  <h1 className="text-2xl font-bold text-primary">Create Account</h1>
-                  <p className="text-muted-foreground text-sm">Join Mutambuke Today</p>
+              <TabsContent value="register" className="space-y-4 mt-0">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label className="text-xs font-black text-slate-400 tracking-widest">FULL NAME</Label>
+                    <div className="relative">
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                      <Input placeholder="John Doe" className="pl-12 h-14 rounded-2xl border-slate-100 bg-slate-50" required value={name} onChange={(e) => setName(e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs font-black text-slate-400 tracking-widest">PHONE</Label>
+                    <div className="relative">
+                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                      <Input placeholder="+250..." className="pl-12 h-14 rounded-2xl border-slate-100 bg-slate-50" type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} />
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs font-black text-slate-400 tracking-widest">EMAIL ADDRESS</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                    <Input placeholder="email@example.com" className="pl-12 h-14 rounded-2xl border-slate-100 bg-slate-50" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs font-black text-slate-400 tracking-widest">PASSWORD</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                    <Input placeholder="Min. 8 characters" className="pl-12 h-14 rounded-2xl border-slate-100 bg-slate-50" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+                  </div>
                 </div>
 
-                <form onSubmit={handleAuth} className="space-y-4">
-                  <div className="relative">
-                    <User className="absolute left-3 top-3 size-4 text-muted-foreground" />
-                    <Input placeholder="Full Name" className="pl-10 bg-muted/30 h-12" required value={name} onChange={(e) => setName(e.target.value)} />
-                  </div>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 size-4 text-muted-foreground" />
-                    <Input placeholder="Email Address" className="pl-10 bg-muted/30 h-12" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-                  </div>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-3 size-4 text-muted-foreground" />
-                    <Input placeholder="Phone Number" className="pl-10 bg-muted/30 h-12" type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} />
-                  </div>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 size-4 text-muted-foreground" />
-                    <Input placeholder="Create Password" className="pl-10 bg-muted/30 h-12" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
-                  </div>
-
-                  <div className="space-y-3">
-                    <Label className="text-sm font-bold text-slate-700">Register as:</Label>
-                    <RadioGroup defaultValue="passenger" className="flex gap-4" onValueChange={(v) => setRole(v as any)}>
-                      <div className={`flex flex-1 items-center justify-between p-3 rounded-xl border cursor-pointer transition-colors ${role === 'passenger' ? 'border-primary bg-primary/5' : 'bg-muted/30'}`}>
-                        <span className="text-sm font-medium">Passenger</span>
-                        <RadioGroupItem value="passenger" />
-                      </div>
-                      <div className={`flex flex-1 items-center justify-between p-3 rounded-xl border cursor-pointer transition-colors ${role === 'driver' ? 'border-primary bg-primary/5' : 'bg-muted/30'}`}>
-                        <span className="text-sm font-medium">Rider</span>
-                        <RadioGroupItem value="driver" />
-                      </div>
-                    </RadioGroup>
-                  </div>
-
-                  <Button type="submit" className="w-full bg-secondary hover:bg-secondary/90 h-12 text-lg font-bold" disabled={isLoading}>
-                    {isLoading ? 'Registering...' : 'Register'}
-                  </Button>
-                </form>
-
-                <div className="text-center text-sm">
-                  Already have an account? <button onClick={() => setIsLogin(true)} className="text-primary font-bold hover:underline">Login</button>
+                <div className="space-y-3 pt-2">
+                  <Label className="text-xs font-black text-slate-400 tracking-widest">REGISTER AS</Label>
+                  <RadioGroup defaultValue="passenger" className="flex gap-4" onValueChange={(v) => setRole(v as any)}>
+                    <div className={`flex flex-1 items-center justify-between p-4 rounded-2xl border-2 cursor-pointer transition-all ${role === 'passenger' ? 'border-primary bg-primary/5 text-primary' : 'border-slate-100'}`}>
+                      <span className="text-sm font-bold">PASSENGER</span>
+                      <RadioGroupItem value="passenger" className="border-slate-200" />
+                    </div>
+                    <div className={`flex flex-1 items-center justify-between p-4 rounded-2xl border-2 cursor-pointer transition-all ${role === 'driver' ? 'border-secondary bg-secondary/5 text-secondary' : 'border-slate-100'}`}>
+                      <span className="text-sm font-bold">RIDER</span>
+                      <RadioGroupItem value="driver" className="border-slate-200" />
+                    </div>
+                  </RadioGroup>
                 </div>
               </TabsContent>
-            </div>
+
+              <Button type="submit" className={`w-full h-16 rounded-2xl text-xl font-black shadow-lg transition-transform active:scale-95 ${role === 'driver' && !isLogin ? 'bg-secondary hover:bg-secondary/90' : 'bg-primary hover:bg-primary/90'}`} disabled={isLoading}>
+                {isLoading ? 'PROCESSING...' : (isLogin ? 'LOGIN' : 'SIGN UP')}
+              </Button>
+            </form>
           </Tabs>
-        </CardContent>
-      </Card>
+
+          <p className="text-center text-sm text-slate-400">
+            By continuing, you agree to our <span className="text-slate-900 font-bold hover:underline cursor-pointer">Terms of Service</span> and <span className="text-slate-900 font-bold hover:underline cursor-pointer">Privacy Policy</span>.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
