@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,7 @@ import { doc, setDoc, serverTimestamp, collection, query, where, getDocs, limit 
 import Link from 'next/link';
 import { translations, Language } from '@/lib/translations';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from '@/hooks/use-toast';
 
 export default function AuthPage() {
   const [lang, setLang] = useState<Language>('rw');
@@ -37,6 +38,7 @@ export default function AuthPage() {
   const db = useFirestore();
 
   const authImage = PlaceHolderImages.find(img => img.id === 'auth-illustration');
+  const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
   async function handleAuth(e: React.FormEvent) {
     e.preventDefault();
@@ -45,11 +47,11 @@ export default function AuthPage() {
     setIsLoading(true);
     try {
       if (isLogin) {
-        let loginEmail = identifier;
+        let loginEmail = identifier.trim();
         
         // Handle phone number login by finding the associated email
-        if (!identifier.includes('@')) {
-          const q = query(collection(db, 'users'), where('phone', '==', identifier), limit(1));
+        if (!loginEmail.includes('@')) {
+          const q = query(collection(db, 'users'), where('phone', '==', loginEmail), limit(1));
           const snapshot = await getDocs(q);
           if (!snapshot.empty) {
             loginEmail = snapshot.docs[0].data().email;
@@ -89,11 +91,19 @@ export default function AuthPage() {
           });
         }
 
+        toast({
+          title: "Success",
+          description: "Account created successfully!",
+        });
         router.push('/');
       }
     } catch (error: any) {
       console.error(error);
-      alert(error.message);
+      toast({
+        variant: "destructive",
+        title: "Authentication Error",
+        description: error.message,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -113,8 +123,10 @@ export default function AuthPage() {
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/80 to-transparent flex flex-col justify-center p-20 text-white z-10">
-          <Bike className="size-20 mb-8" />
-          <h1 className="text-7xl font-black italic mb-6 leading-none">JOIN THE <br /> MOVEMENT.</h1>
+          <div className="relative w-24 h-24 mb-8">
+            {logo && <Image src={logo.imageUrl} alt="Logo" fill className="object-contain" />}
+          </div>
+          <h1 className="text-7xl font-black italic mb-6 leading-none uppercase">Join the <br /> Movement.</h1>
           <p className="text-xl font-medium opacity-90 max-w-md italic">
             Connecting thousands of riders and passengers across the city every day.
           </p>
@@ -122,8 +134,8 @@ export default function AuthPage() {
       </div>
 
       {/* Form Section */}
-      <div className="flex-1 flex flex-col justify-center p-6 md:p-12 bg-white">
-        <div className="max-w-md w-full mx-auto space-y-8">
+      <div className="flex-1 flex flex-col justify-center p-6 md:p-12 bg-white overflow-y-auto">
+        <div className="max-w-md w-full mx-auto space-y-8 py-8">
           <div className="flex justify-between items-center">
             <Link href="/landing" className="inline-flex items-center gap-2 text-slate-400 hover:text-primary transition-colors font-bold text-sm uppercase">
               <ArrowLeft className="size-4" /> {isLogin ? 'Home' : 'Back'}
@@ -142,13 +154,18 @@ export default function AuthPage() {
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <h2 className="text-4xl font-black italic text-slate-900 uppercase">
-              {isLogin ? t.welcome : t.createAccount}
-            </h2>
-            <p className="text-slate-500 font-medium">
-              {isLogin ? 'Enter your details to access your dashboard' : 'Join the fastest urban transport network'}
-            </p>
+          <div className="space-y-4">
+            <div className="relative w-16 h-16 md:hidden">
+               {logo && <Image src={logo.imageUrl} alt="Logo" fill className="object-contain" />}
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-4xl font-black italic text-slate-900 uppercase">
+                {isLogin ? t.welcome : t.createAccount}
+              </h2>
+              <p className="text-slate-500 font-medium">
+                {isLogin ? 'Enter your details to access your dashboard' : 'Join the fastest urban transport network'}
+              </p>
+            </div>
           </div>
 
           <Tabs value={isLogin ? 'login' : 'register'} onValueChange={(v) => setIsLogin(v === 'login')} className="w-full">
@@ -189,7 +206,7 @@ export default function AuthPage() {
               </TabsContent>
 
               <TabsContent value="register" className="space-y-4 mt-0">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <Label className="text-xs font-black text-slate-400 tracking-widest uppercase">{t.fullName}</Label>
                     <div className="relative">

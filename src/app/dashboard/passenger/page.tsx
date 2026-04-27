@@ -8,13 +8,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { MapPin, Navigation, Bike, User, LogOut, Loader2, Clock, Search, ShieldCheck, Car } from 'lucide-react';
+import { MapPin, User, LogOut, Loader2, Car } from 'lucide-react';
 import { collection, doc, setDoc, query, where, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '@/firebase';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { translations, Language } from '@/lib/translations';
+import { toast } from '@/hooks/use-toast';
 
 export default function PassengerDashboard() {
   const { user } = useUser();
@@ -31,6 +32,7 @@ export default function PassengerDashboard() {
   const [isRequesting, setIsRequesting] = useState(false);
 
   const mapImage = PlaceHolderImages.find(img => img.id === 'map-preview');
+  const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
   const ridersQuery = useMemo(() => {
     if (!db) return null;
@@ -53,19 +55,32 @@ export default function PassengerDashboard() {
     if (!db || !user || !pickup || !destination) return;
     setIsRequesting(true);
     
-    const rideId = doc(collection(db, 'rides')).id;
-    const rideData = {
-      rideId,
-      passengerId: user.uid,
-      passengerName: userProfile?.name || user.email?.split('@')[0] || 'Passenger',
-      pickupLocation: pickup,
-      destination: destination,
-      status: 'requested',
-      createdAt: serverTimestamp(),
-    };
+    try {
+      const rideId = doc(collection(db, 'rides')).id;
+      const rideData = {
+        rideId,
+        passengerId: user.uid,
+        passengerName: userProfile?.name || user.email?.split('@')[0] || 'Passenger',
+        pickupLocation: pickup,
+        destination: destination,
+        status: 'requested',
+        createdAt: serverTimestamp(),
+      };
 
-    await setDoc(doc(db, 'rides', rideId), rideData);
-    setIsRequesting(false);
+      await setDoc(doc(db, 'rides', rideId), rideData);
+      toast({
+        title: "Request Sent",
+        description: "Looking for nearby riders...",
+      });
+    } catch (e: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: e.message,
+      });
+    } finally {
+      setIsRequesting(false);
+    }
   }
 
   async function handleLogout() {
@@ -79,7 +94,9 @@ export default function PassengerDashboard() {
     <div className="min-h-screen bg-slate-50 flex flex-col">
       <header className="bg-white border-b px-6 h-16 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-2 font-black text-xl text-primary italic">
-          <Bike className="size-6" />
+          <div className="relative w-8 h-8">
+             {logo && <Image src={logo.imageUrl} alt="Logo" fill className="object-contain" />}
+          </div>
           MUTAMBUKE
         </div>
         <div className="flex items-center gap-4">
@@ -100,7 +117,7 @@ export default function PassengerDashboard() {
           {riders?.map((rider, i) => (
             <div key={rider.driverId} className="absolute animate-pulse" style={{ top: `${30 + (i * 10)}%`, left: `${20 + (i * 25)}%` }}>
               <div className="bg-white p-2 rounded-full shadow-lg border">
-                {rider.vehicleType === 'taxi' ? <Car className="size-6 text-secondary" /> : <Bike className="size-6 text-secondary" />}
+                {logo && <Image src={logo.imageUrl} alt="Moto" width={24} height={24} className="object-contain" />}
               </div>
             </div>
           ))}
@@ -125,7 +142,11 @@ export default function PassengerDashboard() {
           ) : (
             <>
               <div className="bg-white/80 backdrop-blur-md p-4 rounded-3xl shadow-sm border flex items-center gap-3">
-                <div className="size-10 rounded-2xl bg-secondary/10 flex items-center justify-center text-secondary"><Bike className="size-5" /></div>
+                <div className="size-10 rounded-2xl bg-secondary/10 flex items-center justify-center text-secondary">
+                  <div className="relative w-6 h-6">
+                    {logo && <Image src={logo.imageUrl} alt="Logo" fill className="object-contain" />}
+                  </div>
+                </div>
                 <div><p className="text-sm font-black italic uppercase">{riders?.length || 0} {t.nearbyRiders}</p></div>
               </div>
 
@@ -140,7 +161,7 @@ export default function PassengerDashboard() {
                     <Input placeholder="Destination..." className="h-14 rounded-2xl bg-slate-50 border-none font-bold" value={destination} onChange={(e) => setDestination(e.target.value)} />
                   </div>
                 </div>
-                <Button onClick={handleRequestRide} disabled={!destination || isRequesting} className="w-full h-16 rounded-[1.5rem] bg-primary text-white text-xl font-black shadow-xl">
+                <Button onClick={handleRequestRide} disabled={!destination || isRequesting} className="w-full h-16 rounded-[1.5rem] bg-primary text-white text-xl font-black shadow-xl uppercase">
                   {isRequesting ? <Loader2 className="size-6 animate-spin" /> : t.confirmed}
                 </Button>
               </Card>

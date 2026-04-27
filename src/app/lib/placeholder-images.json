@@ -2,6 +2,12 @@
 {
   "placeholderImages": [
     {
+      "id": "logo",
+      "description": "MUTAMBUKE Logo",
+      "imageUrl": "https://i.pinimg.com/736x/8f/3e/20/8f3e2001e3b6807e997e597c11f7c32d.jpg",
+      "imageHint": "motorcycle logo"
+    },
+    {
       "id": "hero-moto",
       "description": "Premium Motorcycle Rider",
       "imageUrl": "https://i.pinimg.com/1200x/e7/7c/57/e77c57a45e0d314d5aafc998eeab94a1.jpg",
