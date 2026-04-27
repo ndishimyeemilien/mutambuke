@@ -14,16 +14,14 @@ export default function RootPage() {
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
   useEffect(() => {
-    // Wait for auth state to be determined
     if (authLoading) return;
 
-    // Not logged in -> Landing
     if (!user) {
       router.push('/landing');
       return;
     }
 
-    // Logged in -> Wait for profile
+    // Only redirect once we have a definitive answer on the profile
     if (!profileLoading) {
       if (profile) {
         if (profile.role === 'admin') {
@@ -34,8 +32,11 @@ export default function RootPage() {
           router.push('/dashboard/passenger');
         }
       } else {
-        // Authenticated but no profile doc exists - redirect to auth to complete or logout
-        router.push('/auth');
+        // Logged in but profile doc not found yet - allow some buffer or redirect to auth to re-init
+        const timeout = setTimeout(() => {
+          if (!profile) router.push('/auth');
+        }, 2000);
+        return () => clearTimeout(timeout);
       }
     }
   }, [user, authLoading, profile, profileLoading, router]);

@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Bike, Mail, Lock, User, Phone, ArrowLeft, Loader2, Car, Globe } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { useAuth, useFirestore } from '@/firebase';
+import { useAuth, useFirestore, useUser } from '@/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp, collection, query, where, getDocs, limit } from 'firebase/firestore';
 import Link from 'next/link';
@@ -23,10 +23,11 @@ export default function AuthPage() {
   const [lang, setLang] = useState<Language>('rw');
   const t = translations[lang];
 
+  const { user, loading: authChecking } = useUser();
   const [isLogin, setIsLogin] = useState(true);
   const [role, setRole] = useState<'passenger' | 'driver'>('passenger');
   const [vehicleType, setVehicleType] = useState<'moto' | 'taxi'>('moto');
-  const [identifier, setIdentifier] = useState(''); // Email or Phone
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -40,6 +41,13 @@ export default function AuthPage() {
   const authImage = PlaceHolderImages.find(img => img.id === 'auth-illustration');
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
+  // If user is already authenticated, redirect them to the home page (RootPage handles role routing)
+  useEffect(() => {
+    if (user && !isLoading) {
+      router.push('/');
+    }
+  }, [user, router, isLoading]);
+
   async function handleAuth(e: React.FormEvent) {
     e.preventDefault();
     if (!auth || !db) return;
@@ -49,7 +57,7 @@ export default function AuthPage() {
       if (isLogin) {
         let loginEmail = identifier.trim();
         
-        // Handle phone number login by finding associated email
+        // Phone number login detection
         if (!loginEmail.includes('@')) {
           const q = query(collection(db, 'users'), where('phone', '==', loginEmail), limit(1));
           const snapshot = await getDocs(q);
@@ -61,12 +69,19 @@ export default function AuthPage() {
         }
 
         await signInWithEmailAndPassword(auth, loginEmail, password);
-        router.push('/');
+        // router.push('/') will be handled by the useEffect
       } else {
         const cleanEmail = email.trim().toLowerCase();
         const cleanPhone = phone.trim();
 
-        // Check if phone is unique
+        // 1. Check if email exists in Firestore (Double protection)
+        const emailQuery = query(collection(db, 'users'), where('email', '==', cleanEmail), limit(1));
+        const emailSnapshot = await getDocs(emailQuery);
+        if (!emailSnapshot.empty) {
+          throw new Error(lang === 'rw' ? 'Iyi email isanzwe ikoreshwa.' : 'This email is already in use.');
+        }
+
+        // 2. Check if phone is unique
         const phoneQuery = query(collection(db, 'users'), where('phone', '==', cleanPhone), limit(1));
         const phoneSnapshot = await getDocs(phoneQuery);
         if (!phoneSnapshot.empty) {
@@ -74,13 +89,13 @@ export default function AuthPage() {
         }
 
         const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
-        const user = userCredential.user;
+        const newUser = userCredential.user;
 
-        // Auto-assign admin
+        // Auto-assign admin for specific email
         const userRole = cleanEmail === 'adimini@gmail.com' ? 'admin' : role;
 
         const userData = {
-          userId: user.uid,
+          userId: newUser.uid,
           name: name.trim(),
           email: cleanEmail,
           phone: cleanPhone,
@@ -89,11 +104,11 @@ export default function AuthPage() {
           createdAt: serverTimestamp(),
         };
 
-        await setDoc(doc(db, 'users', user.uid), userData);
+        await setDoc(doc(db, 'users', newUser.uid), userData);
 
         if (userRole === 'driver') {
-          await setDoc(doc(db, 'drivers', user.uid), {
-            driverId: user.uid,
+          await setDoc(doc(db, 'drivers', newUser.uid), {
+            driverId: newUser.uid,
             status: 'offline',
             isVerified: false,
             vehicleType: vehicleType,
@@ -105,7 +120,6 @@ export default function AuthPage() {
           title: "Success",
           description: lang === 'rw' ? "Konti yafunguwe neza!" : "Account created successfully!",
         });
-        router.push('/');
       }
     } catch (error: any) {
       console.error(error);
@@ -117,6 +131,14 @@ export default function AuthPage() {
     } finally {
       setIsLoading(false);
     }
+  }
+
+  if (authChecking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-900">
+        <Loader2 className="size-12 animate-spin text-secondary" />
+      </div>
+    );
   }
 
   return (
