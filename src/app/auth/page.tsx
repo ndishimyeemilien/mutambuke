@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState } from 'react';
@@ -26,7 +25,7 @@ export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [role, setRole] = useState<'passenger' | 'driver'>('passenger');
   const [vehicleType, setVehicleType] = useState<'moto' | 'taxi'>('moto');
-  const [identifier, setIdentifier] = useState(''); // Email or Phone
+  const [identifier, setIdentifier] = useState(''); // Email or Phone for login
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -56,29 +55,43 @@ export default function AuthPage() {
           if (!snapshot.empty) {
             loginEmail = snapshot.docs[0].data().email;
           } else {
-            throw new Error('No user found with this phone number.');
+            throw new Error(lang === 'rw' ? 'Nta konti ibonetse kuri iyi telefone.' : 'No account found with this phone number.');
           }
         }
 
         await signInWithEmailAndPassword(auth, loginEmail, password);
         router.push('/');
       } else {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        // Registration Logic
+        const cleanEmail = email.trim().toLowerCase();
+        const cleanPhone = phone.trim();
+
+        // 1. Check if phone number is already in use
+        const phoneQuery = query(collection(db, 'users'), where('phone', '==', cleanPhone), limit(1));
+        const phoneSnapshot = await getDocs(phoneQuery);
+        
+        if (!phoneSnapshot.empty) {
+          throw new Error(lang === 'rw' ? 'Iyi telefone isanzwe ikoreshwa.' : 'This phone number is already in use.');
+        }
+
+        // 2. Create the user in Firebase Auth
+        const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
         const user = userCredential.user;
 
         // Auto-assign admin role for specified email
-        const userRole = email === 'adimini@gmail.com' ? 'admin' : role;
+        const userRole = cleanEmail === 'adimini@gmail.com' ? 'admin' : role;
 
         const userData = {
           userId: user.uid,
-          name: name,
-          email: email,
-          phone: phone,
+          name: name.trim(),
+          email: cleanEmail,
+          phone: cleanPhone,
           role: userRole,
           language: lang,
           createdAt: serverTimestamp(),
         };
 
+        // 3. Save profile to Firestore
         await setDoc(doc(db, 'users', user.uid), userData);
 
         if (userRole === 'driver') {
@@ -93,16 +106,20 @@ export default function AuthPage() {
 
         toast({
           title: "Success",
-          description: "Account created successfully!",
+          description: lang === 'rw' ? "Konti yafunguwe neza!" : "Account created successfully!",
         });
         router.push('/');
       }
     } catch (error: any) {
       console.error(error);
+      let errorMessage = error.message;
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = lang === 'rw' ? 'Iyi email isanzwe ikoreshwa.' : 'This email is already in use.';
+      }
       toast({
         variant: "destructive",
-        title: "Authentication Error",
-        description: error.message,
+        title: "Error",
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);
