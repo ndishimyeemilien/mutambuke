@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -25,7 +26,7 @@ export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [role, setRole] = useState<'passenger' | 'driver'>('passenger');
   const [vehicleType, setVehicleType] = useState<'moto' | 'taxi'>('moto');
-  const [identifier, setIdentifier] = useState(''); // Email or Phone for login
+  const [identifier, setIdentifier] = useState(''); // Email or Phone
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -48,7 +49,7 @@ export default function AuthPage() {
       if (isLogin) {
         let loginEmail = identifier.trim();
         
-        // Handle phone number login by finding the associated email
+        // Handle phone number login by finding associated email
         if (!loginEmail.includes('@')) {
           const q = query(collection(db, 'users'), where('phone', '==', loginEmail), limit(1));
           const snapshot = await getDocs(q);
@@ -62,22 +63,20 @@ export default function AuthPage() {
         await signInWithEmailAndPassword(auth, loginEmail, password);
         router.push('/');
       } else {
-        // Registration Logic
         const cleanEmail = email.trim().toLowerCase();
         const cleanPhone = phone.trim();
 
-        // 1. Check if email/phone are unique
+        // Check if phone is unique
         const phoneQuery = query(collection(db, 'users'), where('phone', '==', cleanPhone), limit(1));
         const phoneSnapshot = await getDocs(phoneQuery);
         if (!phoneSnapshot.empty) {
           throw new Error(lang === 'rw' ? 'Iyi telefone isanzwe ikoreshwa.' : 'This phone number is already in use.');
         }
 
-        // 2. Create the user in Firebase Auth
         const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
         const user = userCredential.user;
 
-        // Auto-assign admin role for specified email
+        // Auto-assign admin
         const userRole = cleanEmail === 'adimini@gmail.com' ? 'admin' : role;
 
         const userData = {
@@ -90,7 +89,6 @@ export default function AuthPage() {
           createdAt: serverTimestamp(),
         };
 
-        // 3. Save profile to Firestore
         await setDoc(doc(db, 'users', user.uid), userData);
 
         if (userRole === 'driver') {
@@ -111,14 +109,10 @@ export default function AuthPage() {
       }
     } catch (error: any) {
       console.error(error);
-      let errorMessage = error.message;
-      if (error.code === 'auth/email-already-in-use') {
-        errorMessage = lang === 'rw' ? 'Iyi email isanzwe ikoreshwa.' : 'This email is already in use.';
-      }
       toast({
         variant: "destructive",
         title: "Error",
-        description: errorMessage,
+        description: error.message,
       });
     } finally {
       setIsLoading(false);
@@ -126,8 +120,7 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
-      {/* Visual Sidebar */}
+    <div className="min-h-screen bg-white flex flex-col md:flex-row">
       <div className="hidden md:flex md:w-1/2 relative bg-primary overflow-hidden">
         {authImage && (
           <Image
@@ -139,31 +132,30 @@ export default function AuthPage() {
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/80 to-transparent flex flex-col justify-center p-20 text-white z-10">
-          <div className="relative w-24 h-24 mb-8">
+          <div className="relative w-32 h-32 mb-10">
             {logo && (
               <Image 
                 src={logo.imageUrl} 
                 alt="Logo" 
                 fill 
-                className="object-contain rounded-2xl" 
+                className="object-contain rounded-[2rem]" 
               />
             )}
           </div>
           <h1 className="text-7xl font-black italic mb-6 leading-none uppercase">
             Join the <br /> Movement.
           </h1>
-          <p className="text-xl font-medium opacity-90 max-w-md italic">
+          <p className="text-2xl font-medium opacity-90 max-w-md italic">
             Connecting thousands of riders and passengers across the city every day.
           </p>
         </div>
       </div>
 
-      {/* Form Section */}
-      <div className="flex-1 flex flex-col justify-center p-6 md:p-12 bg-white overflow-y-auto">
-        <div className="max-w-md w-full mx-auto space-y-8 py-8">
+      <div className="flex-1 flex flex-col justify-center p-6 md:p-12 bg-white">
+        <div className="max-w-md w-full mx-auto space-y-8">
           <div className="flex justify-between items-center">
             <Link href="/landing" className="inline-flex items-center gap-2 text-slate-400 hover:text-primary transition-colors font-bold text-sm uppercase">
-              <ArrowLeft className="size-4" /> {isLogin ? 'Home' : 'Back'}
+              <ArrowLeft className="size-4" /> Home
             </Link>
             
             <Select value={lang} onValueChange={(v: Language) => setLang(v)}>
@@ -179,24 +171,19 @@ export default function AuthPage() {
             </Select>
           </div>
 
-          <div className="space-y-4">
-            <div className="relative w-16 h-16 md:hidden">
-               {logo && <Image src={logo.imageUrl} alt="Logo" fill className="object-contain rounded-xl" />}
-            </div>
-            <div className="space-y-2">
-              <h2 className="text-4xl font-black italic text-slate-900 uppercase">
-                {isLogin ? t.welcome : t.createAccount}
-              </h2>
-              <p className="text-slate-500 font-medium italic">
-                {isLogin ? 'Enter your details to access your dashboard' : 'Join the fastest urban transport network'}
-              </p>
-            </div>
+          <div className="space-y-2">
+            <h2 className="text-4xl font-black italic text-slate-900 uppercase">
+              {isLogin ? t.welcome : t.createAccount}
+            </h2>
+            <p className="text-slate-500 font-medium italic">
+              Access the MUTAMBUKE smart urban network.
+            </p>
           </div>
 
           <Tabs value={isLogin ? 'login' : 'register'} onValueChange={(v) => setIsLogin(v === 'login')} className="w-full">
             <TabsList className="grid w-full grid-cols-2 rounded-2xl h-12 bg-slate-100 p-1 mb-8">
-              <TabsTrigger value="login" className="rounded-xl font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm uppercase">{t.login}</TabsTrigger>
-              <TabsTrigger value="register" className="rounded-xl font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm uppercase">{t.signup}</TabsTrigger>
+              <TabsTrigger value="login" className="rounded-xl font-bold uppercase">{t.login}</TabsTrigger>
+              <TabsTrigger value="register" className="rounded-xl font-bold uppercase">{t.signup}</TabsTrigger>
             </TabsList>
 
             <form onSubmit={handleAuth} className="space-y-4">
@@ -206,8 +193,8 @@ export default function AuthPage() {
                   <div className="relative">
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
                     <Input 
-                      placeholder="Email or +250..." 
-                      className="pl-12 h-14 rounded-2xl border-slate-100 bg-slate-50 focus:bg-white transition-colors" 
+                      placeholder="Email or Phone Number" 
+                      className="pl-12 h-14 rounded-2xl border-slate-100 bg-slate-50" 
                       required 
                       value={identifier}
                       onChange={(e) => setIdentifier(e.target.value)}
@@ -220,7 +207,7 @@ export default function AuthPage() {
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
                     <Input 
                       placeholder="••••••••" 
-                      className="pl-12 h-14 rounded-2xl border-slate-100 bg-slate-50 focus:bg-white transition-colors" 
+                      className="pl-12 h-14 rounded-2xl border-slate-100 bg-slate-50" 
                       type="password" 
                       required
                       value={password}
@@ -234,32 +221,20 @@ export default function AuthPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <Label className="text-xs font-black text-slate-400 tracking-widest uppercase">{t.fullName}</Label>
-                    <div className="relative">
-                      <User className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                      <Input placeholder="John Doe" className="pl-12 h-14 rounded-2xl border-slate-100 bg-slate-50" required value={name} onChange={(e) => setName(e.target.value)} />
-                    </div>
+                    <Input placeholder="John Doe" className="h-14 rounded-2xl border-slate-100 bg-slate-50" required value={name} onChange={(e) => setName(e.target.value)} />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs font-black text-slate-400 tracking-widest uppercase">{t.phone}</Label>
-                    <div className="relative">
-                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                      <Input placeholder="+250..." className="pl-12 h-14 rounded-2xl border-slate-100 bg-slate-50" type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} />
-                    </div>
+                    <Input placeholder="+250..." className="h-14 rounded-2xl border-slate-100 bg-slate-50" type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} />
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs font-black text-slate-400 tracking-widest uppercase">EMAIL ADDRESS</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                    <Input placeholder="email@example.com" className="pl-12 h-14 rounded-2xl border-slate-100 bg-slate-50" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-                  </div>
+                  <Label className="text-xs font-black text-slate-400 tracking-widest uppercase">EMAIL</Label>
+                  <Input placeholder="email@example.com" className="h-14 rounded-2xl border-slate-100 bg-slate-50" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs font-black text-slate-400 tracking-widest uppercase">{t.password}</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                    <Input placeholder="Min. 8 characters" className="pl-12 h-14 rounded-2xl border-slate-100 bg-slate-50" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
-                  </div>
+                  <Input placeholder="Min. 8 characters" className="h-14 rounded-2xl border-slate-100 bg-slate-50" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
                 </div>
 
                 <div className="space-y-3 pt-2">
