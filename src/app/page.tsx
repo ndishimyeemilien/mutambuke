@@ -14,9 +14,17 @@ export default function RootPage() {
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
   useEffect(() => {
-    if (!authLoading && !user) {
+    // Wait for auth state to be determined
+    if (authLoading) return;
+
+    // Not logged in -> Landing
+    if (!user) {
       router.push('/landing');
-    } else if (!authLoading && !profileLoading && user) {
+      return;
+    }
+
+    // Logged in -> Wait for profile
+    if (!profileLoading) {
       if (profile) {
         if (profile.role === 'admin') {
           router.push('/dashboard/admin');
@@ -25,34 +33,36 @@ export default function RootPage() {
         } else {
           router.push('/dashboard/passenger');
         }
-      } else if (!profileLoading && user) {
-        // If auth exists but profile doesn't, we might be in a race condition
-        // or the user was deleted from Firestore but not Auth.
-        // Usually, registration handles this, but a fallback is safe.
+      } else {
+        // Authenticated but no profile doc exists - redirect to auth to complete or logout
+        router.push('/auth');
       }
     }
   }, [user, authLoading, profile, profileLoading, router]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white">
-      <div className="relative w-48 h-48 mb-8 animate-pulse">
+      <div className="relative w-48 h-48 mb-8">
         {logo && (
           <Image 
             src={logo.imageUrl} 
             alt="MUTAMBUKE Logo" 
             fill 
-            className="object-contain rounded-3xl"
+            className="object-contain rounded-[3rem] animate-pulse"
             priority
           />
         )}
       </div>
-      <div className="flex flex-col items-center gap-4">
-        <div className="flex items-center gap-2">
-           <div className="w-3 h-3 rounded-full bg-secondary animate-bounce [animation-delay:-0.3s]"></div>
-           <div className="w-3 h-3 rounded-full bg-secondary animate-bounce [animation-delay:-0.15s]"></div>
-           <div className="w-3 h-3 rounded-full bg-secondary animate-bounce"></div>
+      <div className="flex flex-col items-center gap-6">
+        <div className="flex items-center gap-3">
+           <div className="w-4 h-4 rounded-full bg-secondary animate-bounce [animation-delay:-0.3s]"></div>
+           <div className="w-4 h-4 rounded-full bg-secondary animate-bounce [animation-delay:-0.15s]"></div>
+           <div className="w-4 h-4 rounded-full bg-secondary animate-bounce"></div>
         </div>
-        <p className="text-secondary font-black italic tracking-widest text-sm uppercase">Loading Mutambuke...</p>
+        <div className="text-center space-y-2">
+          <h2 className="text-2xl font-black italic tracking-tighter uppercase">MUTAMBUKE</h2>
+          <p className="text-secondary font-black italic tracking-widest text-xs uppercase opacity-80">Smart Urban Travel</p>
+        </div>
       </div>
     </div>
   );

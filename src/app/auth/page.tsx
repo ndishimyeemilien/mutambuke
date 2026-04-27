@@ -121,31 +121,31 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col md:flex-row">
-      <div className="hidden md:flex md:w-1/2 relative bg-primary overflow-hidden">
+      <div className="hidden md:flex md:w-1/2 relative bg-slate-900 overflow-hidden">
         {authImage && (
           <Image
             src={authImage.imageUrl}
             alt="Auth illustration"
             fill
-            className="object-cover opacity-60 mix-blend-overlay"
+            className="object-cover opacity-60"
             priority
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/80 to-transparent flex flex-col justify-center p-20 text-white z-10">
-          <div className="relative w-32 h-32 mb-10">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 via-slate-900/40 to-transparent flex flex-col justify-center p-20 text-white z-10">
+          <div className="relative w-40 h-40 mb-10">
             {logo && (
               <Image 
                 src={logo.imageUrl} 
                 alt="Logo" 
                 fill 
-                className="object-contain rounded-[2rem]" 
+                className="object-contain rounded-[2.5rem]" 
               />
             )}
           </div>
-          <h1 className="text-7xl font-black italic mb-6 leading-none uppercase">
-            Join the <br /> Movement.
+          <h1 className="text-7xl font-black italic mb-6 leading-[0.9] uppercase tracking-tighter">
+            Join the <br /> <span className="text-secondary">Movement.</span>
           </h1>
-          <p className="text-2xl font-medium opacity-90 max-w-md italic">
+          <p className="text-2xl font-medium opacity-90 max-w-md italic leading-tight">
             Connecting thousands of riders and passengers across the city every day.
           </p>
         </div>
@@ -154,7 +154,7 @@ export default function AuthPage() {
       <div className="flex-1 flex flex-col justify-center p-6 md:p-12 bg-white">
         <div className="max-w-md w-full mx-auto space-y-8">
           <div className="flex justify-between items-center">
-            <Link href="/landing" className="inline-flex items-center gap-2 text-slate-400 hover:text-primary transition-colors font-bold text-sm uppercase">
+            <Link href="/landing" className="inline-flex items-center gap-2 text-slate-400 hover:text-primary transition-colors font-bold text-sm uppercase italic">
               <ArrowLeft className="size-4" /> Home
             </Link>
             
@@ -172,7 +172,10 @@ export default function AuthPage() {
           </div>
 
           <div className="space-y-2">
-            <h2 className="text-4xl font-black italic text-slate-900 uppercase">
+             <div className="md:hidden relative w-20 h-20 mb-4">
+                {logo && <Image src={logo.imageUrl} alt="Logo" fill className="object-contain rounded-2xl" />}
+             </div>
+            <h2 className="text-4xl font-black italic text-slate-900 uppercase tracking-tighter">
               {isLogin ? t.welcome : t.createAccount}
             </h2>
             <p className="text-slate-500 font-medium italic">
@@ -194,7 +197,7 @@ export default function AuthPage() {
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
                     <Input 
                       placeholder="Email or Phone Number" 
-                      className="pl-12 h-14 rounded-2xl border-slate-100 bg-slate-50" 
+                      className="pl-12 h-14 rounded-2xl border-slate-100 bg-slate-50 font-bold" 
                       required 
                       value={identifier}
                       onChange={(e) => setIdentifier(e.target.value)}
@@ -207,7 +210,7 @@ export default function AuthPage() {
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
                     <Input 
                       placeholder="••••••••" 
-                      className="pl-12 h-14 rounded-2xl border-slate-100 bg-slate-50" 
+                      className="pl-12 h-14 rounded-2xl border-slate-100 bg-slate-50 font-bold" 
                       type="password" 
                       required
                       value={password}
@@ -221,20 +224,20 @@ export default function AuthPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <Label className="text-xs font-black text-slate-400 tracking-widest uppercase">{t.fullName}</Label>
-                    <Input placeholder="John Doe" className="h-14 rounded-2xl border-slate-100 bg-slate-50" required value={name} onChange={(e) => setName(e.target.value)} />
+                    <Input placeholder="John Doe" className="h-14 rounded-2xl border-slate-100 bg-slate-50 font-bold" required value={name} onChange={(e) => setName(e.target.value)} />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs font-black text-slate-400 tracking-widest uppercase">{t.phone}</Label>
-                    <Input placeholder="+250..." className="h-14 rounded-2xl border-slate-100 bg-slate-50" type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} />
+                    <Input placeholder="+250..." className="h-14 rounded-2xl border-slate-100 bg-slate-50 font-bold" type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} />
                   </div>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs font-black text-slate-400 tracking-widest uppercase">EMAIL</Label>
-                  <Input placeholder="email@example.com" className="h-14 rounded-2xl border-slate-100 bg-slate-50" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <Input placeholder="email@example.com" className="h-14 rounded-2xl border-slate-100 bg-slate-50 font-bold" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs font-black text-slate-400 tracking-widest uppercase">{t.password}</Label>
-                  <Input placeholder="Min. 8 characters" className="h-14 rounded-2xl border-slate-100 bg-slate-50" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+                  <Input placeholder="Min. 8 characters" className="h-14 rounded-2xl border-slate-100 bg-slate-50 font-bold" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
                 </div>
 
                 <div className="space-y-3 pt-2">
