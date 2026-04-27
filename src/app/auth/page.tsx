@@ -66,10 +66,9 @@ export default function AuthPage() {
         const cleanEmail = email.trim().toLowerCase();
         const cleanPhone = phone.trim();
 
-        // 1. Check if phone number is already in use
+        // 1. Check if email/phone are unique
         const phoneQuery = query(collection(db, 'users'), where('phone', '==', cleanPhone), limit(1));
         const phoneSnapshot = await getDocs(phoneQuery);
-        
         if (!phoneSnapshot.empty) {
           throw new Error(lang === 'rw' ? 'Iyi telefone isanzwe ikoreshwa.' : 'This phone number is already in use.');
         }
@@ -141,9 +140,18 @@ export default function AuthPage() {
         )}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/80 to-transparent flex flex-col justify-center p-20 text-white z-10">
           <div className="relative w-24 h-24 mb-8">
-            {logo && <Image src={logo.imageUrl} alt="Logo" fill className="object-contain" />}
+            {logo && (
+              <Image 
+                src={logo.imageUrl} 
+                alt="Logo" 
+                fill 
+                className="object-contain rounded-2xl" 
+              />
+            )}
           </div>
-          <h1 className="text-7xl font-black italic mb-6 leading-none uppercase">Join the <br /> Movement.</h1>
+          <h1 className="text-7xl font-black italic mb-6 leading-none uppercase">
+            Join the <br /> Movement.
+          </h1>
           <p className="text-xl font-medium opacity-90 max-w-md italic">
             Connecting thousands of riders and passengers across the city every day.
           </p>
@@ -173,13 +181,13 @@ export default function AuthPage() {
 
           <div className="space-y-4">
             <div className="relative w-16 h-16 md:hidden">
-               {logo && <Image src={logo.imageUrl} alt="Logo" fill className="object-contain" />}
+               {logo && <Image src={logo.imageUrl} alt="Logo" fill className="object-contain rounded-xl" />}
             </div>
             <div className="space-y-2">
               <h2 className="text-4xl font-black italic text-slate-900 uppercase">
                 {isLogin ? t.welcome : t.createAccount}
               </h2>
-              <p className="text-slate-500 font-medium">
+              <p className="text-slate-500 font-medium italic">
                 {isLogin ? 'Enter your details to access your dashboard' : 'Join the fastest urban transport network'}
               </p>
             </div>
@@ -291,7 +299,7 @@ export default function AuthPage() {
                 )}
               </TabsContent>
 
-              <Button type="submit" className={`w-full h-16 rounded-2xl text-xl font-black shadow-lg transition-transform active:scale-95 ${role === 'driver' && !isLogin ? 'bg-secondary hover:bg-secondary/90' : 'bg-primary hover:bg-primary/90'}`} disabled={isLoading}>
+              <Button type="submit" className={`w-full h-16 rounded-2xl text-xl font-black shadow-lg transition-transform active:scale-95 italic ${role === 'driver' && !isLogin ? 'bg-secondary hover:bg-secondary/90' : 'bg-primary hover:bg-primary/90'}`} disabled={isLoading}>
                 {isLoading ? <Loader2 className="animate-spin" /> : (isLogin ? t.login : t.signup)}
               </Button>
             </form>
