@@ -14,8 +14,6 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp, collection, query, where, getDocs, limit } from 'firebase/firestore';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 import Link from 'next/link';
 import { translations, Language } from '@/lib/translations';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -49,6 +47,7 @@ export default function AuthPage() {
       if (isLogin) {
         let loginEmail = identifier;
         
+        // Handle phone number login by finding the associated email
         if (!identifier.includes('@')) {
           const q = query(collection(db, 'users'), where('phone', '==', identifier), limit(1));
           const snapshot = await getDocs(q);
@@ -65,6 +64,7 @@ export default function AuthPage() {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
+        // Auto-assign admin role for specified email
         const userRole = email === 'adimini@gmail.com' ? 'admin' : role;
 
         const userData = {
@@ -80,14 +80,13 @@ export default function AuthPage() {
         await setDoc(doc(db, 'users', user.uid), userData);
 
         if (userRole === 'driver') {
-          const driverData = {
+          await setDoc(doc(db, 'drivers', user.uid), {
             driverId: user.uid,
             status: 'offline',
             isVerified: false,
             vehicleType: vehicleType,
             updatedAt: serverTimestamp(),
-          };
-          await setDoc(doc(db, 'drivers', user.uid), driverData);
+          });
         }
 
         router.push('/');
@@ -102,6 +101,7 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
+      {/* Visual Sidebar */}
       <div className="hidden md:flex md:w-1/2 relative bg-primary overflow-hidden">
         {authImage && (
           <Image
@@ -109,6 +109,7 @@ export default function AuthPage() {
             alt="Auth illustration"
             fill
             className="object-cover opacity-60 mix-blend-overlay"
+            priority
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/80 to-transparent flex flex-col justify-center p-20 text-white z-10">
@@ -120,6 +121,7 @@ export default function AuthPage() {
         </div>
       </div>
 
+      {/* Form Section */}
       <div className="flex-1 flex flex-col justify-center p-6 md:p-12 bg-white">
         <div className="max-w-md w-full mx-auto space-y-8">
           <div className="flex justify-between items-center">
