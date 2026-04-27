@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -9,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Bike, Mail, Lock, User, Phone, ArrowLeft, Loader2, Car, Globe } from 'lucide-react';
+import { Bike, User, Lock, ArrowLeft, Loader2, Car, Globe } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useAuth, useFirestore, useUser } from '@/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
@@ -41,7 +40,6 @@ export default function AuthPage() {
   const authImage = PlaceHolderImages.find(img => img.id === 'auth-illustration');
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
-  // If user is already authenticated, redirect them to the home page (RootPage handles role routing)
   useEffect(() => {
     if (user && !isLoading) {
       router.push('/');
@@ -57,7 +55,6 @@ export default function AuthPage() {
       if (isLogin) {
         let loginEmail = identifier.trim();
         
-        // Phone number login detection
         if (!loginEmail.includes('@')) {
           const q = query(collection(db, 'users'), where('phone', '==', loginEmail), limit(1));
           const snapshot = await getDocs(q);
@@ -69,19 +66,16 @@ export default function AuthPage() {
         }
 
         await signInWithEmailAndPassword(auth, loginEmail, password);
-        // router.push('/') will be handled by the useEffect
       } else {
         const cleanEmail = email.trim().toLowerCase();
         const cleanPhone = phone.trim();
 
-        // 1. Check if email exists in Firestore (Double protection)
         const emailQuery = query(collection(db, 'users'), where('email', '==', cleanEmail), limit(1));
         const emailSnapshot = await getDocs(emailQuery);
         if (!emailSnapshot.empty) {
           throw new Error(lang === 'rw' ? 'Iyi email isanzwe ikoreshwa.' : 'This email is already in use.');
         }
 
-        // 2. Check if phone is unique
         const phoneQuery = query(collection(db, 'users'), where('phone', '==', cleanPhone), limit(1));
         const phoneSnapshot = await getDocs(phoneQuery);
         if (!phoneSnapshot.empty) {
@@ -91,7 +85,6 @@ export default function AuthPage() {
         const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
         const newUser = userCredential.user;
 
-        // Auto-assign admin for specific email
         const userRole = cleanEmail === 'adimini@gmail.com' ? 'admin' : role;
 
         const userData = {
@@ -133,12 +126,9 @@ export default function AuthPage() {
     }
   }
 
+  // If we're just checking auth, don't show a heavy loader, just keep it blank to allow immediate transition if logged in
   if (authChecking) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900">
-        <Loader2 className="size-12 animate-spin text-secondary" />
-      </div>
-    );
+    return <div className="min-h-screen bg-white" />;
   }
 
   return (
