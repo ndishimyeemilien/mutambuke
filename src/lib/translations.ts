@@ -28,7 +28,12 @@ export const translations = {
     nearbyRiders: "RIDERS NEARBY",
     verificationPending: "Verification Pending",
     admin: "ADMIN",
-    logout: "LOGOUT"
+    logout: "LOGOUT",
+    call: "CALL",
+    pickupAt: "PICKUP AT",
+    destination: "DESTINATION",
+    selectRider: "SELECT RIDER",
+    rideConfirmed: "RIDE CONFIRMED"
   },
   rw: {
     welcome: "MURAKAZA NEZA",
@@ -56,7 +61,12 @@ export const translations = {
     nearbyRiders: "ABASHOFERI BARI HAFI",
     verificationPending: "KUGENZURA KONTI",
     admin: "UBAYOBOZI",
-    logout: "SOHOKA"
+    logout: "SOHOKA",
+    call: "HAMAGARA",
+    pickupAt: "HAGURUKIRA",
+    destination: "IYO UJYA",
+    selectRider: "HITAMO UMUSHOFERI",
+    rideConfirmed: "URUGENDO RWEMEJWE"
   },
   fr: {
     welcome: "BIENVENUE",
@@ -84,6 +94,11 @@ export const translations = {
     nearbyRiders: "CHAUFFEURS À PROXIMITÉ",
     verificationPending: "Vérification en attente",
     admin: "ADMIN",
-    logout: "DÉCONNEXION"
+    logout: "DÉCONNEXION",
+    call: "APPELER",
+    pickupAt: "DÉPART À",
+    destination: "DESTINATION",
+    selectRider: "CHOISIR UN CHAUFFEUR",
+    rideConfirmed: "COURSE CONFIRMÉE"
   }
 };

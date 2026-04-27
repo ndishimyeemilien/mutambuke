@@ -1,15 +1,15 @@
 
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import { useUser, useFirestore, useCollection, useDoc } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { MapPin, User, LogOut, Loader2, Car } from 'lucide-react';
-import { collection, doc, setDoc, query, where, serverTimestamp } from 'firebase/firestore';
+import { MapPin, User, LogOut, Loader2, Phone, Navigation, Bike, Car as CarIcon, Star } from 'lucide-react';
+import { collection, doc, setDoc, query, where, serverTimestamp, getDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '@/firebase';
@@ -27,19 +27,22 @@ export default function PassengerDashboard() {
   const lang = (userProfile?.language as Language) || 'rw';
   const t = translations[lang];
 
-  const [pickup, setPickup] = useState('Current Location');
+  const [pickup, setPickup] = useState('My Location');
   const [destination, setDestination] = useState('');
   const [isRequesting, setIsRequesting] = useState(false);
+  const [selectedRider, setSelectedRider] = useState<any>(null);
 
   const mapImage = PlaceHolderImages.find(img => img.id === 'map-preview');
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
+  // Real-time query for online drivers
   const ridersQuery = useMemo(() => {
     if (!db) return null;
-    return query(collection(db, 'drivers'), where('status', '==', 'online'));
+    return query(collection(db, 'drivers'), where('status', '==', 'online'), where('isVerified', '==', true));
   }, [db]);
   const { data: riders } = useCollection(ridersQuery);
 
+  // Active ride monitoring
   const activeRideQuery = useMemo(() => {
     if (!db || !user) return null;
     return query(
@@ -51,6 +54,17 @@ export default function PassengerDashboard() {
   const { data: activeRides } = useCollection(activeRideQuery);
   const currentRide = activeRides?.[0];
 
+  const [riderProfile, setRiderProfile] = useState<any>(null);
+  useEffect(() => {
+    async function fetchRiderProfile() {
+      if (currentRide?.driverId && db) {
+        const d = await getDoc(doc(db, 'users', currentRide.driverId));
+        if (d.exists()) setRiderProfile(d.data());
+      }
+    }
+    fetchRiderProfile();
+  }, [currentRide, db]);
+
   async function handleRequestRide() {
     if (!db || !user || !pickup || !destination) return;
     setIsRequesting(true);
@@ -60,24 +74,23 @@ export default function PassengerDashboard() {
       const rideData = {
         rideId,
         passengerId: user.uid,
-        passengerName: userProfile?.name || user.email?.split('@')[0] || 'Passenger',
+        passengerName: userProfile?.name || 'Passenger',
+        passengerPhone: userProfile?.phone || '',
         pickupLocation: pickup,
         destination: destination,
         status: 'requested',
+        vehicleType: selectedRider?.vehicleType || 'moto',
+        preferredDriverId: selectedRider?.driverId || null,
         createdAt: serverTimestamp(),
       };
 
       await setDoc(doc(db, 'rides', rideId), rideData);
       toast({
-        title: "Request Sent",
-        description: "Looking for nearby riders...",
+        title: t.searching,
+        description: "Your request is live on the network.",
       });
     } catch (e: any) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: e.message,
-      });
+      toast({ variant: "destructive", title: "Error", description: e.message });
     } finally {
       setIsRequesting(false);
     }
@@ -103,65 +116,146 @@ export default function PassengerDashboard() {
           <Button variant="ghost" size="icon" onClick={handleLogout} className="rounded-full text-slate-400 hover:text-red-500">
             <LogOut className="size-5" />
           </Button>
-          <div className="size-8 rounded-full bg-slate-100 flex items-center justify-center">
-            <User className="size-4 text-slate-600" />
+          <div className="size-10 rounded-2xl bg-slate-100 flex items-center justify-center border-2 border-white shadow-sm overflow-hidden">
+            <User className="size-5 text-slate-600" />
           </div>
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col relative">
+      <main className="flex-1 flex flex-col relative overflow-hidden">
+        {/* Map Interface */}
         <div className="absolute inset-0 z-0">
           {mapImage && (
-            <Image src={mapImage.imageUrl} alt="Map" fill className="object-cover opacity-90" />
+            <Image src={mapImage.imageUrl} alt="Map" fill className="object-cover opacity-90 scale-110" />
           )}
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent" />
+          
+          {/* User Location Marker */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+            <div className="relative">
+              <div className="absolute -inset-4 bg-primary/20 rounded-full animate-ping" />
+              <div className="bg-primary p-2 rounded-full border-4 border-white shadow-2xl relative z-20">
+                <Navigation className="size-6 text-white fill-white rotate-45" />
+              </div>
+            </div>
+          </div>
+
+          {/* Online Riders Markers */}
           {riders?.map((rider, i) => (
-            <div key={rider.driverId} className="absolute animate-pulse" style={{ top: `${30 + (i * 10)}%`, left: `${20 + (i * 25)}%` }}>
-              <div className="bg-white p-2 rounded-full shadow-lg border">
-                {logo && <Image src={logo.imageUrl} alt="Moto" width={24} height={24} className="object-contain" />}
+            <div 
+              key={rider.driverId} 
+              onClick={() => setSelectedRider(rider)}
+              className="absolute cursor-pointer transition-transform hover:scale-125 group" 
+              style={{ top: `${20 + (i * 15)}%`, left: `${15 + (i * 20)}%` }}
+            >
+              <div className={`p-2 rounded-2xl shadow-xl border-2 transition-all ${selectedRider?.driverId === rider.driverId ? 'bg-secondary border-white scale-125' : 'bg-white border-slate-100'}`}>
+                {rider.vehicleType === 'moto' ? <Bike className="size-5" /> : <CarIcon className="size-5" />}
+              </div>
+              <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-white px-2 py-1 rounded-lg text-[10px] font-bold shadow-lg">
+                3 mins away
               </div>
             </div>
           ))}
         </div>
 
+        {/* Bottom Interaction Panel */}
         <div className="relative z-10 mt-auto p-4 max-w-lg w-full mx-auto space-y-4">
           {currentRide ? (
-            <Card className="rounded-[2.5rem] border-none shadow-2xl overflow-hidden animate-in slide-in-from-bottom-8">
-              <div className="bg-primary p-6 text-white text-center">
-                <Loader2 className="size-8 animate-spin mx-auto mb-2" />
-                <h3 className="text-2xl font-black italic uppercase">{t.searching}</h3>
+            <Card className="rounded-[2.5rem] border-none shadow-2xl overflow-hidden animate-in slide-in-from-bottom-8 bg-white/95 backdrop-blur-xl">
+              <div className={`${currentRide.status === 'requested' ? 'bg-primary' : 'bg-green-600'} p-6 text-white`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] font-black opacity-70 tracking-widest uppercase">{currentRide.status.toUpperCase()}</p>
+                    <h3 className="text-2xl font-black italic uppercase leading-tight">
+                      {currentRide.status === 'requested' ? t.searching : t.rideConfirmed}
+                    </h3>
+                  </div>
+                  {currentRide.status === 'requested' ? <Loader2 className="size-8 animate-spin" /> : <Star className="size-8 fill-white" />}
+                </div>
               </div>
               <CardContent className="p-8 space-y-6">
-                 <div className="flex gap-4">
-                    <div className="flex-1 space-y-6">
-                      <div><p className="text-[10px] font-black text-slate-400 tracking-widest mb-1 uppercase">PICKUP</p><p className="font-bold text-slate-900">{currentRide.pickupLocation}</p></div>
-                      <div><p className="text-[10px] font-black text-slate-400 tracking-widest mb-1 uppercase">DESTINATION</p><p className="font-bold text-slate-900">{currentRide.destination}</p></div>
+                 {riderProfile && (
+                   <div className="flex items-center justify-between bg-slate-50 p-4 rounded-3xl border border-slate-100">
+                     <div className="flex items-center gap-4">
+                       <div className="size-14 rounded-2xl bg-white border shadow-sm flex items-center justify-center text-primary">
+                         <User className="size-8" />
+                       </div>
+                       <div>
+                         <p className="font-black text-slate-900 italic text-lg uppercase leading-none">{riderProfile.name}</p>
+                         <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{currentRide.vehicleType}</p>
+                       </div>
+                     </div>
+                     <a href={`tel:${riderProfile.phone}`} className="size-14 rounded-2xl bg-green-500 text-white flex items-center justify-center shadow-lg hover:bg-green-600 transition-colors">
+                       <Phone className="size-7" />
+                     </a>
+                   </div>
+                 )}
+                 <div className="space-y-4">
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 tracking-widest mb-1 uppercase">{t.pickupAt}</p>
+                      <p className="font-bold text-slate-900 text-lg leading-tight">{currentRide.pickupLocation}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 tracking-widest mb-1 uppercase">{t.destination}</p>
+                      <p className="font-bold text-slate-900 text-lg leading-tight">{currentRide.destination}</p>
                     </div>
                  </div>
               </CardContent>
             </Card>
           ) : (
             <>
-              <div className="bg-white/80 backdrop-blur-md p-4 rounded-3xl shadow-sm border flex items-center gap-3">
-                <div className="size-10 rounded-2xl bg-secondary/10 flex items-center justify-center text-secondary">
-                  <div className="relative w-6 h-6">
-                    {logo && <Image src={logo.imageUrl} alt="Logo" fill className="object-contain" />}
+              {/* Nearby Info Bar */}
+              <div className="bg-white/90 backdrop-blur-lg p-4 rounded-[1.5rem] shadow-xl border-2 border-white flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="size-10 rounded-xl bg-secondary/10 flex items-center justify-center text-secondary">
+                    <Bike className="size-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-black italic uppercase leading-none">{riders?.length || 0} {t.nearbyRiders}</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Fastest: 2 mins</p>
                   </div>
                 </div>
-                <div><p className="text-sm font-black italic uppercase">{riders?.length || 0} {t.nearbyRiders}</p></div>
+                {selectedRider && (
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedRider(null)} className="text-[10px] font-black uppercase text-slate-400">Clear Selection</Button>
+                )}
               </div>
 
-              <Card className="rounded-[2.5rem] border-none shadow-2xl p-8 space-y-6">
+              {/* Ride Form */}
+              <Card className="rounded-[2.5rem] border-none shadow-2xl p-8 space-y-6 bg-white/95 backdrop-blur-xl">
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black text-slate-400 tracking-widest uppercase">PICKUP POINT</Label>
-                    <Input placeholder="Current Location" className="h-14 rounded-2xl bg-slate-50 border-none font-bold" value={pickup} onChange={(e) => setPickup(e.target.value)} />
+                    <div className="relative">
+                      <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-primary" />
+                      <Input placeholder="Current Location" className="h-14 pl-12 rounded-2xl bg-slate-100 border-none font-bold text-slate-900 focus:bg-white transition-colors" value={pickup} onChange={(e) => setPickup(e.target.value)} />
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black text-slate-400 tracking-widest uppercase">WHERE TO?</Label>
-                    <Input placeholder="Destination..." className="h-14 rounded-2xl bg-slate-50 border-none font-bold" value={destination} onChange={(e) => setDestination(e.target.value)} />
+                    <div className="relative">
+                      <Navigation className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-secondary" />
+                      <Input placeholder="Destination..." className="h-14 pl-12 rounded-2xl bg-slate-100 border-none font-bold text-slate-900 focus:bg-white transition-colors" value={destination} onChange={(e) => setDestination(e.target.value)} />
+                    </div>
                   </div>
                 </div>
-                <Button onClick={handleRequestRide} disabled={!destination || isRequesting} className="w-full h-16 rounded-[1.5rem] bg-primary text-white text-xl font-black shadow-xl uppercase">
+
+                {selectedRider && (
+                  <div className="animate-in fade-in slide-in-from-top-2 p-3 bg-secondary/10 rounded-2xl border border-secondary/20 flex items-center gap-3">
+                    <div className="size-10 rounded-xl bg-secondary text-white flex items-center justify-center shadow-lg">
+                      {selectedRider.vehicleType === 'moto' ? <Bike className="size-5" /> : <CarIcon className="size-5" />}
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-secondary tracking-widest uppercase">{t.selectRider}</p>
+                      <p className="font-bold text-slate-900">Rider ID: {selectedRider.driverId.slice(-6).toUpperCase()}</p>
+                    </div>
+                  </div>
+                )}
+
+                <Button 
+                  onClick={handleRequestRide} 
+                  disabled={!destination || isRequesting} 
+                  className={`w-full h-16 rounded-[1.5rem] text-xl font-black shadow-xl uppercase transition-all active:scale-95 ${selectedRider ? 'bg-secondary' : 'bg-primary'}`}
+                >
                   {isRequesting ? <Loader2 className="size-6 animate-spin" /> : t.confirmed}
                 </Button>
               </Card>

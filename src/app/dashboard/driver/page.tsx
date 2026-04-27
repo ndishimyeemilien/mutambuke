@@ -11,14 +11,10 @@ import {
   LogOut, 
   MapPin, 
   User, 
-  Check, 
-  X, 
+  Phone, 
   Navigation, 
-  Play, 
   Flag, 
-  Clock, 
   ShieldAlert, 
-  ShieldCheck,
   Loader2,
   Car
 } from 'lucide-react';
@@ -26,8 +22,6 @@ import { collection, doc, updateDoc, query, where, serverTimestamp } from 'fireb
 import { useRouter } from 'next/navigation';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '@/firebase';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 import { translations, Language } from '@/lib/translations';
 
 export default function DriverDashboard() {
@@ -47,8 +41,8 @@ export default function DriverDashboard() {
 
   const requestsQuery = useMemo(() => {
     if (!db || !isOnline || !isVerified) return null;
-    return query(collection(db, 'rides'), where('status', '==', 'requested'));
-  }, [db, isOnline, isVerified]);
+    return query(collection(db, 'rides'), where('status', '==', 'requested'), where('vehicleType', '==', vehicleType));
+  }, [db, isOnline, isVerified, vehicleType]);
   const { data: incomingRequests } = useCollection(requestsQuery);
 
   const activeRideQuery = useMemo(() => {
@@ -76,6 +70,7 @@ export default function DriverDashboard() {
     updateDoc(doc(db, 'rides', rideId), {
       status: 'accepted',
       driverId: user.uid,
+      driverPhone: userProfile?.phone || ''
     });
   }
 
@@ -181,6 +176,9 @@ export default function DriverDashboard() {
                   <p className="text-[10px] font-black opacity-70 tracking-widest mt-1 uppercase">{t.passenger}</p>
                 </div>
               </div>
+              <a href={`tel:${currentRide.passengerPhone}`} className="size-12 rounded-2xl bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors">
+                <Phone className="size-6" />
+              </a>
             </div>
             <CardContent className="p-8 space-y-8 bg-white">
               <div className="flex gap-5">
