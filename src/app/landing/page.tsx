@@ -7,10 +7,12 @@ import { Container } from "@/components/ui/container";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { ShieldCheck, Clock, MapPin, Star, ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { useUser } from "@/firebase";
+import { useUser, useDoc } from "@/firebase";
 
 export default function LandingPage() {
   const { user } = useUser();
+  const { data: profile } = useDoc(user ? `users/${user.uid}` : null);
+
   const heroImage = { 
     imageUrl: "https://i.pinimg.com/736x/bc/74/3b/bc743bcdaf44a57ab619ecfd5056768f.jpg", 
     description: "Premium Rider" 
@@ -30,7 +32,7 @@ export default function LandingPage() {
           </div>
           <Link href={user ? "/" : "/auth"}>
             <Button size="sm" className="rounded-full bg-slate-900 hover:bg-slate-800 text-white font-black px-6 h-12 uppercase italic text-xs tracking-widest shadow-lg active:scale-95 transition-all">
-              {user ? "DASHBOARD" : "GET STARTED"}
+              {user && profile ? "DASHBOARD" : "GET STARTED"}
             </Button>
           </Link>
         </Container>

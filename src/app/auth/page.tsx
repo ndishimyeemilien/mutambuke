@@ -47,7 +47,7 @@ export default function AuthPage() {
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
   useEffect(() => {
-    // If user and profile are already there, go to root to let it handle redirection
+    // Only redirect if user and profile are confirmed to exist
     if (user && profile && !isLoading && !isSuccess) {
       router.replace('/');
     }
@@ -80,11 +80,10 @@ export default function AuthPage() {
         }
 
         await signInWithEmailAndPassword(auth, loginEmail, password);
-        
         setIsSuccess(true);
         setTimeout(() => {
           router.replace('/');
-        }, 1500);
+        }, 1000);
 
       } else {
         const cleanEmail = email.trim().toLowerCase();
@@ -123,7 +122,7 @@ export default function AuthPage() {
         setIsSuccess(true);
         setTimeout(() => {
           router.replace('/');
-        }, 1500);
+        }, 1000);
       }
     } catch (error: any) {
       setIsLoading(false);
@@ -167,7 +166,7 @@ export default function AuthPage() {
                 <CheckCircle2 className="size-12" />
              </div>
              <h2 className="text-4xl font-black italic uppercase tracking-tighter text-slate-900">SUCCESSFUL</h2>
-             <p className="text-slate-500 font-bold italic mt-2">Redirecting to dashboard...</p>
+             <p className="text-slate-500 font-bold italic mt-2">Redirecting to network...</p>
           </div>
         )}
 

@@ -17,20 +17,16 @@ export default function RootPage() {
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
   useEffect(() => {
-    // If we are already in the process of redirecting, don't do anything else.
     if (redirecting.current) return;
 
-    // Wait for auth to resolve
     if (authLoading) return;
 
-    // If no user, go to landing
     if (!user) {
       redirecting.current = true;
       router.replace('/landing');
       return;
     }
 
-    // If user exists, wait for profile to resolve
     if (profileLoading) return;
 
     if (profile) {
@@ -44,8 +40,7 @@ export default function RootPage() {
         router.replace('/dashboard/passenger');
       }
     } else {
-      // User is logged in but profile not found (maybe first-time setup or race condition)
-      // Only redirect if we've actually confirmed the profile doesn't exist after loading.
+      // User is logged in but profile not found (maybe first-time setup)
       if (!profileLoading) {
         redirecting.current = true;
         router.replace('/auth');
