@@ -70,7 +70,6 @@ export default function DriverDashboard() {
   const vehicleType = driverProfile?.vehicleType || 'moto';
   const plateNumber = driverProfile?.plateNumber || '---';
 
-  // Listen for incoming requests when online and approved
   const requestsQuery = useMemoFirebase(() => {
     if (!db || !isOnline || !isApproved) return null;
     return query(
@@ -82,7 +81,6 @@ export default function DriverDashboard() {
   
   const { data: incomingRequests } = useCollection(requestsQuery);
 
-  // Listen for active mission
   const activeRideQuery = useMemoFirebase(() => {
     if (!db || !user || !isApproved) return null;
     return query(
@@ -95,7 +93,6 @@ export default function DriverDashboard() {
   const { data: activeRides } = useCollection(activeRideQuery);
   const currentRide = activeRides?.[0];
 
-  // Stats
   const completedRidesQuery = useMemoFirebase(() => {
     if (!db || !user) return null;
     return query(
@@ -195,23 +192,6 @@ export default function DriverDashboard() {
         <h1 className="text-3xl font-black italic text-slate-900 uppercase mb-2">Account Under Review</h1>
         <p className="text-slate-500 font-medium max-w-xs mx-auto mb-8">
           The MUTAMBUKE admin team is verifying your documents and plate: <span className="text-primary font-bold">{plateNumber}</span>. This usually takes 24 hours.
-        </p>
-        <Button onClick={handleLogout} variant="outline" className="h-14 rounded-2xl px-10 font-black uppercase italic border-slate-200">
-          <LogOut className="size-4 mr-2" /> {t.logout}
-        </Button>
-      </div>
-    );
-  }
-
-  if (verificationStatus === 'rejected') {
-    return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
-        <div className="size-24 rounded-[2rem] bg-red-100 flex items-center justify-center text-red-600 mb-6">
-          <AlertCircle className="size-12" />
-        </div>
-        <h1 className="text-3xl font-black italic text-slate-900 uppercase mb-2">Application Rejected</h1>
-        <p className="text-slate-500 font-medium max-w-xs mx-auto mb-8">
-          We regret to inform you that your driver application for MUTAMBUKE has been rejected. Please contact support for more information.
         </p>
         <Button onClick={handleLogout} variant="outline" className="h-14 rounded-2xl px-10 font-black uppercase italic border-slate-200">
           <LogOut className="size-4 mr-2" /> {t.logout}

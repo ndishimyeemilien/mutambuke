@@ -46,7 +46,6 @@ export default function AuthPage() {
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
   useEffect(() => {
-    // Redirect if profile exists and we are not currently signing up/logging in
     if (user && profile && !isLoading && !isSuccess) {
       router.replace('/');
     }
@@ -56,8 +55,6 @@ export default function AuthPage() {
     const code = error.code;
     if (code === 'auth/email-already-in-use') return t.errorEmailInUse;
     if (code === 'auth/invalid-credential' || code === 'auth/user-not-found' || code === 'auth/wrong-password') return t.errorInvalidAuth;
-    if (code === 'custom/phone-in-use') return error.message;
-    if (code === 'custom/missing-plate') return error.message;
     return error.message || t.errorGeneric;
   };
 
@@ -70,42 +67,28 @@ export default function AuthPage() {
       if (isLogin) {
         let loginEmail = identifier.trim().toLowerCase();
         
-        // Handle phone number login if identifier is not an email
         if (!loginEmail.includes('@')) {
           const q = query(collection(db, 'users'), where('phone', '==', identifier.trim()), limit(1));
           const snapshot = await getDocs(q);
           if (!snapshot.empty) {
             loginEmail = snapshot.docs[0].data().email;
           } else {
-            throw { code: 'auth/user-not-found', message: lang === 'rw' ? 'Nta konti yabonetse kuri iyi telefone.' : 'No account found with this phone number.' };
+            throw { code: 'auth/user-not-found' };
           }
         }
 
         await signInWithEmailAndPassword(auth, loginEmail, password);
         
         setIsSuccess(true);
-        toast({
-          title: lang === 'rw' ? "Byagenze neza" : "Success",
-          description: lang === 'rw' ? "Urinjiye neza!" : "Logged in successfully!",
-        });
-
         setTimeout(() => {
           router.replace('/');
         }, 1500);
 
       } else {
         const cleanEmail = email.trim().toLowerCase();
-        const cleanPhone = phone.trim();
-
-        // Unique phone check
-        const phoneQuery = query(collection(db, 'users'), where('phone', '==', cleanPhone), limit(1));
-        const phoneSnapshot = await getDocs(phoneQuery);
-        if (!phoneSnapshot.empty) {
-          throw { code: 'custom/phone-in-use', message: lang === 'rw' ? 'Iyi telefone isanzwe ikoreshwa.' : 'This phone number is already in use.' };
-        }
-
+        
         if (role === 'driver' && !plateNumber.trim()) {
-          throw { code: 'custom/missing-plate', message: lang === 'rw' ? 'Ntabwo washyizeho plaque.' : 'Plate number is required.' };
+          throw new Error(lang === 'rw' ? 'Ntabwo washyizeho plaque.' : 'Plate number is required.');
         }
 
         const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
@@ -116,7 +99,7 @@ export default function AuthPage() {
           userId: newUser.uid,
           name: name.trim(),
           email: cleanEmail,
-          phone: cleanPhone,
+          phone: phone.trim(),
           role: userRole,
           language: lang,
           createdAt: serverTimestamp(),
@@ -136,11 +119,6 @@ export default function AuthPage() {
         }
 
         setIsSuccess(true);
-        toast({
-          title: lang === 'rw' ? "Byagenze neza" : "Success",
-          description: lang === 'rw' ? "Konti yafunguwe neza!" : "Account created successfully!",
-        });
-        
         setTimeout(() => {
           router.replace('/');
         }, 1500);
@@ -187,7 +165,7 @@ export default function AuthPage() {
                 <CheckCircle2 className="size-12" />
              </div>
              <h2 className="text-4xl font-black italic uppercase tracking-tighter text-slate-900">
-                {lang === 'rw' ? 'BYAGENZE NEZA' : 'SUCCESSFUL'}
+                SUCCESSFUL
              </h2>
              <p className="text-slate-500 font-bold italic mt-2">Redirecting to dashboard...</p>
              <div className="mt-8 flex gap-1">

@@ -37,13 +37,13 @@ export default function RootPage() {
         router.replace('/dashboard/passenger');
       }
     } else if (user && !profileLoading) {
-      // User is authenticated but no profile yet (maybe just signed up)
-      // Check if it's the admin or wait for profile creation
+      // If user exists but profile doesn't (might be in progress), check admin email
       if (user.email === 'admin@mutambuke.com') {
+        redirecting.current = true;
         router.replace('/dashboard/admin');
       } else {
-        // Stay on Root or go to Auth if profile really doesn't exist
-        // But usually Auth handles its own redirects
+        // Fallback to auth if something is wrong
+        redirecting.current = true;
         router.replace('/auth');
       }
     }

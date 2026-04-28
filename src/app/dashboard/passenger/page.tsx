@@ -64,7 +64,6 @@ export default function PassengerDashboard() {
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
   const { data: userProfile, loading: profileLoading } = useDoc(user ? `users/${user.uid}` : null);
   
-  // Passenger matching rule: status = "online" AND verificationStatus = "approved"
   const ridersQuery = useMemoFirebase(() => {
     if (!db) return null;
     return query(
