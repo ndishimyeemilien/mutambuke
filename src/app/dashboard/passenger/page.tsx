@@ -1,7 +1,6 @@
-
 'use client';
 
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
@@ -19,8 +18,7 @@ import {
   Car as CarIcon, 
   Star,
   Search,
-  CheckCircle2,
-  Clock
+  CheckCircle2
 } from 'lucide-react';
 import { collection, doc, setDoc, query, where, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
@@ -53,9 +51,10 @@ export default function PassengerDashboard() {
   const [vehicleTypeFilter, setVehicleTypeFilter] = useState<'moto' | 'taxi'>('moto');
   const [passengerLocation, setPassengerLocation] = useState(kigaliCenter);
 
-  const { isLoaded } = useJsApiLoader({
+  const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
-    googleMapsApiKey: GOOGLE_MAPS_API_KEY
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+    libraries: ['places']
   });
 
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
@@ -96,25 +95,10 @@ export default function PassengerDashboard() {
             lng: position.coords.longitude
           });
         },
-        () => {
-          console.log("Using default Kigali center");
-        }
+        () => console.log("Using default Kigali center")
       );
     }
   }, []);
-
-  const getDistance = (lat1: number, lng1: number, lat2: number, lng2: number) => {
-    return Math.sqrt(Math.pow(lat2 - lat1, 2) + Math.pow(lng2 - lng1, 2));
-  };
-
-  const nearestDriver = useMemo(() => {
-    if (!availableDrivers || availableDrivers.length === 0) return null;
-    return availableDrivers.reduce((prev, curr) => {
-      const prevDist = getDistance(passengerLocation.lat, passengerLocation.lng, prev.currentLocation?.lat || 0, prev.currentLocation?.lng || 0);
-      const currDist = getDistance(passengerLocation.lat, passengerLocation.lng, curr.currentLocation?.lat || 0, curr.currentLocation?.lng || 0);
-      return prevDist < currDist ? prev : curr;
-    });
-  }, [availableDrivers, passengerLocation]);
 
   async function handleRequestRide() {
     if (!db || !user || !destination) return;
@@ -153,7 +137,7 @@ export default function PassengerDashboard() {
     }
   }
 
-  if (profileLoading || !isLoaded) {
+  if (profileLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <Loader2 className="size-10 animate-spin text-primary" />
@@ -165,48 +149,51 @@ export default function PassengerDashboard() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col relative overflow-hidden">
-      <div className="absolute inset-0 z-0">
-        <GoogleMap
-          mapContainerStyle={mapContainerStyle}
-          center={passengerLocation}
-          zoom={14}
-          options={{
-            disableDefaultUI: true,
-            styles: [
-              {
-                featureType: "all",
-                elementType: "labels.text.fill",
-                color: "#9ca3af"
-              },
-              {
-                featureType: "water",
-                elementType: "geometry",
-                color: "#e5e7eb"
-              }
-            ]
-          }}
-        >
-          <Marker 
-            position={passengerLocation} 
-            icon={{
-              url: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
-              scaledSize: new google.maps.Size(40, 40)
+      <div className="absolute inset-0 z-0 bg-slate-200">
+        {isLoaded ? (
+          <GoogleMap
+            mapContainerStyle={mapContainerStyle}
+            center={passengerLocation}
+            zoom={14}
+            options={{
+              disableDefaultUI: true,
+              styles: [
+                { featureType: "all", elementType: "labels.text.fill", color: "#9ca3af" },
+                { featureType: "water", elementType: "geometry", color: "#e5e7eb" }
+              ]
             }}
-          />
-          {availableDrivers?.map((driver) => (
-            <Marker
-              key={driver.driverId}
-              position={driver.currentLocation || { lat: passengerLocation.lat + 0.005, lng: passengerLocation.lng + 0.005 }}
+          >
+            <Marker 
+              position={passengerLocation} 
               icon={{
-                url: driver.vehicleType === 'moto' 
-                  ? 'https://cdn-icons-png.flaticon.com/512/3194/3194514.png' 
-                  : 'https://cdn-icons-png.flaticon.com/512/3082/3082383.png',
-                scaledSize: new google.maps.Size(35, 35)
+                url: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+                scaledSize: new google.maps.Size(40, 40)
               }}
-              title={driver.driverId}
             />
-          ))}
-        </GoogleMap>
+            {availableDrivers?.map((driver) => (
+              <Marker
+                key={driver.driverId}
+                position={driver.currentLocation || { lat: passengerLocation.lat + 0.005, lng: passengerLocation.lng + 0.005 }}
+                icon={{
+                  url: driver.vehicleType === 'moto' 
+                    ? 'https://cdn-icons-png.flaticon.com/512/3194/3194514.png' 
+                    : 'https://cdn-icons-png.flaticon.com/512/3082/3082383.png',
+                  scaledSize: new google.maps.Size(35, 35)
+                }}
+              />
+            ))}
+          </GoogleMap>
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-slate-100">
+            {loadError ? (
+               <div className="text-center p-4">
+                 <p className="text-slate-400 font-bold uppercase text-xs italic">Map configuration error</p>
+               </div>
+             ) : (
+               <Loader2 className="size-8 animate-spin text-slate-300" />
+             )}
+          </div>
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-transparent to-slate-900/20 pointer-events-none" />
       </div>
 

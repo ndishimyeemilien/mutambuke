@@ -1,7 +1,6 @@
-
 'use client';
 
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
@@ -27,7 +26,6 @@ import { useRouter } from 'next/navigation';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '@/firebase';
 import { translations, Language } from '@/lib/translations';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
 
 const GOOGLE_MAPS_API_KEY = "AIzaSyApdnBLqJeVW4c5t1Z32v8BzVBVWyJnY1g";
@@ -47,9 +45,10 @@ export default function DriverDashboard() {
   
   const [driverLocation, setDriverLocation] = useState(kigaliCenter);
 
-  const { isLoaded } = useJsApiLoader({
+  const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
-    googleMapsApiKey: GOOGLE_MAPS_API_KEY
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+    libraries: ['places']
   });
 
   const { data: userProfile, loading: userLoading } = useDoc(user ? `users/${user.uid}` : null);
@@ -141,7 +140,8 @@ export default function DriverDashboard() {
     updateDoc(doc(db, 'rides', rideId), {
       status: 'accepted',
       driverId: user.uid,
-      driverName: userProfile?.name || 'Driver'
+      driverName: userProfile?.name || 'Driver',
+      driverPhone: userProfile?.phone || ''
     });
   }
 
@@ -158,11 +158,11 @@ export default function DriverDashboard() {
   async function handleLogout() {
     if (auth) {
       await signOut(auth);
-      router.push('/landing');
+      router.replace('/landing');
     }
   }
 
-  if (userLoading || driverLoading || !isLoaded) {
+  if (userLoading || driverLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <Loader2 className="size-10 animate-spin text-primary" />
@@ -191,29 +191,42 @@ export default function DriverDashboard() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col relative overflow-hidden">
-      <div className="absolute inset-0 z-0">
-        <GoogleMap
-          mapContainerStyle={mapContainerStyle}
-          center={driverLocation}
-          zoom={15}
-          options={{
-            disableDefaultUI: true,
-            styles: [
-              { featureType: "all", elementType: "labels.text.fill", color: "#9ca3af" },
-              { featureType: "water", elementType: "geometry", color: "#e5e7eb" }
-            ]
-          }}
-        >
-          <Marker 
-            position={driverLocation}
-            icon={{
-              url: vehicleType === 'moto' 
-                ? 'https://cdn-icons-png.flaticon.com/512/3194/3194514.png' 
-                : 'https://cdn-icons-png.flaticon.com/512/3082/3082383.png',
-              scaledSize: new google.maps.Size(45, 45)
+      <div className="absolute inset-0 z-0 bg-slate-200">
+        {isLoaded ? (
+          <GoogleMap
+            mapContainerStyle={mapContainerStyle}
+            center={driverLocation}
+            zoom={15}
+            options={{
+              disableDefaultUI: true,
+              styles: [
+                { featureType: "all", elementType: "labels.text.fill", color: "#9ca3af" },
+                { featureType: "water", elementType: "geometry", color: "#e5e7eb" }
+              ]
             }}
-          />
-        </GoogleMap>
+          >
+            <Marker 
+              position={driverLocation}
+              icon={{
+                url: vehicleType === 'moto' 
+                  ? 'https://cdn-icons-png.flaticon.com/512/3194/3194514.png' 
+                  : 'https://cdn-icons-png.flaticon.com/512/3082/3082383.png',
+                scaledSize: new google.maps.Size(45, 45)
+              }}
+            />
+          </GoogleMap>
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-slate-100">
+             {loadError ? (
+               <div className="text-center p-4">
+                 <p className="text-slate-400 font-bold uppercase text-xs italic">Map configuration error</p>
+                 <p className="text-[10px] text-slate-300 mt-1">Please check your Google Maps API key restrictions</p>
+               </div>
+             ) : (
+               <Loader2 className="size-8 animate-spin text-slate-300" />
+             )}
+          </div>
+        )}
         <div className="absolute inset-0 bg-gradient-to-b from-slate-900/40 via-transparent to-slate-900/60 pointer-events-none" />
       </div>
 
@@ -248,14 +261,14 @@ export default function DriverDashboard() {
             <Card className="flex-1 rounded-3xl border-none shadow-xl bg-white/95 backdrop-blur-md p-4 flex items-center gap-3">
               <div className="size-10 rounded-xl bg-green-100 text-green-600 flex items-center justify-center"><DollarSign className="size-5" /></div>
               <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase leading-none mb-1">Earnings</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase leading-none mb-1">{t.earnings}</p>
                 <p className="font-black text-slate-900 leading-none">{stats.totalEarnings} RWF</p>
               </div>
             </Card>
             <Card className="flex-1 rounded-3xl border-none shadow-xl bg-white/95 backdrop-blur-md p-4 flex items-center gap-3">
               <div className="size-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center"><TrendingUp className="size-5" /></div>
               <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase leading-none mb-1">Trips</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase leading-none mb-1">{t.trips}</p>
                 <p className="font-black text-slate-900 leading-none">{stats.totalTrips}</p>
               </div>
             </Card>
@@ -280,14 +293,14 @@ export default function DriverDashboard() {
                   <div className="flex gap-4 items-start">
                     <MapPin className="size-5 text-primary mt-1" />
                     <div>
-                      <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase">Pickup</p>
+                      <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase">{t.pickupAt}</p>
                       <p className="font-black text-lg text-slate-900">{currentRide.pickupLocation}</p>
                     </div>
                   </div>
                   <div className="flex gap-4 items-start">
                     <Flag className="size-5 text-secondary mt-1" />
                     <div>
-                      <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase">Destination</p>
+                      <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase">{t.destination}</p>
                       <p className="font-black text-lg text-slate-900">{currentRide.destination}</p>
                     </div>
                   </div>
@@ -313,17 +326,17 @@ export default function DriverDashboard() {
                     </div>
                     <div className="grid grid-cols-2 gap-4 mb-6">
                       <div className="space-y-1">
-                        <p className="text-[9px] font-black text-slate-400 uppercase">Pickup</p>
+                        <p className="text-[9px] font-black text-slate-400 uppercase">{t.pickupAt}</p>
                         <p className="font-bold text-slate-900 text-sm truncate">{req.pickupLocation}</p>
                       </div>
                       <div className="space-y-1">
-                        <p className="text-[9px] font-black text-slate-400 uppercase">Dropoff</p>
+                        <p className="text-[9px] font-black text-slate-400 uppercase">{t.destination}</p>
                         <p className="font-bold text-slate-900 text-sm truncate">{req.destination}</p>
                       </div>
                     </div>
                     <div className="flex gap-3">
                       <Button variant="ghost" className="flex-1 h-12 rounded-xl text-slate-400 font-bold uppercase italic"><X className="size-4 mr-2" /> Reject</Button>
-                      <Button onClick={() => acceptRide(req.rideId)} className="flex-[2] h-12 rounded-xl bg-primary text-white font-black italic uppercase">Accept Ride</Button>
+                      <Button onClick={() => acceptRide(req.rideId)} className="flex-[2] h-12 rounded-xl bg-primary text-white font-black italic uppercase">{t.acceptRide}</Button>
                     </div>
                   </Card>
                 ))
@@ -341,7 +354,7 @@ export default function DriverDashboard() {
             </div>
           ) : (
             <div className="py-20 text-center space-y-6">
-              <Button onClick={toggleStatus} className="bg-white text-slate-900 h-16 px-10 rounded-2xl font-black italic uppercase shadow-2xl">
+              <Button onClick={toggleStatus} className="bg-white text-slate-900 h-16 px-10 rounded-2xl font-black italic uppercase shadow-2xl pointer-events-auto">
                 {t.goOnline}
               </Button>
             </div>
