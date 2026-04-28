@@ -24,8 +24,9 @@ export default function AuthPage() {
   const t = translations[lang];
   const { toast } = useToast();
 
-  const { user } = useUser();
+  const { user, loading: authLoading } = useUser();
   const { data: profile, loading: profileLoading } = useDoc(user ? `users/${user.uid}` : null);
+  
   const [isLogin, setIsLogin] = useState(true);
   const [role, setRole] = useState<'passenger' | 'driver'>('passenger');
   const [vehicleType, setVehicleType] = useState<'moto' | 'taxi'>('moto');
@@ -46,11 +47,11 @@ export default function AuthPage() {
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
   useEffect(() => {
-    // Only redirect if the profile is confirmed and we aren't currently in a successful auth flow
-    if (user && profile && !isLoading && !isSuccess && !profileLoading) {
+    // Only redirect if BOTH user and profile are fully resolved and present
+    if (user && profile && !isLoading && !isSuccess && !profileLoading && !authLoading) {
       router.replace('/');
     }
-  }, [user, profile, profileLoading, router, isLoading, isSuccess]);
+  }, [user, profile, profileLoading, authLoading, router, isLoading, isSuccess]);
 
   const getErrorMessage = (error: any) => {
     const code = error.code;
@@ -160,20 +161,17 @@ export default function AuthPage() {
       </div>
 
       <div className="flex-1 flex flex-col justify-center p-6 md:p-12 bg-white relative">
-        {isSuccess && (
+        {(isSuccess || authLoading) && (
           <div className="absolute inset-0 z-50 bg-white/95 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300">
              <div className="size-24 rounded-[2rem] bg-green-100 flex items-center justify-center text-green-600 mb-6 scale-110">
-                <CheckCircle2 className="size-12" />
+                {authLoading ? <Loader2 className="size-12 animate-spin text-primary" /> : <CheckCircle2 className="size-12" />}
              </div>
              <h2 className="text-4xl font-black italic uppercase tracking-tighter text-slate-900">
-                SUCCESSFUL
+                {authLoading ? "SYNCHRONIZING" : "SUCCESSFUL"}
              </h2>
-             <p className="text-slate-500 font-bold italic mt-2">Redirecting to dashboard...</p>
-             <div className="mt-8 flex gap-1">
-                <div className="size-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="size-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="size-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-             </div>
+             <p className="text-slate-500 font-bold italic mt-2">
+               {authLoading ? "Restoring your session..." : "Redirecting to dashboard..."}
+             </p>
           </div>
         )}
 
