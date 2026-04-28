@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -17,11 +16,12 @@ import { doc, setDoc, serverTimestamp, collection, query, where, getDocs, limit 
 import Link from 'next/link';
 import { translations, Language } from '@/lib/translations';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AuthPage() {
   const [lang, setLang] = useState<Language>('rw');
   const t = translations[lang];
+  const { toast } = useToast();
 
   const { user } = useUser();
   const [isLogin, setIsLogin] = useState(true);
@@ -56,6 +56,7 @@ export default function AuthPage() {
       if (isLogin) {
         let loginEmail = identifier.trim().toLowerCase();
         
+        // If identifier is not an email, assume it's a phone number and look up the associated email
         if (!loginEmail.includes('@')) {
           const q = query(collection(db, 'users'), where('phone', '==', identifier.trim()), limit(1));
           const snapshot = await getDocs(q);
@@ -71,6 +72,7 @@ export default function AuthPage() {
         const cleanEmail = email.trim().toLowerCase();
         const cleanPhone = phone.trim();
 
+        // Check if email or phone is already in use
         const emailQuery = query(collection(db, 'users'), where('email', '==', cleanEmail), limit(1));
         const emailSnapshot = await getDocs(emailQuery);
         if (!emailSnapshot.empty) {
@@ -110,7 +112,7 @@ export default function AuthPage() {
         }
 
         toast({
-          title: "Success",
+          title: lang === 'rw' ? "Byagenze neza" : "Success",
           description: lang === 'rw' ? "Konti yafunguwe neza!" : "Account created successfully!",
         });
         
@@ -119,7 +121,7 @@ export default function AuthPage() {
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Error",
+        title: lang === 'rw' ? "Ikosa" : "Error",
         description: error.message,
       });
     } finally {

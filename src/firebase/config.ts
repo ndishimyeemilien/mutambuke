@@ -1,11 +1,11 @@
 'use client';
 
 export const firebaseConfig = {
-  apiKey: 'AIzaSyCwW3o65Apt1Rpjg65JpPmQnGXuwfwNKx8',
-  authDomain: 'urugendo-e72f2.firebaseapp.com',
-  projectId: 'urugendo-e72f2',
-  storageBucket: 'urugendo-e72f2.firebasestorage.app',
-  messagingSenderId: '418797391221',
-  appId: '1:418797391221:web:67c99a7408471e4bbf173c',
-  measurementId: 'G-SGM0E9NXGD',
+  apiKey: "AIzaSyDh4DEMftlxrU708lu0GDzQqw8iB4SINLw",
+  authDomain: "taxi-4cd78.firebaseapp.com",
+  projectId: "taxi-4cd78",
+  storageBucket: "taxi-4cd78.firebasestorage.app",
+  messagingSenderId: "190447657622",
+  appId: "1:190447657622:web:ea6f542b74aafae05c58b7",
+  measurementId: "G-48G6DLSZJV"
 };
