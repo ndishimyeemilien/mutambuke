@@ -17,36 +17,44 @@ export default function RootPage() {
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
   useEffect(() => {
-    if (authLoading || redirecting.current) return;
+    // 1. Wait for Auth to resolve
+    if (authLoading) return;
 
+    // 2. If no user, go to landing
     if (!user) {
-      redirecting.current = true;
-      router.replace('/landing');
+      if (!redirecting.current) {
+        redirecting.current = true;
+        router.replace('/landing');
+      }
       return;
     }
 
-    // If user exists, wait for profile to load definitively
+    // 3. If user exists, wait for Profile to resolve definitively
     if (profileLoading) return;
 
+    // 4. If profile exists, route to the correct dashboard
     if (profile) {
-      redirecting.current = true;
-      const role = profile.role;
-      if (role === 'admin') {
-        router.replace('/dashboard/admin');
-      } else if (role === 'driver') {
-        router.replace('/dashboard/driver');
-      } else {
-        router.replace('/dashboard/passenger');
+      if (!redirecting.current) {
+        redirecting.current = true;
+        const role = profile.role;
+        if (role === 'admin') {
+          router.replace('/dashboard/admin');
+        } else if (role === 'driver') {
+          router.replace('/dashboard/driver');
+        } else {
+          router.replace('/dashboard/passenger');
+        }
       }
     } else {
-      // If we have a user but NO profile after loading, it might be a new user
-      // or a delay in Firestore. We give it a small grace period.
+      // 5. If user exists but profile is missing (and not loading)
+      // This happens for a split second during registration or if data is missing.
+      // We give Firestore a 3-second window to propagate data before assuming it's a failure.
       const timer = setTimeout(() => {
-        if (!profile && !redirecting.current) {
-           redirecting.current = true;
-           router.replace('/auth');
+        if (!profile && !profileLoading && user && !redirecting.current) {
+          redirecting.current = true;
+          router.replace('/auth');
         }
-      }, 2000);
+      }, 3000);
       return () => clearTimeout(timer);
     }
   }, [user, authLoading, profile, profileLoading, router]);

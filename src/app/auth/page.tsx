@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Bike, User, Lock, ArrowLeft, Loader2, Car, Globe, Hash, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Globe, Hash, CheckCircle2 } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useAuth, useFirestore, useUser, useDoc } from '@/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
@@ -26,7 +26,7 @@ export default function AuthPage() {
   const router = useRouter();
 
   const { user, loading: authLoading } = useUser();
-  const { data: profile, loading: profileLoading } = useDoc(user ? `users/${user.uid}` : null);
+  const { data: profile } = useDoc(user ? `users/${user.uid}` : null);
   
   const [isLogin, setIsLogin] = useState(true);
   const [role, setRole] = useState<'passenger' | 'driver'>('passenger');
@@ -46,13 +46,15 @@ export default function AuthPage() {
   const authImage = PlaceHolderImages.find(img => img.id === 'auth-illustration');
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
+  // Unified redirection logic
   useEffect(() => {
-    // Only redirect if we ARE NOT currently in the middle of a login/signup process
-    // and both auth and profile are resolved.
-    if (user && profile && !isLoading && !isSuccess) {
-      router.replace('/');
+    if (user && profile && isSuccess) {
+      const timer = setTimeout(() => {
+        router.replace('/');
+      }, 1500);
+      return () => clearTimeout(timer);
     }
-  }, [user, profile, router, isLoading, isSuccess]);
+  }, [user, profile, isSuccess, router]);
 
   const getErrorMessage = (error: any) => {
     const code = error.code;
@@ -82,7 +84,6 @@ export default function AuthPage() {
 
         await signInWithEmailAndPassword(auth, loginEmail, password);
         setIsSuccess(true);
-        setTimeout(() => router.replace('/'), 1500);
       } else {
         const cleanEmail = email.trim().toLowerCase();
         if (role === 'driver' && !plateNumber.trim()) {
@@ -117,7 +118,6 @@ export default function AuthPage() {
         }
 
         setIsSuccess(true);
-        setTimeout(() => router.replace('/'), 2000);
       }
     } catch (error: any) {
       setIsLoading(false);
@@ -246,12 +246,12 @@ export default function AuthPage() {
 
                 <div className="space-y-3 pt-2">
                   <Label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">{t.registerAs}</Label>
-                  <RadioGroup defaultValue="passenger" className="flex gap-4" onValueChange={(v) => setRole(v as any)}>
-                    <div className={`flex flex-1 items-center justify-between p-5 rounded-[1.25rem] border-2 cursor-pointer transition-all ${role === 'passenger' ? 'border-primary bg-primary/5 text-primary' : 'border-slate-100'}`}>
+                  <RadioGroup value={role} className="flex gap-4" onValueChange={(v) => setRole(v as any)}>
+                    <div onClick={() => setRole('passenger')} className={`flex flex-1 items-center justify-between p-5 rounded-[1.25rem] border-2 cursor-pointer transition-all ${role === 'passenger' ? 'border-primary bg-primary/5 text-primary' : 'border-slate-100'}`}>
                       <span className="text-xs font-black uppercase tracking-widest">{t.passenger}</span>
                       <RadioGroupItem value="passenger" className="border-slate-200" />
                     </div>
-                    <div className={`flex flex-1 items-center justify-between p-5 rounded-[1.25rem] border-2 cursor-pointer transition-all ${role === 'driver' ? 'border-secondary bg-secondary/5 text-secondary' : 'border-slate-100'}`}>
+                    <div onClick={() => setRole('driver')} className={`flex flex-1 items-center justify-between p-5 rounded-[1.25rem] border-2 cursor-pointer transition-all ${role === 'driver' ? 'border-secondary bg-secondary/5 text-secondary' : 'border-slate-100'}`}>
                       <span className="text-xs font-black uppercase tracking-widest">{t.rider}</span>
                       <RadioGroupItem value="driver" className="border-slate-200" />
                     </div>
