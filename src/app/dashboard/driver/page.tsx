@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
 import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,7 +12,6 @@ import {
   User, 
   Phone, 
   Flag, 
-  Loader2,
   Car,
   Navigation,
   DollarSign,
@@ -29,7 +27,7 @@ import { useAuth } from '@/firebase';
 import { translations, Language } from '@/lib/translations';
 import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
 
-const GOOGLE_MAPS_API_KEY = "AIzaSyApdnBLqJeVW4c5t1Z32v8BzVBVWyJnY1g";
+const GOOGLE_MAPS_API_KEY = "AIzaSyBYd7EGaMpDouB0Br1yUSwRarQeToFuiiA";
 
 const containerStyle = {
   width: "100%",

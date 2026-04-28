@@ -29,7 +29,7 @@ import { translations, Language } from '@/lib/translations';
 import { useToast } from '@/hooks/use-toast';
 import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
 
-const GOOGLE_MAPS_API_KEY = "AIzaSyApdnBLqJeVW4c5t1Z32v8BzVBVWyJnY1g";
+const GOOGLE_MAPS_API_KEY = "AIzaSyBYd7EGaMpDouB0Br1yUSwRarQeToFuiiA";
 
 const containerStyle = {
   width: "100%",
