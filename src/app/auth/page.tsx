@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -70,9 +69,10 @@ export default function AuthPage() {
 
   useEffect(() => {
     if (isSuccess && user) {
+      // Redirect almost immediately (200ms for visual feedback)
       const timer = setTimeout(() => {
         router.replace('/');
-      }, 1000);
+      }, 200);
       return () => clearTimeout(timer);
     }
   }, [isSuccess, user, router]);
@@ -95,7 +95,6 @@ export default function AuthPage() {
 
       if (isLogin) {
         await signInWithEmailAndPassword(auth, internalEmail, password);
-        setIsLoading(false);
         setIsSuccess(true);
       } else {
         if (!name.trim()) throw new Error(t.fullName);
@@ -132,8 +131,6 @@ export default function AuthPage() {
             updatedAt: serverTimestamp(),
           });
         }
-
-        setIsLoading(false);
         setIsSuccess(true);
       }
     } catch (error: any) {
@@ -149,12 +146,11 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen bg-[#121b24] flex flex-col items-center justify-center p-4 md:p-12 font-body text-white">
       {isSuccess && (
-        <div className="fixed inset-0 z-[100] bg-[#121b24] flex flex-col items-center justify-center animate-in fade-in duration-300">
-          <div className="size-32 rounded-[2.5rem] bg-blue-500/10 flex items-center justify-center text-blue-500 mb-8 scale-110 shadow-[0_0_80px_rgba(59,130,246,0.3)]">
-            <CheckCircle2 className="size-16" />
+        <div className="fixed inset-0 z-[100] bg-[#121b24] flex flex-col items-center justify-center animate-in fade-in duration-200">
+          <div className="size-24 rounded-3xl bg-blue-500/20 flex items-center justify-center text-blue-500 mb-6 shadow-2xl">
+            <CheckCircle2 className="size-12 animate-bounce" />
           </div>
-          <h2 className="text-4xl font-black italic uppercase tracking-tighter text-white">SUCCESSFUL</h2>
-          <p className="text-slate-400 font-bold italic mt-4 text-xl">Connecting to Mutambuke network...</p>
+          <h2 className="text-3xl font-black italic uppercase tracking-tighter text-white">SUCCESSFUL</h2>
         </div>
       )}
 
@@ -244,7 +240,7 @@ export default function AuthPage() {
             </div>
 
             {!isLogin && role === 'driver' && (
-              <div className="space-y-8 pt-6 animate-in fade-in slide-in-from-top-4 duration-500">
+              <div className="space-y-8 pt-6 animate-in fade-in slide-in-from-top-4 duration-300">
                 <div className="flex items-center justify-center gap-6">
                    <div className="h-px bg-slate-700/50 flex-1" />
                    <div className="flex items-center gap-3 text-sm font-black text-slate-400 uppercase tracking-[0.3em]">

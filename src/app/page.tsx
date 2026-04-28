@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useUser, useDoc } from '@/firebase';
@@ -27,9 +26,8 @@ export default function RootPage() {
       return;
     }
 
-    if (profileLoading) return;
-
-    if (profile) {
+    // If profile is loaded, redirect to specific dashboard
+    if (!profileLoading && profile) {
       if (!redirecting.current) {
         redirecting.current = true;
         const role = profile.role;
@@ -41,36 +39,34 @@ export default function RootPage() {
           router.replace('/dashboard/passenger');
         }
       }
-    } else {
-      // Give it a bit more time for firestore propagation
-      const timer = setTimeout(() => {
-        if (!profile && !profileLoading && user && !redirecting.current) {
-          redirecting.current = true;
-          router.replace('/auth');
-        }
-      }, 5000);
-      return () => clearTimeout(timer);
+      return;
     }
+
+    // Fast fallback if profile takes too long (over 800ms)
+    const fastFallback = setTimeout(() => {
+      if (user && !redirecting.current && !profile) {
+        redirecting.current = true;
+        // Default to passenger if we don't know the role yet, or back to auth to ensure profile
+        router.replace('/dashboard/passenger');
+      }
+    }, 800);
+
+    return () => clearTimeout(fastFallback);
   }, [user, authLoading, profile, profileLoading, router]);
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
-      <div className="flex flex-col items-center gap-8 max-w-sm w-full">
-        <div className="relative w-32 h-32">
-          {logo && <Image src={logo.imageUrl} alt="MUTAMBUKE" fill className="object-contain rounded-[2.5rem]" priority />}
+      <div className="flex flex-col items-center gap-8 max-w-sm w-full animate-pulse">
+        <div className="relative w-24 h-24">
+          {logo && <Image src={logo.imageUrl} alt="MUTAMBUKE" fill className="object-contain rounded-2xl" priority />}
         </div>
-        <div className="space-y-4 text-center">
-          <div className="flex flex-col items-center gap-2">
-            <h2 className="text-4xl font-black italic tracking-tighter text-slate-900 uppercase leading-none">
-              MUTAMBUKE
-            </h2>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.3em]">
-              SMART URBAN NETWORK
-            </p>
-          </div>
-          <div className="flex items-center justify-center gap-2 text-primary font-black italic uppercase text-xs">
-            <Loader2 className="size-4 animate-spin" />
-            Synchronizing...
+        <div className="space-y-2 text-center">
+          <h2 className="text-2xl font-black italic tracking-tighter text-slate-900 uppercase">
+            MUTAMBUKE
+          </h2>
+          <div className="flex items-center justify-center gap-2 text-primary font-black uppercase text-[10px]">
+            <Loader2 className="size-3 animate-spin" />
+            CONNECTING...
           </div>
         </div>
       </div>
