@@ -15,14 +15,11 @@ import {
   Search,
   History,
   UserCircle,
-  ChevronRight,
   Menu,
   X,
-  Star,
-  Settings
+  Star
 } from 'lucide-react';
 import { collection, doc, setDoc, query, where, serverTimestamp } from 'firebase/firestore';
-import { useRouter } from 'next/navigation';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '@/firebase';
 import { translations, Language } from '@/lib/translations';
@@ -37,7 +34,6 @@ export default function PassengerDashboard() {
   const { user, loading: authLoading } = useUser();
   const db = useFirestore();
   const auth = useAuth();
-  const router = useRouter();
   const { toast } = useToast();
 
   const [pickup, setPickup] = useState('Current Location');
@@ -45,7 +41,6 @@ export default function PassengerDashboard() {
   const [isRequesting, setIsRequesting] = useState(false);
   const [vehicleType, setVehicleType] = useState<'moto' | 'taxi'>('moto');
   const [passengerLocation, setPassengerLocation] = useState(kigaliCenter);
-  const [activeTab, setActiveTab] = useState<'map' | 'profile' | 'history'>('map');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const { isLoaded } = useJsApiLoader({
@@ -89,7 +84,7 @@ export default function PassengerDashboard() {
         passengerPhone: userProfile?.phone, pickupLocation: pickup,
         destination, status: 'requested', vehicleType, createdAt: serverTimestamp()
       });
-      toast({ title: t.searching, description: "Searching for nearby riders..." });
+      toast({ title: t.searching, description: "Connecting to MUTAMBUKE network..." });
     } catch (e: any) {
       toast({ variant: "destructive", title: "Error", description: e.message });
     } finally {
@@ -105,7 +100,7 @@ export default function PassengerDashboard() {
 
   return (
     <div className="h-screen w-screen overflow-hidden relative flex flex-col font-body bg-slate-50">
-      {/* FULL SCREEN MAP */}
+      {/* MAP CENTERED DESIGN */}
       <div className="absolute inset-0 z-0">
         {isLoaded ? (
           <GoogleMap
@@ -123,7 +118,7 @@ export default function PassengerDashboard() {
         <div className="absolute inset-0 pointer-events-none map-focused-overlay" />
       </div>
 
-      {/* FLOATING HEADER */}
+      {/* HEADER */}
       <header className="absolute top-6 left-6 right-6 z-50 flex items-center justify-between">
         <Button onClick={() => setIsMenuOpen(true)} className="size-14 rounded-2xl bg-[#0F172A] text-white shadow-2xl hover:scale-105 active:scale-95 transition-all">
           <Menu className="size-6" />
@@ -132,16 +127,16 @@ export default function PassengerDashboard() {
           <div className="size-8 rounded-full bg-secondary flex items-center justify-center">
             <User className="size-4" />
           </div>
-          <span className="font-bold text-sm uppercase">{userProfile?.name}</span>
+          <span className="font-bold text-sm uppercase tracking-tighter">{userProfile?.name}</span>
         </div>
       </header>
 
-      {/* SEARCH CARD */}
+      {/* FLOATING DESTINATION INPUT */}
       <main className="absolute top-24 left-6 right-6 z-40 max-w-xl mx-auto space-y-4">
-        <div className="floating-card p-6 rounded-[2.5rem] space-y-4">
+        <div className="floating-card p-6 rounded-[2.5rem] space-y-4 animate-in slide-in-from-top-10 duration-500">
           <div className="relative">
             <div className="absolute left-4 top-1/2 -translate-y-1/2 size-2.5 bg-secondary rounded-full" />
-            <Input value={pickup} readOnly className="pill-input pl-12" />
+            <Input value={pickup} readOnly className="pill-input pl-12 bg-slate-50 border-none" />
           </div>
           <div className="relative">
             <div className="absolute left-4 top-1/2 -translate-y-1/2 size-2.5 bg-accent rounded-full" />
@@ -149,7 +144,7 @@ export default function PassengerDashboard() {
               placeholder={t.destination} 
               value={destination} 
               onChange={(e) => setDestination(e.target.value)} 
-              className="pill-input pl-12" 
+              className="pill-input pl-12 focus:bg-white transition-colors" 
             />
             <Search className="absolute right-4 top-1/2 -translate-y-1/2 size-5 text-slate-400" />
           </div>
@@ -159,25 +154,25 @@ export default function PassengerDashboard() {
         <div className="flex gap-4">
           <Button 
             onClick={() => setVehicleType('moto')}
-            className={`flex-1 h-20 rounded-3xl flex items-center justify-center gap-3 font-black uppercase italic transition-all shadow-xl ${vehicleType === 'moto' ? 'bg-[#0F172A] text-white scale-105' : 'bg-white text-[#0F172A] hover:bg-slate-50'}`}
+            className={`flex-1 h-20 rounded-3xl flex items-center justify-center gap-3 font-black uppercase italic transition-all shadow-xl ${vehicleType === 'moto' ? 'bg-[#0F172A] text-white scale-105 ring-2 ring-secondary' : 'bg-white text-[#0F172A] hover:bg-slate-50'}`}
           >
             <Bike className="size-6" /> {t.moto}
           </Button>
           <Button 
             onClick={() => setVehicleType('taxi')}
-            className={`flex-1 h-20 rounded-3xl flex items-center justify-center gap-3 font-black uppercase italic transition-all shadow-xl ${vehicleType === 'taxi' ? 'bg-[#0F172A] text-white scale-105' : 'bg-white text-[#0F172A] hover:bg-slate-50'}`}
+            className={`flex-1 h-20 rounded-3xl flex items-center justify-center gap-3 font-black uppercase italic transition-all shadow-xl ${vehicleType === 'taxi' ? 'bg-[#0F172A] text-white scale-105 ring-2 ring-secondary' : 'bg-white text-[#0F172A] hover:bg-slate-50'}`}
           >
             <CarIcon className="size-6" /> {t.taxi}
           </Button>
         </div>
       </main>
 
-      {/* REQUEST BUTTON */}
+      {/* LARGE REQUEST RIDE BUTTON */}
       <footer className="absolute bottom-10 left-6 right-6 z-40 max-w-xl mx-auto">
         <Button 
           onClick={handleRequestRide}
           disabled={!destination || isRequesting}
-          className="w-full h-20 rounded-[2rem] bg-secondary hover:bg-secondary/90 text-white text-2xl font-black italic uppercase tracking-tighter shadow-[0_15px_40px_rgba(34,197,94,0.3)] active:scale-[0.98] disabled:opacity-50"
+          className="w-full h-20 rounded-[2rem] bg-secondary hover:bg-secondary/90 text-white text-2xl font-black italic uppercase tracking-tighter shadow-[0_15px_40px_rgba(34,197,94,0.3)] active:scale-[0.98] disabled:opacity-50 transition-all"
         >
           {isRequesting ? <Loader2 className="size-8 animate-spin" /> : t.findRide}
         </Button>
@@ -194,14 +189,14 @@ export default function PassengerDashboard() {
               </Button>
             </div>
             <div className="flex-1 p-6 space-y-4">
-              <Button variant="ghost" className="w-full h-16 justify-start gap-4 rounded-2xl font-bold uppercase text-xs tracking-widest text-slate-500 hover:text-[#0F172A] hover:bg-slate-50">
-                <Navigation className="size-5" /> Umugenzi
+              <Button variant="ghost" className="w-full h-16 justify-start gap-4 rounded-2xl font-bold uppercase text-xs tracking-widest text-slate-500 hover:text-[#0F172A] hover:bg-slate-50 transition-all">
+                <Navigation className="size-5" /> {t.passenger}
               </Button>
-              <Button variant="ghost" className="w-full h-16 justify-start gap-4 rounded-2xl font-bold uppercase text-xs tracking-widest text-slate-500 hover:text-[#0F172A] hover:bg-slate-50">
-                <History className="size-5" /> Ingendo
+              <Button variant="ghost" className="w-full h-16 justify-start gap-4 rounded-2xl font-bold uppercase text-xs tracking-widest text-slate-500 hover:text-[#0F172A] hover:bg-slate-50 transition-all">
+                <History className="size-5" /> {t.trips}
               </Button>
-              <Button onClick={() => setActiveTab('profile')} variant="ghost" className="w-full h-16 justify-start gap-4 rounded-2xl font-bold uppercase text-xs tracking-widest text-slate-500 hover:text-[#0F172A] hover:bg-slate-50">
-                <UserCircle className="size-5" /> Umwirondoro
+              <Button variant="ghost" className="w-full h-16 justify-start gap-4 rounded-2xl font-bold uppercase text-xs tracking-widest text-slate-500 hover:text-[#0F172A] hover:bg-slate-50 transition-all">
+                <UserCircle className="size-5" /> Profile
               </Button>
             </div>
             <div className="p-8 border-t space-y-4">

@@ -5,6 +5,7 @@ import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from '@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { 
   Bike, 
   Car, 
@@ -12,16 +13,15 @@ import {
   Navigation, 
   User, 
   Phone, 
-  CheckCircle2, 
   DollarSign, 
-  Clock, 
   Star,
   Loader2,
   TrendingUp,
-  MapPin
+  MapPin,
+  Clock,
+  ShieldCheck
 } from 'lucide-react';
 import { collection, doc, updateDoc, query, where, serverTimestamp } from 'firebase/firestore';
-import { useRouter } from 'next/navigation';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '@/firebase';
 import { translations, Language } from '@/lib/translations';
@@ -35,11 +35,10 @@ export default function DriverDashboard() {
   const { user } = useUser();
   const db = useFirestore();
   const auth = useAuth();
-  const router = useRouter();
   const [location, setLocation] = useState(kigaliCenter);
 
   const { isLoaded } = useJsApiLoader({ googleMapsApiKey: GOOGLE_MAPS_API_KEY });
-  const { data: profile, loading: pLoading } = useDoc(user ? `users/${user.uid}` : null);
+  const { data: profile } = useDoc(user ? `users/${user.uid}` : null);
   const { data: driver, loading: dLoading } = useDoc(user ? `drivers/${user.uid}` : null);
 
   const lang = (profile?.language as Language) || 'rw';
@@ -91,38 +90,183 @@ export default function DriverDashboard() {
     await updateDoc(doc(db, 'drivers', user.uid), { status: 'busy', updatedAt: serverTimestamp() });
   }
 
-  if (pLoading || dLoading) return <div className="h-screen flex items-center justify-center bg-[#0F172A]"><Loader2 className="animate-spin text-secondary size-12" /></div>;
+  if (dLoading) return <div className="h-screen flex items-center justify-center bg-[#0F172A]"><Loader2 className="animate-spin text-secondary size-12" /></div>;
 
+  // TAXI VERSION (Detailed, Premium)
+  if (vehicleType === 'taxi') {
+    return (
+      <div className="min-h-screen bg-slate-50 flex font-body">
+        {/* SIDE PANEL FOR TAXI */}
+        <aside className="w-96 bg-[#0F172A] text-white p-10 flex flex-col h-screen sticky top-0 overflow-y-auto no-scrollbar">
+          <div className="mb-12">
+            <h1 className="text-3xl font-black italic tracking-tighter uppercase text-accent">MUTAMBUKE</h1>
+            <p className="text-[10px] font-bold text-white/40 uppercase tracking-[0.4em] mt-1">Taxi Premium</p>
+          </div>
+
+          <div className="space-y-8 flex-1">
+            {/* PROFILE CARD */}
+            <div className="bg-white/5 rounded-3xl p-6 border border-white/10">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="size-12 rounded-2xl bg-secondary flex items-center justify-center">
+                  <User className="size-6" />
+                </div>
+                <div>
+                  <h4 className="font-black uppercase tracking-tighter text-lg">{profile?.name}</h4>
+                  <p className="text-xs text-slate-400 font-bold uppercase">{driver?.plateNumber}</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between pt-4 border-t border-white/10">
+                <div className="flex items-center gap-2">
+                  <Star className="size-4 fill-accent text-accent" />
+                  <span className="text-sm font-black italic">4.95 Rating</span>
+                </div>
+                <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${isOnline ? 'bg-secondary/20 text-secondary' : 'bg-red-500/20 text-red-400'}`}>
+                  {isOnline ? 'Online' : 'Offline'}
+                </div>
+              </div>
+            </div>
+
+            {/* STATS CARDS */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white/5 p-4 rounded-3xl border border-white/10">
+                <DollarSign className="size-5 text-secondary mb-2" />
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Earnings</p>
+                <p className="text-xl font-black italic">24,500 FRW</p>
+              </div>
+              <div className="bg-white/5 p-4 rounded-3xl border border-white/10">
+                <Clock className="size-5 text-accent mb-2" />
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Hrs Active</p>
+                <p className="text-xl font-black italic">6.4 hrs</p>
+              </div>
+            </div>
+
+            {/* STATUS TOGGLE */}
+            <div className="bg-white p-6 rounded-3xl flex items-center justify-between shadow-2xl">
+              <span className="text-sm font-black uppercase text-[#0F172A]">{isOnline ? t.startWorking : 'START WORKING'}</span>
+              <Switch checked={isOnline} onCheckedChange={toggleStatus} disabled={isBusy} className="data-[state=checked]:bg-secondary" />
+            </div>
+          </div>
+
+          <Button onClick={() => signOut(auth!)} className="mt-10 h-16 rounded-2xl bg-white/5 hover:bg-red-600/20 text-white font-black uppercase italic transition-all">
+            <LogOut className="size-5 mr-3" /> {t.logout}
+          </Button>
+        </aside>
+
+        {/* MAIN MAP AREA */}
+        <main className="flex-1 relative">
+          {isLoaded ? (
+            <GoogleMap mapContainerStyle={containerStyle} center={location} zoom={15} options={{ disableDefaultUI: true }}>
+              <Marker position={location} icon={{ url: 'https://cdn-icons-png.flaticon.com/512/3082/3082383.png', scaledSize: { width: 50, height: 50 } as any }} />
+            </GoogleMap>
+          ) : <div className="h-full w-full bg-slate-200 animate-pulse" />}
+          
+          {/* FLOATING REQUESTS FOR TAXI */}
+          <div className="absolute bottom-10 left-10 right-10 z-40">
+            {currentRide ? (
+              <Card className="rounded-[3rem] border-none shadow-3xl bg-white overflow-hidden max-w-2xl mx-auto animate-in slide-in-from-bottom-20">
+                <div className="bg-[#0F172A] p-10 text-white flex items-center justify-between">
+                  <div className="flex items-center gap-6">
+                    <div className="size-16 rounded-2xl bg-white/10 flex items-center justify-center">
+                      <User className="size-10" />
+                    </div>
+                    <div>
+                      <h3 className="text-3xl font-black italic uppercase">{currentRide.passengerName}</h3>
+                      <div className="flex items-center gap-2 text-accent mt-1">
+                        <Star className="size-4 fill-accent" /> <span className="text-sm font-bold">4.8 • Premium Member</span>
+                      </div>
+                    </div>
+                  </div>
+                  <a href={`tel:${currentRide.passengerPhone}`} className="size-16 rounded-3xl bg-secondary text-white flex items-center justify-center shadow-xl hover:scale-110 transition-all">
+                    <Phone className="size-8" />
+                  </a>
+                </div>
+                <CardContent className="p-10 space-y-8">
+                  <div className="grid grid-cols-2 gap-10">
+                    <div>
+                      <div className="flex items-center gap-2 text-slate-400 mb-1">
+                        <MapPin className="size-4" />
+                        <p className="text-[10px] font-bold uppercase tracking-widest">Pickup</p>
+                      </div>
+                      <p className="text-xl font-black text-[#0F172A]">{currentRide.pickupLocation}</p>
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 text-slate-400 mb-1">
+                        <Navigation className="size-4" />
+                        <p className="text-[10px] font-bold uppercase tracking-widest">Destination</p>
+                      </div>
+                      <p className="text-xl font-black text-[#0F172A]">{currentRide.destination}</p>
+                    </div>
+                  </div>
+                  <Button onClick={() => updateDoc(doc(db!, 'rides', currentRide.rideId), { status: currentRide.status === 'accepted' ? 'started' : 'completed' })} className="w-full h-20 rounded-[2rem] bg-[#0F172A] text-white text-2xl font-black italic uppercase tracking-tighter shadow-2xl hover:scale-[1.02] transition-all">
+                    {currentRide.status === 'accepted' ? t.startTrip : t.completeMission}
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : isOnline && requests?.length ? (
+              <div className="space-y-6">
+                {requests.map((req: any) => (
+                  <Card key={req.rideId} className="taxi-card max-w-2xl mx-auto flex items-center justify-between gap-6 animate-in slide-in-from-bottom-10">
+                    <div className="flex items-center gap-6">
+                      <div className="size-16 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400">
+                        <User size={32} />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                           <Badge variant="secondary" className="bg-secondary/10 text-secondary border-none uppercase text-[8px] font-black tracking-widest">New Ride</Badge>
+                           <span className="text-xs font-bold text-slate-400">12,500 FRW Est.</span>
+                        </div>
+                        <h3 className="text-2xl font-black text-[#0F172A] italic uppercase">{req.passengerName}</h3>
+                        <p className="text-sm font-bold text-slate-400 flex items-center gap-1">
+                          <MapPin size={12} /> {req.pickupLocation} → {req.destination}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-4">
+                      <Button onClick={() => acceptRide(req.rideId)} className="h-16 px-10 rounded-2xl bg-secondary hover:bg-secondary/90 text-white font-black italic uppercase text-lg shadow-xl">
+                        {t.takeTrip}
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // MOTO VERSION (Fast, Simple, Map-Focused)
   return (
     <div className="h-screen w-screen overflow-hidden relative flex flex-col font-body bg-slate-50">
-      {/* MAP BACKGROUND */}
+      {/* MAP AS BACKGROUND */}
       <div className="absolute inset-0 z-0">
         {isLoaded ? (
           <GoogleMap mapContainerStyle={containerStyle} center={location} zoom={15} options={{ disableDefaultUI: true }}>
-            <Marker position={location} icon={{ url: vehicleType === 'moto' ? 'https://cdn-icons-png.flaticon.com/512/3194/3194514.png' : 'https://cdn-icons-png.flaticon.com/512/3082/3082383.png', scaledSize: { width: 50, height: 50 } as any }} />
+            <Marker position={location} icon={{ url: 'https://cdn-icons-png.flaticon.com/512/3194/3194514.png', scaledSize: { width: 50, height: 50 } as any }} />
           </GoogleMap>
         ) : <div className="h-full w-full bg-slate-200 animate-pulse" />}
         <div className="absolute inset-0 pointer-events-none map-focused-overlay" />
       </div>
 
-      {/* HEADER */}
+      {/* STATUS INDICATOR HEADER */}
       <header className="absolute top-6 left-6 right-6 z-50 flex items-center justify-between">
         <div className="bg-[#0F172A] p-4 rounded-3xl flex items-center gap-4 shadow-2xl text-white">
           <div className="size-12 rounded-2xl bg-secondary flex items-center justify-center">
-            {vehicleType === 'moto' ? <Bike size={24} /> : <Car size={24} />}
+            <Bike size={24} />
           </div>
           <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{profile?.name}</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Moto Driver</p>
             <p className="text-lg font-black italic text-accent">{driver?.plateNumber}</p>
           </div>
         </div>
         <div className={`bg-white px-8 py-4 rounded-3xl flex items-center gap-4 border-2 transition-all shadow-2xl ${isOnline ? 'border-secondary' : 'border-slate-100'}`}>
-          <span className="text-xs font-black uppercase text-[#0F172A]">{isOnline ? t.startWorking : 'OFFLINE'}</span>
+          <span className="text-xs font-black uppercase text-[#0F172A] tracking-widest">{isOnline ? 'WORKING' : 'OFFLINE'}</span>
           <Switch checked={isOnline} onCheckedChange={toggleStatus} disabled={isBusy} className="data-[state=checked]:bg-secondary" />
         </div>
       </header>
 
-      {/* BOTTOM PANEL */}
+      {/* BOTTOM PANEL FOR RIDE REQUESTS */}
       <main className="absolute bottom-10 left-6 right-6 z-40 max-w-4xl mx-auto w-full">
         {currentRide ? (
           <Card className="rounded-[2.5rem] border-none shadow-3xl overflow-hidden bg-white animate-in slide-in-from-bottom-10">
@@ -167,21 +311,23 @@ export default function DriverDashboard() {
                     <User size={32} />
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">New Mission</p>
+                    <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">New Request</p>
                     <h3 className="text-2xl font-black text-[#0F172A] italic uppercase">{req.passengerName}</h3>
                     <p className="text-sm font-bold text-slate-400">{req.pickupLocation} → {req.destination}</p>
                   </div>
                 </div>
-                <Button onClick={() => acceptRide(req.rideId)} className="h-16 px-10 rounded-2xl bg-secondary hover:bg-secondary/90 text-white font-black italic uppercase text-lg shadow-xl">
-                  {t.takeTrip}
-                </Button>
+                <div className="flex gap-4">
+                   <Button onClick={() => acceptRide(req.rideId)} className="h-16 px-10 rounded-2xl bg-secondary hover:bg-secondary/90 text-white font-black italic uppercase text-lg shadow-xl">
+                    {t.takeTrip}
+                  </Button>
+                </div>
               </Card>
             ))}
             {!requests?.length && (
               <div className="bg-[#0F172A]/90 backdrop-blur-md p-10 rounded-[3rem] text-center text-white space-y-4 shadow-3xl">
                 <Navigation className="size-10 mx-auto animate-pulse text-secondary" />
                 <h2 className="text-2xl font-black italic uppercase">{t.readyToRide}</h2>
-                <p className="text-slate-400 font-bold">Waiting for incoming missions...</p>
+                <p className="text-slate-400 font-bold">Searching for missions...</p>
               </div>
             )}
           </div>
