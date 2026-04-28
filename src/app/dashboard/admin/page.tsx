@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ShieldCheck, User, LogOut, CheckCircle2, Clock, MapPin, Bike } from 'lucide-react';
 import { collection, doc, updateDoc, query, where } from 'firebase/firestore';
-import { useRouter } from 'navigation';
+import { useRouter } from 'next/navigation';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '@/firebase';
 
@@ -18,14 +18,12 @@ export default function AdminDashboard() {
   const auth = useAuth();
   const router = useRouter();
 
-  // Get all riders who need verification
   const ridersQuery = useMemo(() => {
     if (!db) return null;
     return query(collection(db, 'drivers'), where('isVerified', '==', false));
   }, [db]);
-  const { data: pendingRiders, loading: ridersLoading } = useCollection(ridersQuery);
+  const { data: pendingRiders } = useCollection(ridersQuery);
 
-  // Get stats
   const allRidersQuery = useMemo(() => {
     if (!db) return null;
     return collection(db, 'drivers');
@@ -40,7 +38,7 @@ export default function AdminDashboard() {
 
   async function verifyRider(riderId: string) {
     if (!db) return;
-    await updateDoc(doc(db, 'drivers', riderId), {
+    updateDoc(doc(db, 'drivers', riderId), {
       isVerified: true
     });
   }
@@ -52,13 +50,7 @@ export default function AdminDashboard() {
     }
   }
 
-  if (ridersLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Clock className="animate-spin size-8 text-primary" />
-      </div>
-    );
-  }
+  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -75,7 +67,6 @@ export default function AdminDashboard() {
       </header>
 
       <main className="max-w-6xl mx-auto p-6 space-y-8">
-        {/* Stats Section */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card className="border-none shadow-sm">
             <CardContent className="p-6 flex items-center gap-4">
@@ -112,7 +103,6 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-        {/* Pending Verification List */}
         <div className="space-y-4">
           <h2 className="text-2xl font-black italic text-slate-800 flex items-center gap-2">
             <User className="size-6" /> PENDING VERIFICATION
@@ -160,7 +150,6 @@ export default function AdminDashboard() {
             <div className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-200">
               <CheckCircle2 className="size-16 text-slate-200 mx-auto mb-4" />
               <p className="text-xl font-bold text-slate-400">No pending verifications</p>
-              <p className="text-slate-300">All riders are currently verified.</p>
             </div>
           )}
         </div>

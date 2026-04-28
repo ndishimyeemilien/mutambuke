@@ -23,7 +23,7 @@ export default function AuthPage() {
   const [lang, setLang] = useState<Language>('rw');
   const t = translations[lang];
 
-  const { user, loading: authChecking } = useUser();
+  const { user } = useUser();
   const [isLogin, setIsLogin] = useState(true);
   const [role, setRole] = useState<'passenger' | 'driver'>('passenger');
   const [vehicleType, setVehicleType] = useState<'moto' | 'taxi'>('moto');
@@ -42,11 +42,10 @@ export default function AuthPage() {
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
   useEffect(() => {
-    // Only redirect if user is authenticated AND we aren't currently processing a form
-    if (user && !isLoading && !authChecking) {
+    if (user && !isLoading) {
       router.replace('/');
     }
-  }, [user, router, isLoading, authChecking]);
+  }, [user, router, isLoading]);
 
   async function handleAuth(e: React.FormEvent) {
     e.preventDefault();
@@ -57,7 +56,6 @@ export default function AuthPage() {
       if (isLogin) {
         let loginEmail = identifier.trim().toLowerCase();
         
-        // Phone number lookup logic
         if (!loginEmail.includes('@')) {
           const q = query(collection(db, 'users'), where('phone', '==', identifier.trim()), limit(1));
           const snapshot = await getDocs(q);
@@ -73,7 +71,6 @@ export default function AuthPage() {
         const cleanEmail = email.trim().toLowerCase();
         const cleanPhone = phone.trim();
 
-        // Unique checks for Email and Phone
         const emailQuery = query(collection(db, 'users'), where('email', '==', cleanEmail), limit(1));
         const emailSnapshot = await getDocs(emailQuery);
         if (!emailSnapshot.empty) {
@@ -88,8 +85,6 @@ export default function AuthPage() {
 
         const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
         const newUser = userCredential.user;
-
-        // Custom Admin Logic
         const userRole = cleanEmail === 'adimini@gmail.com' ? 'admin' : role;
 
         const userData = {
@@ -102,10 +97,8 @@ export default function AuthPage() {
           createdAt: serverTimestamp(),
         };
 
-        // Write user profile to Firestore
         await setDoc(doc(db, 'users', newUser.uid), userData);
 
-        // Additional Driver Profile if applicable
         if (userRole === 'driver') {
           await setDoc(doc(db, 'drivers', newUser.uid), {
             driverId: newUser.uid,
@@ -121,7 +114,6 @@ export default function AuthPage() {
           description: lang === 'rw' ? "Konti yafunguwe neza!" : "Account created successfully!",
         });
         
-        // Force redirect to root to handle dashboard selection
         router.replace('/');
       }
     } catch (error: any) {
@@ -135,17 +127,8 @@ export default function AuthPage() {
     }
   }
 
-  if (authChecking && !user) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <Loader2 className="animate-spin size-8 text-primary" />
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-white flex flex-col md:flex-row overflow-hidden">
-      {/* Left side Illustration - Brand Message */}
       <div className="hidden md:flex md:w-1/2 relative bg-slate-900">
         {authImage && (
           <Image
@@ -158,14 +141,7 @@ export default function AuthPage() {
         )}
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900/90 via-slate-900/40 to-transparent flex flex-col justify-center p-20 text-white z-10">
           <div className="relative w-32 h-32 mb-10">
-            {logo && (
-              <Image 
-                src={logo.imageUrl} 
-                alt="Logo" 
-                fill 
-                className="object-contain rounded-[2.5rem]" 
-              />
-            )}
+            {logo && <Image src={logo.imageUrl} alt="Logo" fill className="object-contain rounded-[2.5rem]" />}
           </div>
           <h1 className="text-7xl font-black italic mb-6 leading-[0.9] uppercase tracking-tighter">
             Join the <br /> <span className="text-secondary">Movement.</span>
@@ -176,7 +152,6 @@ export default function AuthPage() {
         </div>
       </div>
 
-      {/* Right side Form */}
       <div className="flex-1 flex flex-col justify-center p-6 md:p-12 bg-white relative">
         <div className="max-w-md w-full mx-auto space-y-8">
           <div className="flex justify-between items-center">

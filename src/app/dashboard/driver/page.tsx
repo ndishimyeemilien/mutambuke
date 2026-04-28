@@ -34,7 +34,10 @@ export default function DriverDashboard() {
   const lang = (userProfile?.language as Language) || 'rw';
   const t = translations[lang];
 
-  const { data: driverProfile, loading: profileLoading } = useDoc(user ? `drivers/${user.uid}` : null);
+  const { data: driverProfile } = useDoc(user ? `drivers/${user.uid}` : null);
+  
+  if (!user || !userProfile || !driverProfile) return null;
+
   const isOnline = driverProfile?.status === 'online';
   const isVerified = driverProfile?.isVerified === true;
   const vehicleType = driverProfile?.vehicleType || 'moto';
@@ -89,14 +92,6 @@ export default function DriverDashboard() {
       await signOut(auth);
       router.push('/landing');
     }
-  }
-
-  if (profileLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <Loader2 className="animate-spin size-8 text-primary" />
-      </div>
-    );
   }
 
   if (!isVerified) {
@@ -219,7 +214,7 @@ export default function DriverDashboard() {
                 </Card>
               ))
             ) : (
-              <div className="py-20 text-center"><Loader2 className="size-10 text-slate-200 animate-spin mx-auto mb-4" /><p className="text-xl font-black italic text-slate-300 uppercase">Scanning...</p></div>
+              <div className="py-20 text-center"><p className="text-xl font-black italic text-slate-300 uppercase">Scanning...</p></div>
             )}
           </div>
         ) : (
