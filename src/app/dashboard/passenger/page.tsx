@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -152,21 +151,21 @@ export default function PassengerDashboard() {
           >
             <Marker 
               position={passengerLocation} 
-              icon={{
+              icon={typeof google !== 'undefined' ? {
                 url: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
                 scaledSize: new google.maps.Size(40, 40)
-              }}
+              } : undefined}
             />
             {availableDrivers?.map((driver) => (
               <Marker
                 key={driver.driverId}
                 position={driver.currentLocation || { lat: passengerLocation.lat + 0.005, lng: passengerLocation.lng + 0.005 }}
-                icon={{
+                icon={typeof google !== 'undefined' ? {
                   url: driver.vehicleType === 'moto' 
                     ? 'https://cdn-icons-png.flaticon.com/512/3194/3194514.png' 
                     : 'https://cdn-icons-png.flaticon.com/512/3082/3082383.png',
                   scaledSize: new google.maps.Size(35, 35)
-                }}
+                } : undefined}
               />
             ))}
           </GoogleMap>

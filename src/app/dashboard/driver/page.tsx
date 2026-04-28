@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -210,12 +209,12 @@ export default function DriverDashboard() {
           >
             <Marker 
               position={driverLocation}
-              icon={{
+              icon={typeof google !== 'undefined' ? {
                 url: vehicleType === 'moto' 
                   ? 'https://cdn-icons-png.flaticon.com/512/3194/3194514.png' 
                   : 'https://cdn-icons-png.flaticon.com/512/3082/3082383.png',
                 scaledSize: new google.maps.Size(45, 45)
-              }}
+              } : undefined}
             />
           </GoogleMap>
         </LoadScript>
