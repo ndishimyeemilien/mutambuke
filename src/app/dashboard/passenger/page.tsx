@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
@@ -28,13 +28,13 @@ import { useAuth } from '@/firebase';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { translations, Language } from '@/lib/translations';
 import { useToast } from '@/hooks/use-toast';
-import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
+import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
 
 const GOOGLE_MAPS_API_KEY = "AIzaSyApdnBLqJeVW4c5t1Z32v8BzVBVWyJnY1g";
 
-const mapContainerStyle = {
-  width: '100%',
-  height: '100%'
+const containerStyle = {
+  width: "100%",
+  height: "100%",
 };
 
 const kigaliCenter = { lat: -1.9441, lng: 30.0619 };
@@ -52,14 +52,7 @@ export default function PassengerDashboard() {
   const [vehicleTypeFilter, setVehicleTypeFilter] = useState<'moto' | 'taxi'>('moto');
   const [passengerLocation, setPassengerLocation] = useState(kigaliCenter);
 
-  const { isLoaded, loadError } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
-    libraries: ['places']
-  });
-
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
-
   const { data: userProfile, loading: profileLoading } = useDoc(user ? `users/${user.uid}` : null);
   
   const ridersQuery = useMemoFirebase(() => {
@@ -138,22 +131,15 @@ export default function PassengerDashboard() {
     }
   }
 
-  if (profileLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <Loader2 className="size-10 animate-spin text-primary" />
-      </div>
-    );
-  }
-
+  if (profileLoading) return null;
   if (!user) return null;
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col relative overflow-hidden">
       <div className="absolute inset-0 z-0 bg-slate-200">
-        {isLoaded ? (
+        <LoadScript googleMapsApiKey={GOOGLE_MAPS_API_KEY}>
           <GoogleMap
-            mapContainerStyle={mapContainerStyle}
+            mapContainerStyle={containerStyle}
             center={passengerLocation}
             zoom={14}
             options={{
@@ -184,17 +170,7 @@ export default function PassengerDashboard() {
               />
             ))}
           </GoogleMap>
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-slate-100">
-            {loadError ? (
-               <div className="text-center p-4">
-                 <p className="text-slate-400 font-bold uppercase text-xs italic">Map configuration error</p>
-               </div>
-             ) : (
-               <Loader2 className="size-8 animate-spin text-slate-300" />
-             )}
-          </div>
-        )}
+        </LoadScript>
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-transparent to-slate-900/20 pointer-events-none" />
       </div>
 
@@ -223,7 +199,7 @@ export default function PassengerDashboard() {
       <main className="flex-1 flex flex-col justify-end p-4 md:p-8 space-y-4 relative z-30 pointer-events-none">
         <div className="pointer-events-auto">
           {currentRide ? (
-            <Card className="rounded-[2.5rem] border-none shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)] overflow-hidden bg-white animate-in slide-in-from-bottom-20 duration-500">
+            <Card className="rounded-[2.5rem] border-none shadow-2xl overflow-hidden bg-white animate-in slide-in-from-bottom-20 duration-500">
               <div className={`${currentRide.status === 'requested' ? 'bg-primary' : 'bg-green-600'} p-6 text-white`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -237,10 +213,8 @@ export default function PassengerDashboard() {
                       <p className="text-[10px] font-bold opacity-70 tracking-widest mt-1 uppercase">Mission ID: {currentRide.rideId.slice(-6)}</p>
                     </div>
                   </div>
-                  {currentRide.status === 'requested' && <Loader2 className="size-6 animate-spin" />}
                 </div>
               </div>
-              
               <CardContent className="p-8 space-y-8">
                  {currentRide.status !== 'requested' && currentRide.driverId && (
                    <div className="flex items-center justify-between bg-slate-50 p-5 rounded-[2rem] border-2 border-white shadow-sm">
@@ -263,7 +237,6 @@ export default function PassengerDashboard() {
                      </a>
                    </div>
                  )}
-
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="flex gap-4 items-start">
                       <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0"><MapPin className="size-5" /></div>
@@ -283,7 +256,7 @@ export default function PassengerDashboard() {
               </CardContent>
             </Card>
           ) : (
-            <Card className="rounded-[3rem] border-none shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)] p-8 space-y-8 bg-white/95 backdrop-blur-xl animate-in fade-in slide-in-from-bottom-10 duration-500">
+            <Card className="rounded-[3rem] border-none shadow-2xl p-8 space-y-8 bg-white/95 backdrop-blur-xl animate-in fade-in slide-in-from-bottom-10">
               <div className="space-y-6">
                 <div className="flex items-center justify-between mb-4">
                    <h2 className="text-2xl font-black italic text-slate-900 uppercase tracking-tighter">Where to?</h2>
@@ -291,40 +264,39 @@ export default function PassengerDashboard() {
                       <Button 
                         variant={vehicleTypeFilter === 'moto' ? 'default' : 'outline'} 
                         onClick={() => setVehicleTypeFilter('moto')}
-                        className={`rounded-xl h-12 px-5 font-black italic gap-2 transition-all ${vehicleTypeFilter === 'moto' ? 'bg-secondary' : 'text-slate-400'}`}
+                        className={`rounded-xl h-12 px-5 font-black italic gap-2 ${vehicleTypeFilter === 'moto' ? 'bg-secondary' : 'text-slate-400'}`}
                       >
                         <Bike className="size-4" /> {t.moto}
                       </Button>
                       <Button 
                         variant={vehicleTypeFilter === 'taxi' ? 'default' : 'outline'} 
                         onClick={() => setVehicleTypeFilter('taxi')}
-                        className={`rounded-xl h-12 px-5 font-black italic gap-2 transition-all ${vehicleTypeFilter === 'taxi' ? 'bg-primary' : 'text-slate-400'}`}
+                        className={`rounded-xl h-12 px-5 font-black italic gap-2 ${vehicleTypeFilter === 'taxi' ? 'bg-primary' : 'text-slate-400'}`}
                       >
                         <CarIcon className="size-4" /> {t.taxi}
                       </Button>
                    </div>
                 </div>
-
                 <div className="space-y-4">
-                  <div className="space-y-2 group">
+                  <div className="space-y-2">
                     <Label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">Current Location</Label>
                     <div className="relative">
                       <div className="absolute left-5 top-1/2 -translate-y-1/2 size-2 bg-primary rounded-full ring-4 ring-primary/20" />
                       <Input 
                         placeholder="Pickup point..." 
-                        className="h-16 pl-14 rounded-[1.5rem] bg-slate-50 border-none font-bold text-lg focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all" 
+                        className="h-16 pl-14 rounded-[1.5rem] bg-slate-50 border-none font-bold text-lg" 
                         value={pickup} 
                         onChange={(e) => setPickup(e.target.value)} 
                       />
                     </div>
                   </div>
-                  <div className="space-y-2 group">
+                  <div className="space-y-2">
                     <Label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">Destination</Label>
                     <div className="relative">
                       <Navigation className="absolute left-5 top-1/2 -translate-y-1/2 size-5 text-secondary" />
                       <Input 
                         placeholder="Enter destination..." 
-                        className="h-16 pl-14 rounded-[1.5rem] bg-slate-50 border-none font-bold text-lg focus:bg-white focus:ring-2 focus:ring-secondary/20 transition-all" 
+                        className="h-16 pl-14 rounded-[1.5rem] bg-slate-50 border-none font-bold text-lg" 
                         value={destination} 
                         onChange={(e) => setDestination(e.target.value)} 
                       />
@@ -332,16 +304,13 @@ export default function PassengerDashboard() {
                   </div>
                 </div>
               </div>
-
-              <div className="space-y-4">
-                <Button 
-                  onClick={handleRequestRide} 
-                  disabled={!destination || isRequesting} 
-                  className={`w-full h-20 rounded-[1.75rem] text-2xl font-black shadow-2xl uppercase italic transition-all active:scale-95 ${vehicleTypeFilter === 'moto' ? 'bg-secondary hover:bg-secondary/90' : 'bg-primary hover:bg-primary/90'}`}
-                >
-                  {isRequesting ? <Loader2 className="size-8 animate-spin" /> : t.confirmed}
-                </Button>
-              </div>
+              <Button 
+                onClick={handleRequestRide} 
+                disabled={!destination || isRequesting} 
+                className={`w-full h-20 rounded-[1.75rem] text-2xl font-black shadow-2xl uppercase italic ${vehicleTypeFilter === 'moto' ? 'bg-secondary' : 'bg-primary'}`}
+              >
+                {isRequesting ? <Loader2 className="size-8 animate-spin" /> : t.confirmed}
+              </Button>
             </Card>
           )}
         </div>

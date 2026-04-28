@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser, useDoc } from '@/firebase';
@@ -14,23 +15,17 @@ export default function RootPage() {
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
   useEffect(() => {
-    // 1. Wait for Firebase Auth to determine if a user exists
-    if (authLoading) return;
+    if (authLoading || isRedirecting) return;
 
-    // 2. If no user, go to landing immediately
     if (!user) {
-      if (!isRedirecting) {
-        setIsRedirecting(true);
-        router.replace('/landing');
-      }
+      setIsRedirecting(true);
+      router.replace('/landing');
       return;
     }
 
-    // 3. If user exists, wait for the Firestore profile to load
     if (profileLoading) return;
 
-    // 4. Once profile is available, route to the correct dashboard
-    if (profile && !isRedirecting) {
+    if (profile) {
       setIsRedirecting(true);
       const role = profile.role;
       if (role === 'admin') {
@@ -40,14 +35,20 @@ export default function RootPage() {
       } else {
         router.replace('/dashboard/passenger');
       }
-    } else if (!profile && !profileLoading && !isRedirecting) {
-      // If user exists but no profile is found after loading, go to auth
-      setIsRedirecting(true);
-      router.replace('/auth');
+    } else if (!profile && !profileLoading) {
+      // User is authenticated but profile document doesn't exist yet
+      // This happens briefly after registration or if a write failed
+      // We wait a bit or redirect to auth to complete profile
+      const timer = setTimeout(() => {
+        if (!profile) {
+          setIsRedirecting(true);
+          router.replace('/auth');
+        }
+      }, 2000);
+      return () => clearTimeout(timer);
     }
   }, [user, authLoading, profile, profileLoading, router, isRedirecting]);
 
-  // Branded "Join the Movement" loading state
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
       <div className="flex flex-col items-center gap-8 max-w-sm w-full">

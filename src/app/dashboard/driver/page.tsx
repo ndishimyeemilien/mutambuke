@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,6 @@ import {
   User, 
   Phone, 
   Flag, 
-  ShieldAlert, 
   Loader2,
   Car,
   Navigation,
@@ -29,13 +28,13 @@ import { useRouter } from 'next/navigation';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '@/firebase';
 import { translations, Language } from '@/lib/translations';
-import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
+import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
 
 const GOOGLE_MAPS_API_KEY = "AIzaSyApdnBLqJeVW4c5t1Z32v8BzVBVWyJnY1g";
 
-const mapContainerStyle = {
-  width: '100%',
-  height: '100%'
+const containerStyle = {
+  width: "100%",
+  height: "100%",
 };
 
 const kigaliCenter = { lat: -1.9441, lng: 30.0619 };
@@ -47,12 +46,6 @@ export default function DriverDashboard() {
   const router = useRouter();
   
   const [driverLocation, setDriverLocation] = useState(kigaliCenter);
-
-  const { isLoaded, loadError } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
-    libraries: ['places']
-  });
 
   const { data: userProfile, loading: userLoading } = useDoc(user ? `users/${user.uid}` : null);
   const { data: driverProfile, loading: driverLoading } = useDoc(user ? `drivers/${user.uid}` : null);
@@ -98,14 +91,10 @@ export default function DriverDashboard() {
   }, [db, user]);
   const { data: completedRides } = useCollection(completedRidesQuery);
 
-  const stats = useMemo(() => {
-    const count = completedRides?.length || 0;
-    const baseRate = vehicleType === 'moto' ? 500 : 1500;
-    return {
-      totalTrips: count,
-      totalEarnings: count * baseRate
-    };
-  }, [completedRides, vehicleType]);
+  const stats = {
+    totalTrips: completedRides?.length || 0,
+    totalEarnings: (completedRides?.length || 0) * (vehicleType === 'moto' ? 500 : 1500)
+  };
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -166,14 +155,7 @@ export default function DriverDashboard() {
     }
   }
 
-  if (userLoading || driverLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <Loader2 className="size-10 animate-spin text-primary" />
-      </div>
-    );
-  }
-
+  if (userLoading || driverLoading) return null;
   if (!user || !userProfile || !driverProfile) return null;
 
   if (verificationStatus === 'pending') {
@@ -213,9 +195,9 @@ export default function DriverDashboard() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col relative overflow-hidden">
       <div className="absolute inset-0 z-0 bg-slate-200">
-        {isLoaded ? (
+        <LoadScript googleMapsApiKey={GOOGLE_MAPS_API_KEY}>
           <GoogleMap
-            mapContainerStyle={mapContainerStyle}
+            mapContainerStyle={containerStyle}
             center={driverLocation}
             zoom={15}
             options={{
@@ -236,17 +218,7 @@ export default function DriverDashboard() {
               }}
             />
           </GoogleMap>
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-slate-100">
-             {loadError ? (
-               <div className="text-center p-4">
-                 <p className="text-slate-400 font-bold uppercase text-xs italic">Map configuration error</p>
-               </div>
-             ) : (
-               <Loader2 className="size-8 animate-spin text-slate-300" />
-             )}
-          </div>
-        )}
+        </LoadScript>
         <div className="absolute inset-0 bg-gradient-to-b from-slate-900/40 via-transparent to-slate-900/60 pointer-events-none" />
       </div>
 
@@ -258,7 +230,7 @@ export default function DriverDashboard() {
                 {vehicleType === 'moto' ? <Bike className="size-6" /> : <Car className="size-6" />}
               </div>
               <div>
-                <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase">{userProfile.name}</p>
+                <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase leading-none mb-1">{userProfile.name}</p>
                 <div className="flex items-center gap-2">
                   <div className={`size-2 rounded-full ${isOnline ? 'bg-green-500 animate-pulse' : 'bg-slate-300'}`} />
                   <p className="font-black text-slate-900 italic uppercase leading-none">{isOnline ? 'Online' : 'Offline'}</p>
@@ -277,7 +249,7 @@ export default function DriverDashboard() {
 
       <main className="flex-1 relative z-10 flex flex-col justify-end p-4 md:p-6 space-y-4 pointer-events-none">
         <div className="pointer-events-auto w-full space-y-4">
-          <div className="flex gap-4 mb-auto">
+          <div className="flex gap-4">
             <Card className="flex-1 rounded-3xl border-none shadow-xl bg-white/95 backdrop-blur-md p-4 flex items-center gap-3">
               <div className="size-10 rounded-xl bg-green-100 text-green-600 flex items-center justify-center"><DollarSign className="size-5" /></div>
               <div>
@@ -295,7 +267,7 @@ export default function DriverDashboard() {
           </div>
 
           {currentRide ? (
-            <Card className="rounded-[2.5rem] border-none shadow-2xl overflow-hidden bg-white animate-in slide-in-from-bottom-10 duration-500">
+            <Card className="rounded-[2.5rem] border-none shadow-2xl overflow-hidden bg-white animate-in slide-in-from-bottom-10">
               <div className="bg-primary p-6 text-white flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="size-14 rounded-2xl bg-white/20 flex items-center justify-center"><User className="size-8" /></div>
@@ -327,7 +299,7 @@ export default function DriverDashboard() {
                 </div>
                 <Button 
                   onClick={() => currentRide.status === 'accepted' ? startRide(currentRide.rideId) : completeRide(currentRide.rideId)}
-                  className="w-full h-20 rounded-[1.5rem] bg-primary text-white text-2xl font-black italic shadow-2xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+                  className="w-full h-20 rounded-[1.5rem] bg-primary text-white text-2xl font-black italic shadow-2xl"
                 >
                   {currentRide.status === 'accepted' ? t.startTrip : t.completeMission}
                 </Button>
