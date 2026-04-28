@@ -5,10 +5,10 @@ export const translations = {
   en: {
     welcome: "WELCOME BACK",
     createAccount: "CREATE ACCOUNT",
-    emailOrPhone: "EMAIL OR PHONE NUMBER",
+    emailOrPhone: "PHONE NUMBER",
     password: "PASSWORD",
     fullName: "FULL NAME",
-    phone: "PHONE",
+    phone: "PHONE NUMBER",
     registerAs: "REGISTER AS",
     passenger: "PASSENGER",
     rider: "RIDER",
@@ -39,17 +39,17 @@ export const translations = {
     endMission: "END MISSION",
     earnings: "EARNINGS",
     trips: "TRIPS",
-    errorEmailInUse: "This email is already registered.",
-    errorInvalidAuth: "Invalid email or password.",
+    errorEmailInUse: "This phone number is already registered.",
+    errorInvalidAuth: "Invalid phone number or password.",
     errorGeneric: "An error occurred. Please try again."
   },
   rw: {
     welcome: "MURAKAZA NEZA",
     createAccount: "FUNGURA KONTI",
-    emailOrPhone: "EMAIL CYANGWA TELEFONE",
+    emailOrPhone: "NIMERO YA TELEFONE",
     password: "IJAMBO RY'IBANGA",
     fullName: "AMAZINA YOSE",
-    phone: "TELEFONE",
+    phone: "NIMERO YA TELEFONE",
     registerAs: "IYANDIKISHE NKA",
     passenger: "UMUGENZI",
     rider: "UMUSHOFERI",
@@ -80,14 +80,14 @@ export const translations = {
     endMission: "SOZA AKAZI",
     earnings: "AYO WAKOREYE",
     trips: "INGENDO",
-    errorEmailInUse: "Iyi email isanzwe ikoreshwa.",
-    errorInvalidAuth: "Email cyangwa ijambo ry'ibanga ntabwo ari byo.",
+    errorEmailInUse: "Iyi nimero isanzwe ikoreshwa.",
+    errorInvalidAuth: "Nimero cyangwa ijambo ry'ibanga ntabwo ari byo.",
     errorGeneric: "Havutse ikosa. Ongera ugerageze."
   },
   fr: {
     welcome: "BIENVENUE",
     createAccount: "CRÉER UN COMPTE",
-    emailOrPhone: "EMAIL OU TÉLÉPHONE",
+    emailOrPhone: "TÉLÉPHONE",
     password: "MOT DE PASSE",
     fullName: "NOM COMPLET",
     phone: "TÉLÉPHONE",
@@ -121,8 +121,8 @@ export const translations = {
     endMission: "TERMINER MISSION",
     earnings: "REVENUS",
     trips: "COURSES",
-    errorEmailInUse: "Cet e-mail est déjà utilisé.",
-    errorInvalidAuth: "E-mail ou mot de passe invalide.",
+    errorEmailInUse: "Ce numéro est déjà utilisé.",
+    errorInvalidAuth: "Numéro ou mot de passe invalide.",
     errorGeneric: "Une erreur est survenue. Veuillez réessayer."
   }
 };

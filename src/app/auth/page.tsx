@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -9,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ArrowLeft, Loader2, Globe, Hash, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Globe, Hash, CheckCircle2, Phone } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useAuth, useFirestore, useUser, useDoc } from '@/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
@@ -32,11 +31,9 @@ export default function AuthPage() {
   const [role, setRole] = useState<'passenger' | 'driver'>('passenger');
   const [vehicleType, setVehicleType] = useState<'moto' | 'taxi'>('moto');
   const [plateNumber, setPlateNumber] = useState('');
-  const [identifier, setIdentifier] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   
@@ -46,7 +43,6 @@ export default function AuthPage() {
   const authImage = PlaceHolderImages.find(img => img.id === 'auth-illustration');
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
-  // Unified redirection logic
   useEffect(() => {
     if (user && profile && isSuccess) {
       const timer = setTimeout(() => {
@@ -58,7 +54,7 @@ export default function AuthPage() {
 
   const getErrorMessage = (error: any) => {
     const code = error.code;
-    if (code === 'auth/email-already-in-use') return t.errorEmailInUse;
+    if (code === 'auth/email-already-in-use') return lang === 'rw' ? 'Iyi nimero isanzwe ikoreshwa.' : 'This phone number is already registered.';
     if (code === 'auth/invalid-credential' || code === 'auth/user-not-found' || code === 'auth/wrong-password') return t.errorInvalidAuth;
     return error.message || t.errorGeneric;
   };
@@ -69,44 +65,35 @@ export default function AuthPage() {
 
     setIsLoading(true);
     try {
-      if (isLogin) {
-        let loginEmail = identifier.trim().toLowerCase();
-        
-        if (!loginEmail.includes('@')) {
-          const q = query(collection(db, 'users'), where('phone', '==', identifier.trim()), limit(1));
-          const snapshot = await getDocs(q);
-          if (!snapshot.empty) {
-            loginEmail = snapshot.docs[0].data().email;
-          } else {
-            throw { code: 'auth/user-not-found' };
-          }
-        }
+      const cleanPhone = phone.trim().replace(/\s+/g, '');
+      const internalEmail = `${cleanPhone}@mutambuke.com`;
 
-        await signInWithEmailAndPassword(auth, loginEmail, password);
+      if (isLogin) {
+        await signInWithEmailAndPassword(auth, internalEmail, password);
         setIsSuccess(true);
       } else {
-        const cleanEmail = email.trim().toLowerCase();
+        if (!name.trim()) throw new Error(lang === 'rw' ? 'Shyiramo amazina yose.' : 'Full name is required.');
+        if (!phone.trim()) throw new Error(lang === 'rw' ? 'Shyiramo nimero ya telefone.' : 'Phone number is required.');
         if (role === 'driver' && !plateNumber.trim()) {
           throw new Error(lang === 'rw' ? 'Ntabwo washyizeho plaque.' : 'Plate number is required.');
         }
 
-        const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
+        const userCredential = await createUserWithEmailAndPassword(auth, internalEmail, password);
         const newUser = userCredential.user;
-        const userRole = cleanEmail === 'admin@mutambuke.com' ? 'admin' : role;
 
         const userData = {
           userId: newUser.uid,
           name: name.trim(),
-          email: cleanEmail,
-          phone: phone.trim(),
-          role: userRole,
+          email: internalEmail,
+          phone: cleanPhone,
+          role: role,
           language: lang,
           createdAt: serverTimestamp(),
         };
 
         await setDoc(doc(db, 'users', newUser.uid), userData);
 
-        if (userRole === 'driver') {
+        if (role === 'driver') {
           await setDoc(doc(db, 'drivers', newUser.uid), {
             driverId: newUser.uid,
             status: 'offline',
@@ -139,6 +126,7 @@ export default function AuthPage() {
             fill
             className="object-cover opacity-60"
             priority
+            data-ai-hint="motorcycle rider"
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900/90 via-slate-900/40 to-transparent flex flex-col justify-center p-20 text-white z-10">
@@ -202,14 +190,17 @@ export default function AuthPage() {
             <form onSubmit={handleAuth} className="space-y-4">
               <TabsContent value="login" className="space-y-4 mt-0">
                 <div className="space-y-1">
-                  <Label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">{t.emailOrPhone}</Label>
-                  <Input 
-                    placeholder="Email or Phone Number" 
-                    className="h-16 rounded-[1.25rem] border-slate-100 bg-slate-50 font-bold text-lg" 
-                    required 
-                    value={identifier}
-                    onChange={(e) => setIdentifier(e.target.value)}
-                  />
+                  <Label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">{t.phone}</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-5 top-1/2 -translate-y-1/2 size-5 text-slate-400" />
+                    <Input 
+                      placeholder="078..." 
+                      className="h-16 pl-14 rounded-[1.25rem] border-slate-100 bg-slate-50 font-bold text-lg" 
+                      required 
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                    />
+                  </div>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">{t.password}</Label>
@@ -225,20 +216,19 @@ export default function AuthPage() {
               </TabsContent>
 
               <TabsContent value="register" className="space-y-4 mt-0">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <Label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">{t.fullName}</Label>
-                    <Input placeholder="John Doe" className="h-16 rounded-[1.25rem] border-slate-100 bg-slate-50 font-bold" required value={name} onChange={(e) => setName(e.target.value)} />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">{t.phone}</Label>
-                    <Input placeholder="+250..." className="h-16 rounded-[1.25rem] border-slate-100 bg-slate-50 font-bold" type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} />
-                  </div>
-                </div>
                 <div className="space-y-1">
-                  <Label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">EMAIL</Label>
-                  <Input placeholder="email@example.com" className="h-16 rounded-[1.25rem] border-slate-100 bg-slate-50 font-bold" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <Label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">{t.fullName}</Label>
+                  <Input placeholder="John Doe" className="h-16 rounded-[1.25rem] border-slate-100 bg-slate-50 font-bold" required value={name} onChange={(e) => setName(e.target.value)} />
                 </div>
+                
+                <div className="space-y-1">
+                  <Label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">{t.phone}</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-5 top-1/2 -translate-y-1/2 size-5 text-slate-400" />
+                    <Input placeholder="078..." className="h-16 pl-14 rounded-[1.25rem] border-slate-100 bg-slate-50 font-bold" type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} />
+                  </div>
+                </div>
+                
                 <div className="space-y-1">
                   <Label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">{t.password}</Label>
                   <Input placeholder="Min. 8 characters" className="h-16 rounded-[1.25rem] border-slate-100 bg-slate-50 font-bold" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
