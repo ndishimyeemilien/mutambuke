@@ -1,8 +1,8 @@
-
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { useUser, useFirestore, useCollection, useDoc } from '@/firebase';
+import Image from 'next/image';
+import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -12,7 +12,6 @@ import {
   MapPin, 
   User, 
   Phone, 
-  Navigation, 
   Flag, 
   ShieldAlert, 
   Loader2,
@@ -23,32 +22,33 @@ import { useRouter } from 'next/navigation';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '@/firebase';
 import { translations, Language } from '@/lib/translations';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export default function DriverDashboard() {
   const { user } = useUser();
   const db = useFirestore();
   const auth = useAuth();
   const router = useRouter();
+  const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
   const { data: userProfile } = useDoc(user ? `users/${user.uid}` : null);
+  const { data: driverProfile } = useDoc(user ? `drivers/${user.uid}` : null);
+
   const lang = (userProfile?.language as Language) || 'rw';
   const t = translations[lang];
-
-  const { data: driverProfile } = useDoc(user ? `drivers/${user.uid}` : null);
-  
-  if (!user || !userProfile || !driverProfile) return null;
 
   const isOnline = driverProfile?.status === 'online';
   const isVerified = driverProfile?.isVerified === true;
   const vehicleType = driverProfile?.vehicleType || 'moto';
 
-  const requestsQuery = useMemo(() => {
+  // HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
+  const requestsQuery = useMemoFirebase(() => {
     if (!db || !isOnline || !isVerified) return null;
     return query(collection(db, 'rides'), where('status', '==', 'requested'), where('vehicleType', '==', vehicleType));
   }, [db, isOnline, isVerified, vehicleType]);
   const { data: incomingRequests } = useCollection(requestsQuery);
 
-  const activeRideQuery = useMemo(() => {
+  const activeRideQuery = useMemoFirebase(() => {
     if (!db || !user || !isVerified) return null;
     return query(
       collection(db, 'rides'),
@@ -94,12 +94,25 @@ export default function DriverDashboard() {
     }
   }
 
+  // Content rendering based on state
+  if (!user || !userProfile || !driverProfile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="relative w-20 h-20 animate-pulse">
+           {logo && <Image src={logo.imageUrl} alt="Loading..." fill className="object-contain" />}
+        </div>
+      </div>
+    );
+  }
+
   if (!isVerified) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col">
         <header className="bg-white border-b p-4 flex justify-between items-center">
           <div className="flex items-center gap-2 font-black text-xl italic text-primary">
-            {vehicleType === 'moto' ? <Bike className="size-6" /> : <Car className="size-6" />}
+            <div className="relative w-8 h-8">
+               {logo && <Image src={logo.imageUrl} alt="Logo" fill className="object-contain" />}
+            </div>
             MUTAMBUKE
           </div>
           <Button variant="ghost" size="sm" onClick={handleLogout} className="text-slate-400 font-bold uppercase">

@@ -56,7 +56,7 @@ export default function AuthPage() {
       if (isLogin) {
         let loginEmail = identifier.trim().toLowerCase();
         
-        // If identifier is not an email, assume it's a phone number and look up the associated email
+        // Handle phone-based login
         if (!loginEmail.includes('@')) {
           const q = query(collection(db, 'users'), where('phone', '==', identifier.trim()), limit(1));
           const snapshot = await getDocs(q);
@@ -72,13 +72,14 @@ export default function AuthPage() {
         const cleanEmail = email.trim().toLowerCase();
         const cleanPhone = phone.trim();
 
-        // Check if email or phone is already in use
+        // Unique check for email
         const emailQuery = query(collection(db, 'users'), where('email', '==', cleanEmail), limit(1));
         const emailSnapshot = await getDocs(emailQuery);
         if (!emailSnapshot.empty) {
           throw new Error(lang === 'rw' ? 'Iyi email isanzwe ikoreshwa.' : 'This email is already in use.');
         }
 
+        // Unique check for phone number
         const phoneQuery = query(collection(db, 'users'), where('phone', '==', cleanPhone), limit(1));
         const phoneSnapshot = await getDocs(phoneQuery);
         if (!phoneSnapshot.empty) {
