@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useUser, useDoc } from '@/firebase';
@@ -37,23 +36,22 @@ export default function RootPage() {
         router.replace('/dashboard/passenger');
       }
     } else if (!profile && !profileLoading && user) {
-      // If user is authenticated but no profile exists yet (registration in progress)
-      // we check again after a shorter delay
-      const timer = setTimeout(() => {
-        if (!profile) {
-          setIsRedirecting(true);
-          router.replace('/auth');
-        }
-      }, 1000);
-      return () => clearTimeout(timer);
+      // If user exists but profile doesn't, they might be in registration or it's a new user
+      // We check if it's the admin email first
+      if (user.email === 'admin@mutambuke.com') {
+         router.replace('/dashboard/admin');
+      } else {
+         router.replace('/auth');
+      }
+      setIsRedirecting(true);
     }
   }, [user, authLoading, profile, profileLoading, router, isRedirecting]);
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
       <div className="flex flex-col items-center gap-8 max-w-sm w-full">
-        <div className="relative w-32 h-32 animate-pulse">
-          {logo && <Image src={logo.imageUrl} alt="MUTAMBUKE" fill className="object-contain rounded-[2.5rem]" />}
+        <div className="relative w-32 h-32">
+          {logo && <Image src={logo.imageUrl} alt="MUTAMBUKE" fill className="object-contain rounded-[2.5rem]" priority />}
         </div>
         <div className="space-y-3 text-center">
           <h2 className="text-4xl font-black italic tracking-tighter text-slate-900 uppercase leading-none">
@@ -64,7 +62,7 @@ export default function RootPage() {
           </p>
           <div className="pt-8">
             <div className="h-1 w-24 bg-slate-100 mx-auto rounded-full overflow-hidden">
-              <div className="h-full bg-primary animate-[loading_2s_infinite]" />
+              <div className="h-full bg-primary animate-[loading_1.5s_infinite]" />
             </div>
           </div>
         </div>

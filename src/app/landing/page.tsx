@@ -1,4 +1,3 @@
-
 'use client';
 
 import Image from "next/image";
@@ -7,8 +6,10 @@ import { Container } from "@/components/ui/container";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { ShieldCheck, Clock, MapPin, Star } from "lucide-react";
 import Link from "next/link";
+import { useUser } from "@/firebase";
 
 export default function LandingPage() {
+  const { user } = useUser();
   const heroImage = PlaceHolderImages.find(img => img.id === 'hero-moto');
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
@@ -23,9 +24,9 @@ export default function LandingPage() {
             </div>
             <span>MUTAMBUKE</span>
           </div>
-          <Link href="/auth">
+          <Link href={user ? "/" : "/auth"}>
             <Button size="sm" className="rounded-full bg-secondary hover:bg-secondary/90 text-white font-bold px-8 h-12">
-              GET STARTED
+              {user ? "DASHBOARD" : "GET STARTED"}
             </Button>
           </Link>
         </Container>
@@ -48,12 +49,12 @@ export default function LandingPage() {
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/auth" className="flex-1">
+                <Link href={user ? "/" : "/auth"} className="flex-1">
                   <Button size="lg" className="w-full rounded-2xl h-16 bg-primary hover:bg-primary/90 text-white text-xl font-black shadow-xl">
                     BOOK RIDE
                   </Button>
                 </Link>
-                <Link href="/auth" className="flex-1">
+                <Link href={user ? "/" : "/auth"} className="flex-1">
                   <Button size="lg" variant="outline" className="w-full rounded-2xl h-16 border-2 text-xl font-black hover:bg-slate-50">
                     BECOME RIDER
                   </Button>
