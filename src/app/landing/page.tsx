@@ -75,7 +75,6 @@ export default function LandingPage() {
                 fill
                 className="object-cover"
                 priority
-                data-ai-hint="motorcycle rider"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent" />
               <div className="absolute bottom-10 left-10 right-10 text-white">
