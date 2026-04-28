@@ -5,7 +5,6 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Loader2, 
   Globe, 
@@ -29,6 +28,16 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { translations, Language } from '@/lib/translations';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
+
+// Moved outside to prevent re-mounting on every state change (fixes focus loss)
+const InputWrapper = ({ icon: Icon, children, className = "" }: { icon: any, children: React.ReactNode, className?: string }) => (
+  <div className={`relative group ${className}`}>
+    <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-400 transition-colors">
+      <Icon size={24} />
+    </div>
+    {children}
+  </div>
+);
 
 export default function AuthPage() {
   const [lang, setLang] = useState<Language>('rw');
@@ -139,36 +148,27 @@ export default function AuthPage() {
     }
   }
 
-  const InputWrapper = ({ icon: Icon, children, className = "" }: { icon: any, children: React.ReactNode, className?: string }) => (
-    <div className={`relative group ${className}`}>
-      <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-400 transition-colors">
-        <Icon size={20} />
-      </div>
-      {children}
-    </div>
-  );
-
   return (
-    <div className="min-h-screen bg-[#1f2d3a] flex flex-col items-center justify-center p-4 md:p-12 font-body text-white">
+    <div className="min-h-screen bg-[#121b24] flex flex-col items-center justify-center p-4 md:p-12 font-body text-white">
       {isSuccess && (
-        <div className="fixed inset-0 z-50 bg-[#1f2d3a] flex flex-col items-center justify-center animate-in fade-in duration-300">
-          <div className="size-24 rounded-[2rem] bg-blue-500/10 flex items-center justify-center text-blue-500 mb-6 scale-110 shadow-[0_0_50px_rgba(59,130,246,0.2)]">
-            <CheckCircle2 className="size-12" />
+        <div className="fixed inset-0 z-[100] bg-[#121b24] flex flex-col items-center justify-center animate-in fade-in duration-300">
+          <div className="size-32 rounded-[2.5rem] bg-blue-500/10 flex items-center justify-center text-blue-500 mb-8 scale-110 shadow-[0_0_80px_rgba(59,130,246,0.3)]">
+            <CheckCircle2 className="size-16" />
           </div>
-          <h2 className="text-3xl font-black italic uppercase tracking-tighter text-white">SUCCESSFUL</h2>
-          <p className="text-slate-400 font-bold italic mt-2">Connecting to Mutambuke network...</p>
+          <h2 className="text-4xl font-black italic uppercase tracking-tighter text-white">SUCCESSFUL</h2>
+          <p className="text-slate-400 font-bold italic mt-4 text-xl">Connecting to Mutambuke network...</p>
         </div>
       )}
 
-      <div className="max-w-3xl w-full space-y-8 bg-[#253341] p-6 md:p-10 rounded-[2.5rem] shadow-2xl">
+      <div className="max-w-4xl w-full space-y-8 bg-[#1a2632] p-8 md:p-14 rounded-[3rem] shadow-2xl border border-white/5">
         {/* Language Selector */}
         <div className="flex justify-end">
           <Select value={lang} onValueChange={(v: Language) => setLang(v)}>
-            <SelectTrigger className="w-[140px] h-10 rounded-xl bg-slate-800/50 border-slate-700/50 text-xs font-black">
-              <Globe className="size-4 mr-2 text-blue-400" />
+            <SelectTrigger className="w-[160px] h-12 rounded-2xl bg-slate-800/50 border-slate-700/50 text-sm font-black">
+              <Globe className="size-5 mr-3 text-blue-400" />
               <SelectValue placeholder="Lang" />
             </SelectTrigger>
-            <SelectContent className="rounded-xl border-slate-700 bg-slate-900 text-white">
+            <SelectContent className="rounded-2xl border-slate-700 bg-slate-900 text-white">
               <SelectItem value="rw" className="font-black">RWANDA</SelectItem>
               <SelectItem value="en" className="font-black">ENGLISH</SelectItem>
               <SelectItem value="fr" className="font-black">FRANÇAIS</SelectItem>
@@ -176,40 +176,41 @@ export default function AuthPage() {
           </Select>
         </div>
 
-        {/* Form Container */}
-        <div className="space-y-6">
-          <div className="text-center space-y-2">
-            <h1 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter text-white">MUTAMBUKE</h1>
-            <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] md:text-xs">Smart Urban Mobility System</p>
+        <div className="space-y-8">
+          <div className="text-center space-y-3">
+            <h1 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter text-white">MUTAMBUKE</h1>
+            <p className="text-slate-400 font-bold uppercase tracking-[0.4em] text-xs md:text-sm">Smart Urban Mobility System</p>
           </div>
 
-          {/* Header Toggle */}
+          {/* Role Toggle for Registration */}
           {!isLogin && (
-            <div className="grid grid-cols-2 gap-4 mb-8">
+            <div className="grid grid-cols-2 gap-6">
               <Button 
                 onClick={() => setRole('passenger')}
-                className={`h-24 md:h-28 rounded-[1.5rem] border-2 flex flex-col items-center justify-center gap-2 transition-all ${role === 'passenger' ? 'bg-blue-500/10 border-blue-500/50 text-blue-400' : 'bg-slate-800/30 border-slate-700/50 text-slate-500'}`}
+                className={`h-28 md:h-36 rounded-[2rem] border-2 flex flex-col items-center justify-center gap-3 transition-all ${role === 'passenger' ? 'bg-blue-500/10 border-blue-500/50 text-blue-400 shadow-[0_0_30px_rgba(59,130,246,0.1)]' : 'bg-slate-800/30 border-slate-700/50 text-slate-500'}`}
               >
-                <div className="size-8 md:size-10 rounded-full bg-slate-700/50 flex items-center justify-center" />
-                <span className="text-[10px] md:text-xs font-black uppercase tracking-widest">{t.passenger}</span>
+                <div className="size-12 rounded-full bg-slate-700/50 flex items-center justify-center overflow-hidden">
+                   <User className="size-8" />
+                </div>
+                <span className="text-xs md:text-sm font-black uppercase tracking-widest">{t.passenger}</span>
               </Button>
               <Button 
                 onClick={() => setRole('driver')}
-                className={`h-24 md:h-28 rounded-[1.5rem] border-2 flex flex-col items-center justify-center gap-2 transition-all ${role === 'driver' ? 'bg-blue-500/10 border-blue-500/50 text-blue-400' : 'bg-slate-800/30 border-slate-700/50 text-slate-500'}`}
+                className={`h-28 md:h-36 rounded-[2rem] border-2 flex flex-col items-center justify-center gap-3 transition-all ${role === 'driver' ? 'bg-blue-500/10 border-blue-500/50 text-blue-400 shadow-[0_0_30px_rgba(59,130,246,0.1)]' : 'bg-slate-800/30 border-slate-700/50 text-slate-500'}`}
               >
-                <ShieldCheck className="size-8 md:size-10" />
-                <span className="text-[10px] md:text-xs font-black uppercase tracking-widest">{t.rider}</span>
+                <ShieldCheck className="size-12 md:size-14" />
+                <span className="text-xs md:text-sm font-black uppercase tracking-widest">{t.rider}</span>
               </Button>
             </div>
           )}
 
-          <form onSubmit={handleAuth} className="space-y-6">
-            <div className={`grid gap-4 ${!isLogin && role === 'driver' ? 'md:grid-cols-1' : ''}`}>
+          <form onSubmit={handleAuth} className="space-y-8">
+            <div className="grid gap-6">
               {!isLogin && (
                 <InputWrapper icon={User}>
                   <Input 
                     placeholder={t.fullName} 
-                    className="h-16 pl-14 rounded-2xl bg-slate-800/40 border-slate-700/50 focus:border-blue-500/50 transition-all font-bold placeholder:text-slate-500 text-lg" 
+                    className="h-20 pl-16 rounded-[1.5rem] bg-slate-800/40 border-slate-700/50 focus:border-blue-500/50 transition-all font-bold placeholder:text-slate-500 text-xl" 
                     value={name} 
                     onChange={(e) => setName(e.target.value)} 
                     required 
@@ -220,7 +221,7 @@ export default function AuthPage() {
               <InputWrapper icon={Phone}>
                 <Input 
                   placeholder={t.phone} 
-                  className="h-16 pl-14 rounded-2xl bg-slate-800/40 border-slate-700/50 focus:border-blue-500/50 transition-all font-bold placeholder:text-slate-500 text-lg" 
+                  className="h-20 pl-16 rounded-[1.5rem] bg-slate-800/40 border-slate-700/50 focus:border-blue-500/50 transition-all font-bold placeholder:text-slate-500 text-xl" 
                   value={phone} 
                   onChange={(e) => setPhone(e.target.value)} 
                   required 
@@ -231,7 +232,7 @@ export default function AuthPage() {
                 <Input 
                   type={showPassword ? "text" : "password"}
                   placeholder={t.password} 
-                  className="h-16 pl-14 pr-12 rounded-2xl bg-slate-800/40 border-slate-700/50 focus:border-blue-500/50 transition-all font-bold placeholder:text-slate-500 text-lg" 
+                  className="h-20 pl-16 pr-16 rounded-[1.5rem] bg-slate-800/40 border-slate-700/50 focus:border-blue-500/50 transition-all font-bold placeholder:text-slate-500 text-xl" 
                   value={password} 
                   onChange={(e) => setPassword(e.target.value)} 
                   required 
@@ -239,30 +240,30 @@ export default function AuthPage() {
                 <button 
                   type="button" 
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+                  className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
                 >
-                  {showPassword ? <EyeOff size={24} /> : <Eye size={24} />}
+                  {showPassword ? <EyeOff size={28} /> : <Eye size={28} />}
                 </button>
               </InputWrapper>
             </div>
 
-            {/* Driver Specific Section */}
+            {/* Driver Specific Section (Dynamic Grid for Desktop) */}
             {!isLogin && role === 'driver' && (
-              <div className="space-y-6 pt-4 animate-in fade-in slide-in-from-top-4">
-                <div className="flex items-center justify-center gap-4 py-2">
+              <div className="space-y-8 pt-6 animate-in fade-in slide-in-from-top-4 duration-500">
+                <div className="flex items-center justify-center gap-6">
                    <div className="h-px bg-slate-700/50 flex-1" />
-                   <div className="flex items-center gap-2 text-[12px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                      <CheckCircle2 size={16} className="text-blue-500" />
+                   <div className="flex items-center gap-3 text-sm font-black text-slate-400 uppercase tracking-[0.3em]">
+                      <CheckCircle2 size={20} className="text-blue-500" />
                       {t.driverDetails}
                    </div>
                    <div className="h-px bg-slate-700/50 flex-1" />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <InputWrapper icon={User}>
                     <Input 
                       placeholder={t.gender} 
-                      className="h-16 pl-14 rounded-2xl bg-slate-800/40 border-slate-700/50 font-bold placeholder:text-slate-500 text-lg" 
+                      className="h-20 pl-16 rounded-[1.5rem] bg-slate-800/40 border-slate-700/50 font-bold text-xl" 
                       value={gender}
                       onChange={(e) => setGender(e.target.value)}
                     />
@@ -270,18 +271,15 @@ export default function AuthPage() {
                   <InputWrapper icon={Calendar}>
                     <Input 
                       placeholder={t.dob} 
-                      className="h-16 pl-14 rounded-2xl bg-slate-800/40 border-slate-700/50 font-bold placeholder:text-slate-500 text-lg" 
+                      className="h-20 pl-16 rounded-[1.5rem] bg-slate-800/40 border-slate-700/50 font-bold text-xl" 
                       value={dob}
                       onChange={(e) => setDob(e.target.value)}
                     />
                   </InputWrapper>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <InputWrapper icon={Car}>
                     <Input 
                       placeholder={t.vehicleBrand} 
-                      className="h-16 pl-14 rounded-2xl bg-slate-800/40 border-slate-700/50 font-bold placeholder:text-slate-500 text-lg" 
+                      className="h-20 pl-16 rounded-[1.5rem] bg-slate-800/40 border-slate-700/50 font-bold text-xl" 
                       value={vehicleBrand}
                       onChange={(e) => setVehicleBrand(e.target.value)}
                     />
@@ -289,18 +287,15 @@ export default function AuthPage() {
                   <InputWrapper icon={FileText}>
                     <Input 
                       placeholder={t.licenseCategory} 
-                      className="h-16 pl-14 rounded-2xl bg-slate-800/40 border-slate-700/50 font-bold placeholder:text-slate-500 text-lg" 
+                      className="h-20 pl-16 rounded-[1.5rem] bg-slate-800/40 border-slate-700/50 font-bold text-xl" 
                       value={licenseCategory}
                       onChange={(e) => setLicenseCategory(e.target.value)}
                     />
                   </InputWrapper>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <InputWrapper icon={Car}>
                     <Input 
                       placeholder={t.vehicleModel} 
-                      className="h-16 pl-14 rounded-2xl bg-slate-800/40 border-slate-700/50 font-bold placeholder:text-slate-500 text-lg" 
+                      className="h-20 pl-16 rounded-[1.5rem] bg-slate-800/40 border-slate-700/50 font-bold text-xl" 
                       value={vehicleModel}
                       onChange={(e) => setVehicleModel(e.target.value)}
                     />
@@ -308,18 +303,15 @@ export default function AuthPage() {
                   <InputWrapper icon={Languages}>
                     <Input 
                       placeholder={t.plateNumber} 
-                      className="h-16 pl-14 rounded-2xl bg-slate-800/40 border-slate-700/50 font-bold placeholder:text-slate-500 uppercase text-lg" 
+                      className="h-20 pl-16 rounded-[1.5rem] bg-slate-800/40 border-slate-700/50 font-bold uppercase text-xl" 
                       value={plateNumber}
                       onChange={(e) => setPlateNumber(e.target.value)}
                     />
                   </InputWrapper>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <InputWrapper icon={FileText}>
                     <Input 
                       placeholder={t.licenseNumber} 
-                      className="h-16 pl-14 rounded-2xl bg-slate-800/40 border-slate-700/50 font-bold placeholder:text-slate-500 text-lg" 
+                      className="h-20 pl-16 rounded-[1.5rem] bg-slate-800/40 border-slate-700/50 font-bold text-xl" 
                       value={licenseNumber}
                       onChange={(e) => setLicenseNumber(e.target.value)}
                     />
@@ -327,7 +319,7 @@ export default function AuthPage() {
                   <InputWrapper icon={Camera}>
                     <Input 
                       placeholder={t.profilePhoto} 
-                      className="h-16 pl-14 rounded-2xl bg-slate-800/40 border-slate-700/50 font-bold placeholder:text-slate-500 text-lg" 
+                      className="h-20 pl-16 rounded-[1.5rem] bg-slate-800/40 border-slate-700/50 font-bold text-xl" 
                       readOnly
                     />
                   </InputWrapper>
@@ -336,16 +328,16 @@ export default function AuthPage() {
             )}
 
             {/* Submit Button */}
-            <div className="pt-6">
+            <div className="pt-8">
               <Button 
                 type="submit" 
-                className="w-full h-20 rounded-[1.5rem] bg-gradient-to-r from-blue-600 to-blue-800 hover:opacity-90 text-white text-2xl font-black italic shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-2 group"
+                className="w-full h-24 rounded-[2rem] bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-500 hover:to-blue-700 text-white text-3xl font-black italic shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-3 group"
                 disabled={isLoading || isSuccess}
               >
-                {isLoading ? <Loader2 className="animate-spin" /> : (
+                {isLoading ? <Loader2 className="animate-spin size-8" /> : (
                   <>
                     {isLogin ? t.login : t.signup}
-                    <ArrowRight className="group-hover:translate-x-1 transition-transform" />
+                    <ArrowRight className="size-8 group-hover:translate-x-2 transition-transform" />
                   </>
                 )}
               </Button>
@@ -353,10 +345,10 @@ export default function AuthPage() {
           </form>
 
           {/* Toggle Login/Register */}
-          <div className="text-center pt-4">
+          <div className="text-center pt-6">
             <button 
               onClick={() => setIsLogin(!isLogin)}
-              className="text-sm md:text-base font-black uppercase tracking-[0.2em] text-blue-400 hover:text-blue-300 transition-colors"
+              className="text-lg md:text-xl font-black uppercase tracking-[0.25em] text-blue-400 hover:text-blue-300 transition-colors"
             >
               {isLogin ? "Kora konti nshya" : "Sanzwe ufite konti? Yinjira"}
             </button>
