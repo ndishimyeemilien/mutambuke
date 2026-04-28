@@ -6,7 +6,7 @@ import { useUser, useFirestore, useCollection } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ShieldCheck, User, LogOut, CheckCircle2, Clock, MapPin, Bike } from 'lucide-react';
+import { ShieldCheck, User, LogOut, CheckCircle2, Clock, MapPin, Bike, XCircle } from 'lucide-react';
 import { collection, doc, updateDoc, query, where } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'firebase/auth';
@@ -18,11 +18,11 @@ export default function AdminDashboard() {
   const auth = useAuth();
   const router = useRouter();
 
-  const ridersQuery = useMemo(() => {
+  const pendingQuery = useMemo(() => {
     if (!db) return null;
-    return query(collection(db, 'drivers'), where('isVerified', '==', false));
+    return query(collection(db, 'drivers'), where('verificationStatus', '==', 'pending'));
   }, [db]);
-  const { data: pendingRiders } = useCollection(ridersQuery);
+  const { data: pendingRiders } = useCollection(pendingQuery);
 
   const allRidersQuery = useMemo(() => {
     if (!db) return null;
@@ -32,14 +32,14 @@ export default function AdminDashboard() {
 
   const stats = {
     total: allRiders?.length || 0,
-    verified: allRiders?.filter(r => r.isVerified).length || 0,
-    pending: allRiders?.filter(r => !r.isVerified).length || 0,
+    approved: allRiders?.filter(r => r.verificationStatus === 'approved').length || 0,
+    pending: allRiders?.filter(r => r.verificationStatus === 'pending').length || 0,
   };
 
-  async function verifyRider(riderId: string) {
+  async function updateVerification(riderId: string, status: 'approved' | 'rejected') {
     if (!db) return;
     updateDoc(doc(db, 'drivers', riderId), {
-      isVerified: true
+      verificationStatus: status
     });
   }
 
@@ -85,8 +85,8 @@ export default function AdminDashboard() {
                 <CheckCircle2 className="size-6" />
               </div>
               <div>
-                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Verified</p>
-                <p className="text-3xl font-black">{stats.verified}</p>
+                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Approved</p>
+                <p className="text-3xl font-black">{stats.approved}</p>
               </div>
             </CardContent>
           </Card>
@@ -121,21 +121,26 @@ export default function AdminDashboard() {
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <h3 className="text-xl font-bold">Rider ID: {rider.driverId.slice(-8)}</h3>
-                            <Badge variant="secondary" className="bg-orange-100 text-orange-700">UNVERIFIED</Badge>
+                            <Badge variant="secondary" className="bg-orange-100 text-orange-700 uppercase">Pending Review</Badge>
                           </div>
                           <div className="flex items-center gap-4 text-sm text-slate-500 font-medium">
-                            <span className="flex items-center gap-1"><MapPin className="size-3" /> Location Pending</span>
-                            <span className="flex items-center gap-1"><Bike className="size-3" /> Vehicle Info Pending</span>
+                            <span className="flex items-center gap-1 font-bold uppercase text-[10px] tracking-tight">
+                               Vehicle: {rider.vehicleType}
+                            </span>
                           </div>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-3">
-                        <Button variant="outline" className="h-12 px-6 rounded-xl font-bold border-red-200 text-red-600 hover:bg-red-50">
+                        <Button 
+                          onClick={() => updateVerification(rider.driverId, 'rejected')}
+                          variant="outline" 
+                          className="h-12 px-6 rounded-xl font-bold border-red-200 text-red-600 hover:bg-red-50"
+                        >
                           Reject
                         </Button>
                         <Button 
-                          onClick={() => verifyRider(rider.driverId)}
+                          onClick={() => updateVerification(rider.driverId, 'approved')}
                           className="h-12 px-6 rounded-xl font-bold bg-green-600 hover:bg-green-700"
                         >
                           Approve Rider

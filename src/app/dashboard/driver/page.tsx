@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -19,7 +20,9 @@ import {
   Navigation,
   DollarSign,
   TrendingUp,
-  X
+  X,
+  XCircle,
+  Clock
 } from 'lucide-react';
 import { collection, doc, updateDoc, query, where, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
@@ -58,28 +61,29 @@ export default function DriverDashboard() {
   const t = translations[lang];
 
   const isOnline = driverProfile?.status === 'online';
-  const isVerified = driverProfile?.isVerified === true;
+  const verificationStatus = driverProfile?.verificationStatus || 'pending';
+  const isApproved = verificationStatus === 'approved';
   const vehicleType = driverProfile?.vehicleType || 'moto';
 
   const requestsQuery = useMemoFirebase(() => {
-    if (!db || !isOnline || !isVerified) return null;
+    if (!db || !isOnline || !isApproved) return null;
     return query(
       collection(db, 'rides'), 
       where('status', '==', 'requested'), 
       where('vehicleType', '==', vehicleType)
     );
-  }, [db, isOnline, isVerified, vehicleType]);
+  }, [db, isOnline, isApproved, vehicleType]);
   
   const { data: incomingRequests } = useCollection(requestsQuery);
 
   const activeRideQuery = useMemoFirebase(() => {
-    if (!db || !user || !isVerified) return null;
+    if (!db || !user || !isApproved) return null;
     return query(
       collection(db, 'rides'),
       where('driverId', '==', user.uid),
       where('status', 'in', ['accepted', 'started'])
     );
-  }, [db, user, isVerified]);
+  }, [db, user, isApproved]);
   
   const { data: activeRides } = useCollection(activeRideQuery);
   const currentRide = activeRides?.[0];
@@ -112,7 +116,7 @@ export default function DriverDashboard() {
             lng: position.coords.longitude
           };
           setDriverLocation(newLoc);
-          if (db && user && isOnline) {
+          if (db && user && isOnline && isApproved) {
             updateDoc(doc(db, 'drivers', user.uid), {
               currentLocation: newLoc,
               updatedAt: serverTimestamp()
@@ -124,10 +128,10 @@ export default function DriverDashboard() {
       );
       return () => navigator.geolocation.clearWatch(watchId);
     }
-  }, [db, user, isOnline]);
+  }, [db, user, isOnline, isApproved]);
 
   async function toggleStatus() {
-    if (!db || !user) return;
+    if (!db || !user || !isApproved) return;
     const newStatus = isOnline ? 'offline' : 'online';
     updateDoc(doc(db, 'drivers', user.uid), {
       status: newStatus,
@@ -172,15 +176,32 @@ export default function DriverDashboard() {
 
   if (!user || !userProfile || !driverProfile) return null;
 
-  if (!isVerified) {
+  if (verificationStatus === 'pending') {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
         <div className="size-24 rounded-[2rem] bg-orange-100 flex items-center justify-center text-orange-600 mb-6">
-          <ShieldAlert className="size-12" />
+          <Clock className="size-12" />
         </div>
-        <h1 className="text-3xl font-black italic text-slate-900 uppercase mb-2">{t.verificationPending}</h1>
+        <h1 className="text-3xl font-black italic text-slate-900 uppercase mb-2">Account Under Review</h1>
         <p className="text-slate-500 font-medium max-w-xs mx-auto mb-8">
-          Your documents are being reviewed by the MUTAMBUKE admin team.
+          The MUTAMBUKE admin team is verifying your documents. This usually takes 24 hours.
+        </p>
+        <Button onClick={handleLogout} variant="outline" className="rounded-xl font-bold uppercase italic">
+          <LogOut className="size-4 mr-2" /> {t.logout}
+        </Button>
+      </div>
+    );
+  }
+
+  if (verificationStatus === 'rejected') {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
+        <div className="size-24 rounded-[2rem] bg-red-100 flex items-center justify-center text-red-600 mb-6">
+          <XCircle className="size-12" />
+        </div>
+        <h1 className="text-3xl font-black italic text-slate-900 uppercase mb-2">Account Rejected</h1>
+        <p className="text-slate-500 font-medium max-w-xs mx-auto mb-8">
+          Your application was not approved. Please contact support at support@mutambuke.com for details.
         </p>
         <Button onClick={handleLogout} variant="outline" className="rounded-xl font-bold uppercase italic">
           <LogOut className="size-4 mr-2" /> {t.logout}
@@ -220,7 +241,6 @@ export default function DriverDashboard() {
              {loadError ? (
                <div className="text-center p-4">
                  <p className="text-slate-400 font-bold uppercase text-xs italic">Map configuration error</p>
-                 <p className="text-[10px] text-slate-300 mt-1">Please check your Google Maps API key restrictions</p>
                </div>
              ) : (
                <Loader2 className="size-8 animate-spin text-slate-300" />

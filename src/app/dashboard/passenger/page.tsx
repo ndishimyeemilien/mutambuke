@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -66,7 +67,7 @@ export default function PassengerDashboard() {
     return query(
       collection(db, 'drivers'), 
       where('status', '==', 'online'), 
-      where('isVerified', '==', true),
+      where('verificationStatus', '==', 'approved'),
       where('vehicleType', '==', vehicleTypeFilter)
     );
   }, [db, vehicleTypeFilter]);

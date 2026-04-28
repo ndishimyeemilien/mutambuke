@@ -23,7 +23,7 @@
       "properties": {
         "driverId": { "type": "string" },
         "status": { "type": "string", "enum": ["online", "offline"] },
-        "isVerified": { "type": "boolean" },
+        "verificationStatus": { "type": "string", "enum": ["pending", "approved", "rejected"] },
         "vehicleType": { "type": "string", "enum": ["moto", "taxi"] },
         "currentLocation": {
           "type": "object",
@@ -35,7 +35,7 @@
         },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["driverId", "status", "vehicleType"]
+      "required": ["driverId", "status", "verificationStatus", "vehicleType"]
     },
     "RideRequest": {
       "title": "Ride Request",

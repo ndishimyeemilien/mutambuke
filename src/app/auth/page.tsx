@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -56,7 +57,6 @@ export default function AuthPage() {
       if (isLogin) {
         let loginEmail = identifier.trim().toLowerCase();
         
-        // Handle phone-based login
         if (!loginEmail.includes('@')) {
           const q = query(collection(db, 'users'), where('phone', '==', identifier.trim()), limit(1));
           const snapshot = await getDocs(q);
@@ -72,14 +72,12 @@ export default function AuthPage() {
         const cleanEmail = email.trim().toLowerCase();
         const cleanPhone = phone.trim();
 
-        // Unique check for email
         const emailQuery = query(collection(db, 'users'), where('email', '==', cleanEmail), limit(1));
         const emailSnapshot = await getDocs(emailQuery);
         if (!emailSnapshot.empty) {
           throw new Error(lang === 'rw' ? 'Iyi email isanzwe ikoreshwa.' : 'This email is already in use.');
         }
 
-        // Unique check for phone number
         const phoneQuery = query(collection(db, 'users'), where('phone', '==', cleanPhone), limit(1));
         const phoneSnapshot = await getDocs(phoneQuery);
         if (!phoneSnapshot.empty) {
@@ -88,7 +86,7 @@ export default function AuthPage() {
 
         const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
         const newUser = userCredential.user;
-        const userRole = cleanEmail === 'adimini@gmail.com' ? 'admin' : role;
+        const userRole = cleanEmail === 'admin@mutambuke.com' ? 'admin' : role;
 
         const userData = {
           userId: newUser.uid,
@@ -106,7 +104,7 @@ export default function AuthPage() {
           await setDoc(doc(db, 'drivers', newUser.uid), {
             driverId: newUser.uid,
             status: 'offline',
-            isVerified: false,
+            verificationStatus: 'pending',
             vehicleType: vehicleType,
             updatedAt: serverTimestamp(),
           });
@@ -176,9 +174,6 @@ export default function AuthPage() {
           </div>
 
           <div className="space-y-2">
-             <div className="md:hidden relative w-20 h-20 mb-4">
-                {logo && <Image src={logo.imageUrl} alt="Logo" fill className="object-contain rounded-2xl" />}
-             </div>
             <h2 className="text-4xl font-black italic text-slate-900 uppercase tracking-tighter">
               {isLogin ? t.welcome : t.createAccount}
             </h2>
@@ -197,30 +192,24 @@ export default function AuthPage() {
               <TabsContent value="login" className="space-y-4 mt-0">
                 <div className="space-y-1">
                   <Label className="text-xs font-black text-slate-400 tracking-widest uppercase">{t.emailOrPhone}</Label>
-                  <div className="relative">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                    <Input 
-                      placeholder="Email or Phone Number" 
-                      className="pl-12 h-14 rounded-2xl border-slate-100 bg-slate-50 font-bold" 
-                      required 
-                      value={identifier}
-                      onChange={(e) => setIdentifier(e.target.value)}
-                    />
-                  </div>
+                  <Input 
+                    placeholder="Email or Phone Number" 
+                    className="h-14 rounded-2xl border-slate-100 bg-slate-50 font-bold" 
+                    required 
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs font-black text-slate-400 tracking-widest uppercase">{t.password}</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                    <Input 
-                      placeholder="••••••••" 
-                      className="pl-12 h-14 rounded-2xl border-slate-100 bg-slate-50 font-bold" 
-                      type="password" 
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                    />
-                  </div>
+                  <Input 
+                    placeholder="••••••••" 
+                    className="h-14 rounded-2xl border-slate-100 bg-slate-50 font-bold" 
+                    type="password" 
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
                 </div>
               </TabsContent>
 
@@ -259,7 +248,7 @@ export default function AuthPage() {
                 </div>
 
                 {role === 'driver' && (
-                  <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                  <div className="space-y-3">
                     <Label className="text-xs font-black text-slate-400 tracking-widest uppercase">{t.vehicleType}</Label>
                     <RadioGroup defaultValue="moto" className="flex gap-4" onValueChange={(v) => setVehicleType(v as any)}>
                       <div className={`flex flex-1 items-center justify-between p-4 rounded-2xl border-2 cursor-pointer transition-all ${vehicleType === 'moto' ? 'border-secondary bg-secondary/5 text-secondary' : 'border-slate-100'}`}>
