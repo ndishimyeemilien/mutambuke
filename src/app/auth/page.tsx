@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -57,6 +56,7 @@ export default function AuthPage() {
       if (isLogin) {
         let loginEmail = identifier.trim().toLowerCase();
         
+        // Handle login by phone number
         if (!loginEmail.includes('@')) {
           const q = query(collection(db, 'users'), where('phone', '==', identifier.trim()), limit(1));
           const snapshot = await getDocs(q);
@@ -72,6 +72,7 @@ export default function AuthPage() {
         const cleanEmail = email.trim().toLowerCase();
         const cleanPhone = phone.trim();
 
+        // Check if email already exists manually to provide better error
         const emailQuery = query(collection(db, 'users'), where('email', '==', cleanEmail), limit(1));
         const emailSnapshot = await getDocs(emailQuery);
         if (!emailSnapshot.empty) {
@@ -98,8 +99,10 @@ export default function AuthPage() {
           createdAt: serverTimestamp(),
         };
 
+        // Save User Profile
         await setDoc(doc(db, 'users', newUser.uid), userData);
 
+        // If driver, create driver status profile
         if (userRole === 'driver') {
           await setDoc(doc(db, 'drivers', newUser.uid), {
             driverId: newUser.uid,

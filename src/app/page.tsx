@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useUser, useDoc } from '@/firebase';
@@ -15,6 +14,7 @@ export default function RootPage() {
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
   useEffect(() => {
+    // Only proceed if everything is done loading
     if (authLoading || isRedirecting) return;
 
     if (!user) {
@@ -23,6 +23,7 @@ export default function RootPage() {
       return;
     }
 
+    // Wait for profile to load to know where to send the user
     if (profileLoading) return;
 
     if (profile) {
@@ -35,16 +36,14 @@ export default function RootPage() {
       } else {
         router.replace('/dashboard/passenger');
       }
-    } else if (!profile && !profileLoading) {
-      // User is authenticated but profile document doesn't exist yet
-      // This happens briefly after registration or if a write failed
-      // We wait a bit or redirect to auth to complete profile
+    } else if (!profile && !profileLoading && user) {
+      // Small delay for initial document creation propagation
       const timer = setTimeout(() => {
         if (!profile) {
           setIsRedirecting(true);
           router.replace('/auth');
         }
-      }, 2000);
+      }, 3000);
       return () => clearTimeout(timer);
     }
   }, [user, authLoading, profile, profileLoading, router, isRedirecting]);
@@ -62,8 +61,19 @@ export default function RootPage() {
           <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.3em]">
             SMART URBAN NETWORK
           </p>
+          <div className="pt-8">
+            <div className="h-1 w-24 bg-slate-100 mx-auto rounded-full overflow-hidden">
+              <div className="h-full bg-primary animate-[loading_2s_infinite]" />
+            </div>
+          </div>
         </div>
       </div>
+      <style jsx>{`
+        @keyframes loading {
+          0% { width: 0; transform: translateX(-100%); }
+          100% { width: 100%; transform: translateX(100%); }
+        }
+      `}</style>
     </div>
   );
 }
