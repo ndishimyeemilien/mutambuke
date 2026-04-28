@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Bike, User, Lock, ArrowLeft, Loader2, Car, Globe, Hash } from 'lucide-react';
+import { Bike, User, Lock, ArrowLeft, Loader2, Car, Globe, Hash, CheckCircle2 } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useAuth, useFirestore, useUser, useDoc } from '@/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
@@ -36,6 +36,7 @@ export default function AuthPage() {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const router = useRouter();
   
   const auth = useAuth();
@@ -44,13 +45,12 @@ export default function AuthPage() {
   const authImage = PlaceHolderImages.find(img => img.id === 'auth-illustration');
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
-  // Only redirect if a profile actually exists. 
-  // If user exists but no profile, they stay here to finish registration.
   useEffect(() => {
-    if (user && profile && !isLoading) {
+    // Only redirect if a profile exists and we aren't showing a success message
+    if (user && profile && !isLoading && !isSuccess) {
       router.replace('/');
     }
-  }, [user, profile, router, isLoading]);
+  }, [user, profile, router, isLoading, isSuccess]);
 
   const getErrorMessage = (error: any) => {
     const code = error.code;
@@ -81,6 +81,17 @@ export default function AuthPage() {
         }
 
         await signInWithEmailAndPassword(auth, loginEmail, password);
+        
+        setIsSuccess(true);
+        toast({
+          title: lang === 'rw' ? "Byagenze neza" : "Success",
+          description: lang === 'rw' ? "Urinjiye neza!" : "Logged in successfully!",
+        });
+
+        setTimeout(() => {
+          router.replace('/');
+        }, 1200);
+
       } else {
         const cleanEmail = email.trim().toLowerCase();
         const cleanPhone = phone.trim();
@@ -122,21 +133,23 @@ export default function AuthPage() {
           });
         }
 
+        setIsSuccess(true);
         toast({
           title: lang === 'rw' ? "Byagenze neza" : "Success",
           description: lang === 'rw' ? "Konti yafunguwe neza!" : "Account created successfully!",
         });
         
-        router.replace('/');
+        setTimeout(() => {
+          router.replace('/');
+        }, 1200);
       }
     } catch (error: any) {
+      setIsLoading(false);
       toast({
         variant: "destructive",
         title: lang === 'rw' ? "Ikosa" : "Error",
         description: getErrorMessage(error),
       });
-    } finally {
-      setIsLoading(false);
     }
   }
 
@@ -166,6 +179,18 @@ export default function AuthPage() {
       </div>
 
       <div className="flex-1 flex flex-col justify-center p-6 md:p-12 bg-white relative">
+        {isSuccess && (
+          <div className="absolute inset-0 z-50 bg-white/90 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300">
+             <div className="size-24 rounded-[2rem] bg-green-100 flex items-center justify-center text-green-600 mb-6 scale-110">
+                <CheckCircle2 className="size-12" />
+             </div>
+             <h2 className="text-4xl font-black italic uppercase tracking-tighter text-slate-900">
+                {lang === 'rw' ? 'BYAGENZE NEZA' : 'SUCCESSFUL'}
+             </h2>
+             <p className="text-slate-500 font-bold italic mt-2">Redirecting to dashboard...</p>
+          </div>
+        )}
+
         <div className="max-w-md w-full mx-auto space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
           <div className="flex justify-between items-center">
             <Link href="/landing" className="inline-flex items-center gap-2 text-slate-400 hover:text-primary transition-colors font-black text-xs uppercase italic tracking-widest">
@@ -297,7 +322,7 @@ export default function AuthPage() {
                 )}
               </TabsContent>
 
-              <Button type="submit" className={`w-full h-20 rounded-[1.5rem] text-2xl font-black shadow-2xl transition-all active:scale-95 italic uppercase tracking-tighter ${role === 'driver' && !isLogin ? 'bg-secondary hover:bg-secondary/90' : 'bg-primary hover:bg-primary/90'}`} disabled={isLoading}>
+              <Button type="submit" className={`w-full h-20 rounded-[1.5rem] text-2xl font-black shadow-2xl transition-all active:scale-95 italic uppercase tracking-tighter ${role === 'driver' && !isLogin ? 'bg-secondary hover:bg-secondary/90' : 'bg-primary hover:bg-primary/90'}`} disabled={isLoading || isSuccess}>
                 {isLoading ? <Loader2 className="animate-spin" /> : (isLogin ? t.login : t.signup)}
               </Button>
             </form>
