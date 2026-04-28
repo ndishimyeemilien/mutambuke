@@ -6,12 +6,8 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { Loader2 } from 'lucide-react';
 
-/**
- * RootPage acts as the main entry point and traffic controller.
- * It redirects users to the appropriate dashboard based on their role
- * or to the landing page if they are not authenticated.
- */
 export default function RootPage() {
   const { user, loading: authLoading } = useUser();
   const router = useRouter();
@@ -20,20 +16,16 @@ export default function RootPage() {
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
   useEffect(() => {
-    // If we're already redirecting or still checking auth, do nothing
     if (authLoading || redirecting.current) return;
 
-    // 1. No user logged in? Go to landing
     if (!user) {
       redirecting.current = true;
       router.replace('/landing');
       return;
     }
 
-    // 2. User exists, wait for profile data
     if (profileLoading) return;
 
-    // 3. Profile found? Go to role-specific dashboard
     if (profile) {
       redirecting.current = true;
       const role = profile.role;
@@ -44,17 +36,14 @@ export default function RootPage() {
       } else {
         router.replace('/dashboard/passenger');
       }
-      return;
-    }
-
-    // 4. User exists but NO profile found in Firestore?
-    // This happens for new signups or incomplete registrations.
-    if (user && !profile && !profileLoading) {
-      redirecting.current = true;
-      // Special case for the manual admin account
+    } else if (user && !profileLoading) {
+      // User is authenticated but no profile yet (maybe just signed up)
+      // Check if it's the admin or wait for profile creation
       if (user.email === 'admin@mutambuke.com') {
         router.replace('/dashboard/admin');
       } else {
+        // Stay on Root or go to Auth if profile really doesn't exist
+        // But usually Auth handles its own redirects
         router.replace('/auth');
       }
     }
@@ -62,17 +51,20 @@ export default function RootPage() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
-      <div className="flex flex-col items-center gap-8 max-w-sm w-full animate-pulse">
-        <div className="relative w-32 h-32">
+      <div className="flex flex-col items-center gap-8 max-w-sm w-full">
+        <div className="relative w-32 h-32 animate-bounce">
           {logo && <Image src={logo.imageUrl} alt="MUTAMBUKE" fill className="object-contain rounded-[2.5rem]" priority />}
         </div>
-        <div className="space-y-3 text-center">
-          <h2 className="text-4xl font-black italic tracking-tighter text-slate-900 uppercase leading-none">
-            MUTAMBUKE
-          </h2>
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.3em]">
-            SMART URBAN NETWORK
-          </p>
+        <div className="space-y-4 text-center">
+          <div className="flex flex-col items-center gap-2">
+            <h2 className="text-4xl font-black italic tracking-tighter text-slate-900 uppercase leading-none">
+              MUTAMBUKE
+            </h2>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.3em]">
+              SMART URBAN NETWORK
+            </p>
+          </div>
+          <Loader2 className="size-8 animate-spin text-primary mx-auto opacity-20" />
         </div>
       </div>
     </div>

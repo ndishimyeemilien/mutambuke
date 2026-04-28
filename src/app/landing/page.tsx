@@ -11,7 +11,10 @@ import { useUser } from "@/firebase";
 
 export default function LandingPage() {
   const { user } = useUser();
-  const heroImage = { imageUrl: "https://i.pinimg.com/736x/bc/74/3b/bc743bcdaf44a57ab619ecfd5056768f.jpg", description: "Premium Rider" };
+  const heroImage = { 
+    imageUrl: "https://i.pinimg.com/736x/bc/74/3b/bc743bcdaf44a57ab619ecfd5056768f.jpg", 
+    description: "Premium Rider" 
+  };
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
   return (
@@ -76,11 +79,11 @@ export default function LandingPage() {
               <div className="absolute bottom-10 left-10 right-10 text-white">
                 <div className="flex gap-4">
                   <div className="bg-white/10 backdrop-blur-2xl p-6 rounded-[2rem] flex-1 border border-white/20 shadow-xl">
-                    <p className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-1">Active Riders</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-1 text-secondary">Active Riders</p>
                     <p className="text-3xl font-black italic">2.4k+</p>
                   </div>
                   <div className="bg-white/10 backdrop-blur-2xl p-6 rounded-[2rem] flex-1 border border-white/20 shadow-xl">
-                    <p className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-1">Response</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-1 text-primary">Response</p>
                     <p className="text-3xl font-black italic">3 min</p>
                   </div>
                 </div>

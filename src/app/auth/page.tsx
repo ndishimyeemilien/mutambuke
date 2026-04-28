@@ -46,7 +46,7 @@ export default function AuthPage() {
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
   useEffect(() => {
-    // Only redirect if a profile exists and we aren't showing a success message
+    // Redirect if profile exists and we are not currently signing up/logging in
     if (user && profile && !isLoading && !isSuccess) {
       router.replace('/');
     }
@@ -70,6 +70,7 @@ export default function AuthPage() {
       if (isLogin) {
         let loginEmail = identifier.trim().toLowerCase();
         
+        // Handle phone number login if identifier is not an email
         if (!loginEmail.includes('@')) {
           const q = query(collection(db, 'users'), where('phone', '==', identifier.trim()), limit(1));
           const snapshot = await getDocs(q);
@@ -90,12 +91,13 @@ export default function AuthPage() {
 
         setTimeout(() => {
           router.replace('/');
-        }, 1200);
+        }, 1500);
 
       } else {
         const cleanEmail = email.trim().toLowerCase();
         const cleanPhone = phone.trim();
 
+        // Unique phone check
         const phoneQuery = query(collection(db, 'users'), where('phone', '==', cleanPhone), limit(1));
         const phoneSnapshot = await getDocs(phoneQuery);
         if (!phoneSnapshot.empty) {
@@ -141,7 +143,7 @@ export default function AuthPage() {
         
         setTimeout(() => {
           router.replace('/');
-        }, 1200);
+        }, 1500);
       }
     } catch (error: any) {
       setIsLoading(false);
@@ -180,7 +182,7 @@ export default function AuthPage() {
 
       <div className="flex-1 flex flex-col justify-center p-6 md:p-12 bg-white relative">
         {isSuccess && (
-          <div className="absolute inset-0 z-50 bg-white/90 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300">
+          <div className="absolute inset-0 z-50 bg-white/95 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300">
              <div className="size-24 rounded-[2rem] bg-green-100 flex items-center justify-center text-green-600 mb-6 scale-110">
                 <CheckCircle2 className="size-12" />
              </div>
@@ -188,6 +190,11 @@ export default function AuthPage() {
                 {lang === 'rw' ? 'BYAGENZE NEZA' : 'SUCCESSFUL'}
              </h2>
              <p className="text-slate-500 font-bold italic mt-2">Redirecting to dashboard...</p>
+             <div className="mt-8 flex gap-1">
+                <div className="size-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="size-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="size-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+             </div>
           </div>
         )}
 
