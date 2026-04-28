@@ -74,7 +74,7 @@ export default function AuthPage() {
           if (!snapshot.empty) {
             loginEmail = snapshot.docs[0].data().email;
           } else {
-            throw { code: 'auth/user-not-found', message: 'Nta konti yabonetse kuri iyi telefone.' };
+            throw { code: 'auth/user-not-found', message: lang === 'rw' ? 'Nta konti yabonetse kuri iyi telefone.' : 'No account found with this phone number.' };
           }
         }
 
@@ -165,21 +165,21 @@ export default function AuthPage() {
       </div>
 
       <div className="flex-1 flex flex-col justify-center p-6 md:p-12 bg-white relative">
-        <div className="max-w-md w-full mx-auto space-y-8">
+        <div className="max-w-md w-full mx-auto space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
           <div className="flex justify-between items-center">
-            <Link href="/landing" className="inline-flex items-center gap-2 text-slate-400 hover:text-primary transition-colors font-bold text-xs uppercase italic">
+            <Link href="/landing" className="inline-flex items-center gap-2 text-slate-400 hover:text-primary transition-colors font-black text-xs uppercase italic tracking-widest">
               <ArrowLeft className="size-4" /> Home
             </Link>
             
             <Select value={lang} onValueChange={(v: Language) => setLang(v)}>
-              <SelectTrigger className="w-[120px] h-10 rounded-xl bg-slate-50 border-none font-bold text-xs">
+              <SelectTrigger className="w-[120px] h-10 rounded-xl bg-slate-50 border-none font-black text-xs">
                 <Globe className="size-3 mr-2" />
                 <SelectValue placeholder="Lang" />
               </SelectTrigger>
               <SelectContent className="rounded-xl border-none shadow-xl">
-                <SelectItem value="rw" className="font-bold">RWANDA</SelectItem>
-                <SelectItem value="en" className="font-bold">ENGLISH</SelectItem>
-                <SelectItem value="fr" className="font-bold">FRANÇAIS</SelectItem>
+                <SelectItem value="rw" className="font-black">RWANDA</SelectItem>
+                <SelectItem value="en" className="font-black">ENGLISH</SelectItem>
+                <SelectItem value="fr" className="font-black">FRANÇAIS</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -188,34 +188,34 @@ export default function AuthPage() {
             <h2 className="text-4xl font-black italic text-slate-900 uppercase tracking-tighter">
               {isLogin ? t.welcome : t.createAccount}
             </h2>
-            <p className="text-slate-500 font-medium italic">
+            <p className="text-slate-500 font-bold italic text-sm">
               Access the MUTAMBUKE smart urban network.
             </p>
           </div>
 
           <Tabs value={isLogin ? 'login' : 'register'} onValueChange={(v) => setIsLogin(v === 'login')} className="w-full">
             <TabsList className="grid w-full grid-cols-2 rounded-2xl h-12 bg-slate-100 p-1 mb-8">
-              <TabsTrigger value="login" className="rounded-xl font-bold uppercase">{t.login}</TabsTrigger>
-              <TabsTrigger value="register" className="rounded-xl font-bold uppercase">{t.signup}</TabsTrigger>
+              <TabsTrigger value="login" className="rounded-xl font-black uppercase text-xs tracking-widest">{t.login}</TabsTrigger>
+              <TabsTrigger value="register" className="rounded-xl font-black uppercase text-xs tracking-widest">{t.signup}</TabsTrigger>
             </TabsList>
 
             <form onSubmit={handleAuth} className="space-y-4">
               <TabsContent value="login" className="space-y-4 mt-0">
                 <div className="space-y-1">
-                  <Label className="text-xs font-black text-slate-400 tracking-widest uppercase">{t.emailOrPhone}</Label>
+                  <Label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">{t.emailOrPhone}</Label>
                   <Input 
                     placeholder="Email or Phone Number" 
-                    className="h-14 rounded-2xl border-slate-100 bg-slate-50 font-bold" 
+                    className="h-16 rounded-[1.25rem] border-slate-100 bg-slate-50 font-bold text-lg" 
                     required 
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs font-black text-slate-400 tracking-widest uppercase">{t.password}</Label>
+                  <Label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">{t.password}</Label>
                   <Input 
                     placeholder="••••••••" 
-                    className="h-14 rounded-2xl border-slate-100 bg-slate-50 font-bold" 
+                    className="h-16 rounded-[1.25rem] border-slate-100 bg-slate-50 font-bold text-lg" 
                     type="password" 
                     required
                     value={password}
@@ -227,32 +227,32 @@ export default function AuthPage() {
               <TabsContent value="register" className="space-y-4 mt-0">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <Label className="text-xs font-black text-slate-400 tracking-widest uppercase">{t.fullName}</Label>
-                    <Input placeholder="John Doe" className="h-14 rounded-2xl border-slate-100 bg-slate-50 font-bold" required value={name} onChange={(e) => setName(e.target.value)} />
+                    <Label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">{t.fullName}</Label>
+                    <Input placeholder="John Doe" className="h-16 rounded-[1.25rem] border-slate-100 bg-slate-50 font-bold" required value={name} onChange={(e) => setName(e.target.value)} />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs font-black text-slate-400 tracking-widest uppercase">{t.phone}</Label>
-                    <Input placeholder="+250..." className="h-14 rounded-2xl border-slate-100 bg-slate-50 font-bold" type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} />
+                    <Label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">{t.phone}</Label>
+                    <Input placeholder="+250..." className="h-16 rounded-[1.25rem] border-slate-100 bg-slate-50 font-bold" type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} />
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs font-black text-slate-400 tracking-widest uppercase">EMAIL</Label>
-                  <Input placeholder="email@example.com" className="h-14 rounded-2xl border-slate-100 bg-slate-50 font-bold" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <Label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">EMAIL</Label>
+                  <Input placeholder="email@example.com" className="h-16 rounded-[1.25rem] border-slate-100 bg-slate-50 font-bold" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs font-black text-slate-400 tracking-widest uppercase">{t.password}</Label>
-                  <Input placeholder="Min. 8 characters" className="h-14 rounded-2xl border-slate-100 bg-slate-50 font-bold" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+                  <Label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">{t.password}</Label>
+                  <Input placeholder="Min. 8 characters" className="h-16 rounded-[1.25rem] border-slate-100 bg-slate-50 font-bold" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
                 </div>
 
                 <div className="space-y-3 pt-2">
-                  <Label className="text-xs font-black text-slate-400 tracking-widest uppercase">{t.registerAs}</Label>
+                  <Label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">{t.registerAs}</Label>
                   <RadioGroup defaultValue="passenger" className="flex gap-4" onValueChange={(v) => setRole(v as any)}>
-                    <div className={`flex flex-1 items-center justify-between p-4 rounded-2xl border-2 cursor-pointer transition-all ${role === 'passenger' ? 'border-primary bg-primary/5 text-primary' : 'border-slate-100'}`}>
-                      <span className="text-sm font-bold uppercase">{t.passenger}</span>
+                    <div className={`flex flex-1 items-center justify-between p-5 rounded-[1.25rem] border-2 cursor-pointer transition-all ${role === 'passenger' ? 'border-primary bg-primary/5 text-primary' : 'border-slate-100'}`}>
+                      <span className="text-xs font-black uppercase tracking-widest">{t.passenger}</span>
                       <RadioGroupItem value="passenger" className="border-slate-200" />
                     </div>
-                    <div className={`flex flex-1 items-center justify-between p-4 rounded-2xl border-2 cursor-pointer transition-all ${role === 'driver' ? 'border-secondary bg-secondary/5 text-secondary' : 'border-slate-100'}`}>
-                      <span className="text-sm font-bold uppercase">{t.rider}</span>
+                    <div className={`flex flex-1 items-center justify-between p-5 rounded-[1.25rem] border-2 cursor-pointer transition-all ${role === 'driver' ? 'border-secondary bg-secondary/5 text-secondary' : 'border-slate-100'}`}>
+                      <span className="text-xs font-black uppercase tracking-widest">{t.rider}</span>
                       <RadioGroupItem value="driver" className="border-slate-200" />
                     </div>
                   </RadioGroup>
@@ -261,12 +261,12 @@ export default function AuthPage() {
                 {role === 'driver' && (
                   <div className="animate-in slide-in-from-top-2 space-y-4">
                     <div className="space-y-1">
-                      <Label className="text-xs font-black text-slate-400 tracking-widest uppercase">{t.plateNumber}</Label>
+                      <Label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">{t.plateNumber}</Label>
                       <div className="relative">
-                        <Hash className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                        <Hash className="absolute left-5 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
                         <Input 
                           placeholder="RAA 000 A" 
-                          className="h-14 pl-12 rounded-2xl border-slate-100 bg-slate-50 font-bold uppercase" 
+                          className="h-16 pl-14 rounded-[1.25rem] border-slate-100 bg-slate-50 font-black uppercase tracking-widest" 
                           required 
                           value={plateNumber} 
                           onChange={(e) => setPlateNumber(e.target.value)} 
@@ -274,19 +274,19 @@ export default function AuthPage() {
                       </div>
                     </div>
                     <div className="space-y-3">
-                      <Label className="text-xs font-black text-slate-400 tracking-widest uppercase">{t.vehicleType}</Label>
+                      <Label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">{t.vehicleType}</Label>
                       <RadioGroup defaultValue="moto" className="flex gap-4" onValueChange={(v) => setVehicleType(v as any)}>
-                        <div className={`flex flex-1 items-center justify-between p-4 rounded-2xl border-2 cursor-pointer transition-all ${vehicleType === 'moto' ? 'border-secondary bg-secondary/5 text-secondary' : 'border-slate-100'}`}>
+                        <div className={`flex flex-1 items-center justify-between p-5 rounded-[1.25rem] border-2 cursor-pointer transition-all ${vehicleType === 'moto' ? 'border-secondary bg-secondary/5 text-secondary' : 'border-slate-100'}`}>
                           <div className="flex items-center gap-2">
                             <Bike className="size-4" />
-                            <span className="text-sm font-bold">{t.moto}</span>
+                            <span className="text-xs font-black uppercase tracking-widest">{t.moto}</span>
                           </div>
                           <RadioGroupItem value="moto" className="border-slate-200" />
                         </div>
-                        <div className={`flex flex-1 items-center justify-between p-4 rounded-2xl border-2 cursor-pointer transition-all ${vehicleType === 'taxi' ? 'border-secondary bg-secondary/5 text-secondary' : 'border-slate-100'}`}>
+                        <div className={`flex flex-1 items-center justify-between p-5 rounded-[1.25rem] border-2 cursor-pointer transition-all ${vehicleType === 'taxi' ? 'border-secondary bg-secondary/5 text-secondary' : 'border-slate-100'}`}>
                           <div className="flex items-center gap-2">
                             <Car className="size-4" />
-                            <span className="text-sm font-bold">{t.taxi}</span>
+                            <span className="text-xs font-black uppercase tracking-widest">{t.taxi}</span>
                           </div>
                           <RadioGroupItem value="taxi" className="border-slate-200" />
                         </div>
@@ -296,7 +296,7 @@ export default function AuthPage() {
                 )}
               </TabsContent>
 
-              <Button type="submit" className={`w-full h-16 rounded-2xl text-xl font-black shadow-lg transition-transform active:scale-95 italic ${role === 'driver' && !isLogin ? 'bg-secondary hover:bg-secondary/90' : 'bg-primary hover:bg-primary/90'}`} disabled={isLoading}>
+              <Button type="submit" className={`w-full h-20 rounded-[1.5rem] text-2xl font-black shadow-2xl transition-all active:scale-95 italic uppercase tracking-tighter ${role === 'driver' && !isLogin ? 'bg-secondary hover:bg-secondary/90' : 'bg-primary hover:bg-primary/90'}`} disabled={isLoading}>
                 {isLoading ? <Loader2 className="animate-spin" /> : (isLogin ? t.login : t.signup)}
               </Button>
             </form>

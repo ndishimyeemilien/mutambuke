@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser, useDoc } from '@/firebase';
@@ -37,7 +38,6 @@ export default function RootPage() {
       }
     } else if (!profile && !profileLoading && user) {
       // If user exists but profile doesn't, they might be in registration or it's a new user
-      // We check if it's the admin email first
       if (user.email === 'admin@mutambuke.com') {
          router.replace('/dashboard/admin');
       } else {
@@ -50,7 +50,7 @@ export default function RootPage() {
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
       <div className="flex flex-col items-center gap-8 max-w-sm w-full">
-        <div className="relative w-32 h-32">
+        <div className="relative w-32 h-32 animate-pulse">
           {logo && <Image src={logo.imageUrl} alt="MUTAMBUKE" fill className="object-contain rounded-[2.5rem]" priority />}
         </div>
         <div className="space-y-3 text-center">
@@ -60,19 +60,8 @@ export default function RootPage() {
           <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.3em]">
             SMART URBAN NETWORK
           </p>
-          <div className="pt-8">
-            <div className="h-1 w-24 bg-slate-100 mx-auto rounded-full overflow-hidden">
-              <div className="h-full bg-primary animate-[loading_1.5s_infinite]" />
-            </div>
-          </div>
         </div>
       </div>
-      <style jsx>{`
-        @keyframes loading {
-          0% { width: 0; transform: translateX(-100%); }
-          100% { width: 100%; transform: translateX(100%); }
-        }
-      `}</style>
     </div>
   );
 }
