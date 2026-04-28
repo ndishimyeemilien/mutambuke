@@ -17,10 +17,8 @@ export default function RootPage() {
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
   useEffect(() => {
-    // 1. Wait for Auth to resolve
     if (authLoading) return;
 
-    // 2. If no user, go to landing
     if (!user) {
       if (!redirecting.current) {
         redirecting.current = true;
@@ -29,10 +27,8 @@ export default function RootPage() {
       return;
     }
 
-    // 3. If user exists, wait for Profile to resolve definitively
     if (profileLoading) return;
 
-    // 4. If profile exists, route to the correct dashboard
     if (profile) {
       if (!redirecting.current) {
         redirecting.current = true;
@@ -46,15 +42,13 @@ export default function RootPage() {
         }
       }
     } else {
-      // 5. If user exists but profile is missing (and not loading)
-      // This happens for a split second during registration or if data is missing.
-      // We give Firestore a 3-second window to propagate data before assuming it's a failure.
+      // Give it a bit more time for firestore propagation
       const timer = setTimeout(() => {
         if (!profile && !profileLoading && user && !redirecting.current) {
           redirecting.current = true;
           router.replace('/auth');
         }
-      }, 3000);
+      }, 5000);
       return () => clearTimeout(timer);
     }
   }, [user, authLoading, profile, profileLoading, router]);

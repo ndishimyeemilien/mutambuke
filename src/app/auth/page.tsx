@@ -22,14 +22,13 @@ import {
   ShieldCheck,
   ArrowRight
 } from 'lucide-react';
-import { useAuth, useFirestore, useUser, useDoc } from '@/firebase';
+import { useAuth, useFirestore, useUser } from '@/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { translations, Language } from '@/lib/translations';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
 
-// Moved outside to prevent re-mounting on every state change (fixes focus loss)
 const InputWrapper = ({ icon: Icon, children, className = "" }: { icon: any, children: React.ReactNode, className?: string }) => (
   <div className={`relative group ${className}`}>
     <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-400 transition-colors">
@@ -45,19 +44,16 @@ export default function AuthPage() {
   const { toast } = useToast();
   const router = useRouter();
 
-  const { user, loading: authLoading } = useUser();
-  const { data: profile } = useDoc(user ? `users/${user.uid}` : null);
+  const { user } = useUser();
   
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState<'passenger' | 'driver'>('passenger');
   
-  // Form fields
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   
-  // Driver specific fields
   const [gender, setGender] = useState('');
   const [dob, setDob] = useState('');
   const [vehicleBrand, setVehicleBrand] = useState('');
@@ -73,13 +69,13 @@ export default function AuthPage() {
   const db = useFirestore();
 
   useEffect(() => {
-    if (user && profile && isSuccess) {
+    if (isSuccess && user) {
       const timer = setTimeout(() => {
         router.replace('/');
-      }, 1500);
+      }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [user, profile, isSuccess, router]);
+  }, [isSuccess, user, router]);
 
   const getErrorMessage = (error: any) => {
     const code = error.code;
@@ -99,6 +95,7 @@ export default function AuthPage() {
 
       if (isLogin) {
         await signInWithEmailAndPassword(auth, internalEmail, password);
+        setIsLoading(false);
         setIsSuccess(true);
       } else {
         if (!name.trim()) throw new Error(t.fullName);
@@ -136,6 +133,7 @@ export default function AuthPage() {
           });
         }
 
+        setIsLoading(false);
         setIsSuccess(true);
       }
     } catch (error: any) {
@@ -161,7 +159,6 @@ export default function AuthPage() {
       )}
 
       <div className="max-w-4xl w-full space-y-8 bg-[#1a2632] p-8 md:p-14 rounded-[3rem] shadow-2xl border border-white/5">
-        {/* Language Selector */}
         <div className="flex justify-end">
           <Select value={lang} onValueChange={(v: Language) => setLang(v)}>
             <SelectTrigger className="w-[160px] h-12 rounded-2xl bg-slate-800/50 border-slate-700/50 text-sm font-black">
@@ -182,7 +179,6 @@ export default function AuthPage() {
             <p className="text-slate-400 font-bold uppercase tracking-[0.4em] text-xs md:text-sm">Smart Urban Mobility System</p>
           </div>
 
-          {/* Role Toggle for Registration */}
           {!isLogin && (
             <div className="grid grid-cols-2 gap-6">
               <Button 
@@ -247,7 +243,6 @@ export default function AuthPage() {
               </InputWrapper>
             </div>
 
-            {/* Driver Specific Section (Dynamic Grid for Desktop) */}
             {!isLogin && role === 'driver' && (
               <div className="space-y-8 pt-6 animate-in fade-in slide-in-from-top-4 duration-500">
                 <div className="flex items-center justify-center gap-6">
@@ -327,7 +322,6 @@ export default function AuthPage() {
               </div>
             )}
 
-            {/* Submit Button */}
             <div className="pt-8">
               <Button 
                 type="submit" 
@@ -344,7 +338,6 @@ export default function AuthPage() {
             </div>
           </form>
 
-          {/* Toggle Login/Register */}
           <div className="text-center pt-6">
             <button 
               onClick={() => setIsLogin(!isLogin)}
