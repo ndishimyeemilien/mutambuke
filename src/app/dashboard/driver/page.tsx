@@ -1,6 +1,7 @@
+
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
@@ -21,12 +22,22 @@ import {
   TrendingUp,
   X
 } from 'lucide-react';
-import { collection, doc, updateDoc, query, where, serverTimestamp, getDocs } from 'firebase/firestore';
+import { collection, doc, updateDoc, query, where, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '@/firebase';
 import { translations, Language } from '@/lib/translations';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
+
+const GOOGLE_MAPS_API_KEY = "AIzaSyApdnBLqJeVW4c5t1Z32v8BzVBVWyJnY1g";
+
+const mapContainerStyle = {
+  width: '100%',
+  height: '100%'
+};
+
+const kigaliCenter = { lat: -1.9441, lng: 30.0619 };
 
 export default function DriverDashboard() {
   const { user } = useUser();
@@ -34,10 +45,13 @@ export default function DriverDashboard() {
   const auth = useAuth();
   const router = useRouter();
   
-  const logo = PlaceHolderImages.find(img => img.id === 'logo');
-  const mapImage = PlaceHolderImages.find(img => img.id === 'map-preview');
+  const [driverLocation, setDriverLocation] = useState(kigaliCenter);
 
-  // Hooks called at top level
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY
+  });
+
   const { data: userProfile, loading: userLoading } = useDoc(user ? `users/${user.uid}` : null);
   const { data: driverProfile, loading: driverLoading } = useDoc(user ? `drivers/${user.uid}` : null);
 
@@ -48,7 +62,6 @@ export default function DriverDashboard() {
   const isVerified = driverProfile?.isVerified === true;
   const vehicleType = driverProfile?.vehicleType || 'moto';
 
-  // Real-time requests listener
   const requestsQuery = useMemoFirebase(() => {
     if (!db || !isOnline || !isVerified) return null;
     return query(
@@ -60,7 +73,6 @@ export default function DriverDashboard() {
   
   const { data: incomingRequests } = useCollection(requestsQuery);
 
-  // Active ride listener
   const activeRideQuery = useMemoFirebase(() => {
     if (!db || !user || !isVerified) return null;
     return query(
@@ -73,7 +85,6 @@ export default function DriverDashboard() {
   const { data: activeRides } = useCollection(activeRideQuery);
   const currentRide = activeRides?.[0];
 
-  // Completed rides for earnings calculation
   const completedRidesQuery = useMemoFirebase(() => {
     if (!db || !user) return null;
     return query(
@@ -92,6 +103,29 @@ export default function DriverDashboard() {
       totalEarnings: count * baseRate
     };
   }, [completedRides, vehicleType]);
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      const watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          const newLoc = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          setDriverLocation(newLoc);
+          if (db && user && isOnline) {
+            updateDoc(doc(db, 'drivers', user.uid), {
+              currentLocation: newLoc,
+              updatedAt: serverTimestamp()
+            });
+          }
+        },
+        () => console.log("Geolocation error"),
+        { enableHighAccuracy: true }
+      );
+      return () => navigator.geolocation.clearWatch(watchId);
+    }
+  }, [db, user, isOnline]);
 
   async function toggleStatus() {
     if (!db || !user) return;
@@ -128,7 +162,7 @@ export default function DriverDashboard() {
     }
   }
 
-  if (userLoading || driverLoading) {
+  if (userLoading || driverLoading || !isLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <Loader2 className="size-10 animate-spin text-primary" />
@@ -157,15 +191,32 @@ export default function DriverDashboard() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col relative overflow-hidden">
-      {/* Real-time Map Background */}
       <div className="absolute inset-0 z-0">
-        {mapImage && (
-          <Image src={mapImage.imageUrl} alt="Map" fill className="object-cover opacity-80" priority />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/40 via-transparent to-slate-900/60" />
+        <GoogleMap
+          mapContainerStyle={mapContainerStyle}
+          center={driverLocation}
+          zoom={15}
+          options={{
+            disableDefaultUI: true,
+            styles: [
+              { featureType: "all", elementType: "labels.text.fill", color: "#9ca3af" },
+              { featureType: "water", elementType: "geometry", color: "#e5e7eb" }
+            ]
+          }}
+        >
+          <Marker 
+            position={driverLocation}
+            icon={{
+              url: vehicleType === 'moto' 
+                ? 'https://cdn-icons-png.flaticon.com/512/3194/3194514.png' 
+                : 'https://cdn-icons-png.flaticon.com/512/3082/3082383.png',
+              scaledSize: new google.maps.Size(45, 45)
+            }}
+          />
+        </GoogleMap>
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/40 via-transparent to-slate-900/60 pointer-events-none" />
       </div>
 
-      {/* Floating Header */}
       <header className="relative z-20 p-4">
         <Card className="rounded-3xl border-none shadow-2xl bg-white/90 backdrop-blur-xl">
           <CardContent className="p-4 flex items-center justify-between">
@@ -191,124 +242,111 @@ export default function DriverDashboard() {
         </Card>
       </header>
 
-      {/* Main Real-time Interface */}
-      <main className="flex-1 relative z-10 flex flex-col justify-end p-4 md:p-6 space-y-4">
-        
-        {/* Earnings Quick View */}
-        <div className="flex gap-4 mb-auto">
-          <Card className="flex-1 rounded-3xl border-none shadow-xl bg-white/95 backdrop-blur-md p-4 flex items-center gap-3">
-            <div className="size-10 rounded-xl bg-green-100 text-green-600 flex items-center justify-center"><DollarSign className="size-5" /></div>
-            <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase leading-none mb-1">Earnings</p>
-              <p className="font-black text-slate-900 leading-none">{stats.totalEarnings} RWF</p>
-            </div>
-          </Card>
-          <Card className="flex-1 rounded-3xl border-none shadow-xl bg-white/95 backdrop-blur-md p-4 flex items-center gap-3">
-            <div className="size-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center"><TrendingUp className="size-5" /></div>
-            <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase leading-none mb-1">Trips</p>
-              <p className="font-black text-slate-900 leading-none">{stats.totalTrips}</p>
-            </div>
-          </Card>
-        </div>
+      <main className="flex-1 relative z-10 flex flex-col justify-end p-4 md:p-6 space-y-4 pointer-events-none">
+        <div className="pointer-events-auto w-full space-y-4">
+          <div className="flex gap-4 mb-auto">
+            <Card className="flex-1 rounded-3xl border-none shadow-xl bg-white/95 backdrop-blur-md p-4 flex items-center gap-3">
+              <div className="size-10 rounded-xl bg-green-100 text-green-600 flex items-center justify-center"><DollarSign className="size-5" /></div>
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase leading-none mb-1">Earnings</p>
+                <p className="font-black text-slate-900 leading-none">{stats.totalEarnings} RWF</p>
+              </div>
+            </Card>
+            <Card className="flex-1 rounded-3xl border-none shadow-xl bg-white/95 backdrop-blur-md p-4 flex items-center gap-3">
+              <div className="size-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center"><TrendingUp className="size-5" /></div>
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase leading-none mb-1">Trips</p>
+                <p className="font-black text-slate-900 leading-none">{stats.totalTrips}</p>
+              </div>
+            </Card>
+          </div>
 
-        {/* Dynamic Trip Cards */}
-        {currentRide ? (
-          <Card className="rounded-[2.5rem] border-none shadow-2xl overflow-hidden bg-white animate-in slide-in-from-bottom-10 duration-500">
-            <div className="bg-primary p-6 text-white flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="size-14 rounded-2xl bg-white/20 flex items-center justify-center"><User className="size-8" /></div>
-                <div>
-                  <h3 className="text-2xl font-black italic uppercase leading-none">{currentRide.passengerName}</h3>
-                  <p className="text-[10px] font-bold opacity-70 tracking-widest mt-1 uppercase">ACTIVE MISSION</p>
+          {currentRide ? (
+            <Card className="rounded-[2.5rem] border-none shadow-2xl overflow-hidden bg-white animate-in slide-in-from-bottom-10 duration-500">
+              <div className="bg-primary p-6 text-white flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="size-14 rounded-2xl bg-white/20 flex items-center justify-center"><User className="size-8" /></div>
+                  <div>
+                    <h3 className="text-2xl font-black italic uppercase leading-none">{currentRide.passengerName}</h3>
+                    <p className="text-[10px] font-bold opacity-70 tracking-widest mt-1 uppercase">ACTIVE MISSION</p>
+                  </div>
                 </div>
+                <a href={`tel:${currentRide.passengerPhone}`} className="size-12 rounded-2xl bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors">
+                  <Phone className="size-6" />
+                </a>
               </div>
-              <a href={`tel:${currentRide.passengerPhone}`} className="size-12 rounded-2xl bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors">
-                <Phone className="size-6" />
-              </a>
+              <CardContent className="p-8 space-y-8">
+                <div className="space-y-6">
+                  <div className="flex gap-4 items-start">
+                    <MapPin className="size-5 text-primary mt-1" />
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase">Pickup</p>
+                      <p className="font-black text-lg text-slate-900">{currentRide.pickupLocation}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-4 items-start">
+                    <Flag className="size-5 text-secondary mt-1" />
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase">Destination</p>
+                      <p className="font-black text-lg text-slate-900">{currentRide.destination}</p>
+                    </div>
+                  </div>
+                </div>
+                <Button 
+                  onClick={() => currentRide.status === 'accepted' ? startRide(currentRide.rideId) : completeRide(currentRide.rideId)}
+                  className="w-full h-20 rounded-[1.5rem] bg-primary text-white text-2xl font-black italic shadow-2xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+                >
+                  {currentRide.status === 'accepted' ? t.startTrip : t.completeMission}
+                </Button>
+              </CardContent>
+            </Card>
+          ) : isOnline ? (
+            <div className="space-y-4">
+              {incomingRequests && incomingRequests.length > 0 ? (
+                incomingRequests.map(req => (
+                  <Card key={req.rideId} className="rounded-[2rem] border-none shadow-2xl bg-white p-6 animate-in slide-in-from-right-10">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="size-10 rounded-full bg-slate-100 flex items-center justify-center"><User className="size-5" /></div>
+                        <p className="font-black text-slate-900 italic uppercase">{req.passengerName}</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                      <div className="space-y-1">
+                        <p className="text-[9px] font-black text-slate-400 uppercase">Pickup</p>
+                        <p className="font-bold text-slate-900 text-sm truncate">{req.pickupLocation}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[9px] font-black text-slate-400 uppercase">Dropoff</p>
+                        <p className="font-bold text-slate-900 text-sm truncate">{req.destination}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <Button variant="ghost" className="flex-1 h-12 rounded-xl text-slate-400 font-bold uppercase italic"><X className="size-4 mr-2" /> Reject</Button>
+                      <Button onClick={() => acceptRide(req.rideId)} className="flex-[2] h-12 rounded-xl bg-primary text-white font-black italic uppercase">Accept Ride</Button>
+                    </div>
+                  </Card>
+                ))
+              ) : (
+                <div className="py-20 text-center space-y-4">
+                  <div className="relative mx-auto size-20">
+                    <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
+                    <div className="relative size-20 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                      <Navigation className="size-10 animate-pulse" />
+                    </div>
+                  </div>
+                  <p className="text-xl font-black italic text-white uppercase tracking-tighter">{t.readyToRide}</p>
+                </div>
+              )}
             </div>
-            <CardContent className="p-8 space-y-8">
-              <div className="space-y-6">
-                <div className="flex gap-4 items-start">
-                  <MapPin className="size-5 text-primary mt-1" />
-                  <div>
-                    <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase">Pickup</p>
-                    <p className="font-black text-lg text-slate-900">{currentRide.pickupLocation}</p>
-                  </div>
-                </div>
-                <div className="flex gap-4 items-start">
-                  <Flag className="size-5 text-secondary mt-1" />
-                  <div>
-                    <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase">Destination</p>
-                    <p className="font-black text-lg text-slate-900">{currentRide.destination}</p>
-                  </div>
-                </div>
-              </div>
-              <Button 
-                onClick={() => currentRide.status === 'accepted' ? startRide(currentRide.rideId) : completeRide(currentRide.rideId)}
-                className="w-full h-20 rounded-[1.5rem] bg-primary text-white text-2xl font-black italic shadow-2xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
-              >
-                {currentRide.status === 'accepted' ? t.startTrip : t.completeMission}
+          ) : (
+            <div className="py-20 text-center space-y-6">
+              <Button onClick={toggleStatus} className="bg-white text-slate-900 h-16 px-10 rounded-2xl font-black italic uppercase shadow-2xl">
+                {t.goOnline}
               </Button>
-            </CardContent>
-          </Card>
-        ) : isOnline ? (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between px-2">
-              <h3 className="text-xs font-black italic text-white tracking-widest uppercase">Live Requests</h3>
-              <div className="flex items-center gap-2">
-                <div className="size-2 rounded-full bg-green-400 animate-ping" />
-                <p className="text-[10px] font-black text-green-400 tracking-tighter uppercase">Scanning...</p>
-              </div>
             </div>
-            {incomingRequests && incomingRequests.length > 0 ? (
-              incomingRequests.map(req => (
-                <Card key={req.rideId} className="rounded-[2rem] border-none shadow-2xl bg-white p-6 animate-in slide-in-from-right-10">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="size-10 rounded-full bg-slate-100 flex items-center justify-center"><User className="size-5" /></div>
-                      <p className="font-black text-slate-900 italic uppercase">{req.passengerName}</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 mb-6">
-                    <div className="space-y-1">
-                      <p className="text-[9px] font-black text-slate-400 uppercase">Pickup</p>
-                      <p className="font-bold text-slate-900 text-sm truncate">{req.pickupLocation}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[9px] font-black text-slate-400 uppercase">Dropoff</p>
-                      <p className="font-bold text-slate-900 text-sm truncate">{req.destination}</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-3">
-                    <Button variant="ghost" className="flex-1 h-12 rounded-xl text-slate-400 font-bold uppercase italic"><X className="size-4 mr-2" /> Reject</Button>
-                    <Button onClick={() => acceptRide(req.rideId)} className="flex-[2] h-12 rounded-xl bg-primary text-white font-black italic uppercase">Accept Ride</Button>
-                  </div>
-                </Card>
-              ))
-            ) : (
-              <div className="py-20 text-center space-y-4">
-                <div className="relative mx-auto size-20">
-                  <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
-                  <div className="relative size-20 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                    <Navigation className="size-10 animate-pulse" />
-                  </div>
-                </div>
-                <p className="text-xl font-black italic text-white uppercase tracking-tighter">{t.readyToRide}</p>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="py-20 text-center space-y-6">
-            <div className="size-24 rounded-[2.5rem] bg-white/10 backdrop-blur-md flex items-center justify-center text-white/40 mx-auto">
-              {vehicleType === 'moto' ? <Bike className="size-12" /> : <Car className="size-12" />}
-            </div>
-            <p className="text-3xl font-black italic text-white/60 uppercase tracking-tighter">{t.offline}</p>
-            <Button onClick={toggleStatus} className="bg-white text-slate-900 h-16 px-10 rounded-2xl font-black italic uppercase shadow-2xl">
-              {t.goOnline}
-            </Button>
-          </div>
-        )}
+          )}
+        </div>
       </main>
     </div>
   );
