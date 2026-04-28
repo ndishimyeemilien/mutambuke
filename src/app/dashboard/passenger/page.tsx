@@ -7,7 +7,6 @@ import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from '@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { 
   MapPin, 
   User, 
@@ -17,12 +16,18 @@ import {
   Navigation, 
   Bike, 
   Car as CarIcon, 
-  Star,
   Search,
   CheckCircle2,
-  Layers,
-  Map as MapIcon,
-  Globe
+  Clock,
+  History,
+  Info,
+  PhoneCall,
+  UserCircle,
+  Moon,
+  LayoutDashboard,
+  FileText,
+  BarChart3,
+  LocateFixed
 } from 'lucide-react';
 import { collection, doc, setDoc, query, where, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
@@ -37,7 +42,7 @@ const GOOGLE_MAPS_API_KEY = "AIzaSyBYd7EGaMpDouB0Br1yUSwRarQeToFuiiA";
 
 const containerStyle = {
   width: "100%",
-  height: "100%",
+  height: "500px",
 };
 
 const kigaliCenter = { lat: -1.9441, lng: 30.0619 };
@@ -49,19 +54,19 @@ export default function PassengerDashboard() {
   const router = useRouter();
   const { toast } = useToast();
 
-  const [pickup, setPickup] = useState('My Current Location');
+  const [pickup, setPickup] = useState('Aho uherereye');
   const [destination, setDestination] = useState('');
   const [isRequesting, setIsRequesting] = useState(false);
-  const [vehicleTypeFilter, setVehicleTypeFilter] = useState<'moto' | 'taxi'>('moto');
+  const [vehicleTypeFilter, setVehicleTypeFilter] = useState<'moto' | 'taxi'>('taxi');
   const [passengerLocation, setPassengerLocation] = useState(kigaliCenter);
   const [mapType, setMapType] = useState<google.maps.MapTypeId | string>('roadmap');
+  const [activeTab, setActiveTab] = useState('request');
 
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: GOOGLE_MAPS_API_KEY
   });
 
-  const logo = PlaceHolderImages.find(img => img.id === 'logo');
   const { data: userProfile, loading: profileLoading } = useDoc(user ? `users/${user.uid}` : null);
   
   const ridersQuery = useMemoFirebase(() => {
@@ -149,7 +154,7 @@ export default function PassengerDashboard() {
 
   if (authLoading || profileLoading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <Loader2 className="size-10 animate-spin text-primary" />
       </div>
     );
@@ -158,192 +163,295 @@ export default function PassengerDashboard() {
   if (!user || !userProfile) return null;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col relative overflow-hidden">
-      <div className="absolute inset-0 z-0 bg-slate-200">
-        {isLoaded ? (
-          <GoogleMap
-            mapContainerStyle={containerStyle}
-            center={passengerLocation}
-            zoom={14}
-            mapTypeId={mapType}
-            options={{
-              disableDefaultUI: true,
-            }}
-          >
-            <Marker 
-              position={passengerLocation} 
-              icon={{
-                url: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
-                scaledSize: { width: 40, height: 40 } as any
-              }}
-            />
-            {availableDrivers?.map((driver) => (
-              <Marker
-                key={driver.id}
-                position={driver.currentLocation || passengerLocation}
-                icon={{
-                  url: driver.vehicleType === 'moto' 
-                    ? 'https://cdn-icons-png.flaticon.com/512/3194/3194514.png' 
-                    : 'https://cdn-icons-png.flaticon.com/512/3082/3082383.png',
-                  scaledSize: { width: 35, height: 35 } as any
-                }}
-              />
-            ))}
-          </GoogleMap>
-        ) : (
-          <div className="h-full w-full flex items-center justify-center bg-slate-100">
-            <Loader2 className="size-10 animate-spin text-slate-300" />
-          </div>
-        )}
-      </div>
-
-      <header className="relative z-30 p-4">
-        <Card className="rounded-[2rem] border-none shadow-2xl bg-white/95 backdrop-blur-xl p-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="relative size-10">
-              {logo && <Image src={logo.imageUrl} alt="Logo" fill className="object-contain rounded-xl" />}
-            </div>
-            <div>
-              <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase leading-none mb-1">MUTAMBUKE</p>
-              <h1 className="text-sm font-black italic text-slate-900 uppercase leading-none">Smart Urban</h1>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={handleLogout} className="rounded-full text-slate-400 hover:text-red-500">
-              <LogOut className="size-5" />
-            </Button>
-            <div className="size-10 rounded-xl bg-slate-100 flex items-center justify-center border-2 border-white">
-              <User className="size-5 text-slate-600" />
-            </div>
-          </div>
-        </Card>
+    <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col font-body">
+      {/* Top Header */}
+      <header className="p-4 flex items-center justify-between border-b border-white/5 bg-[#0a0a0a]">
+        <div className="flex items-center gap-4">
+           {/* Empty spacer to align content */}
+        </div>
+        <div className="flex items-center gap-6">
+           <Button variant="ghost" size="icon" className="text-white/40 hover:text-white">
+              <Moon className="size-5" />
+           </Button>
+           <div className="flex items-center gap-3">
+              <div className="text-right">
+                <p className="text-xs font-black tracking-widest uppercase">{userProfile.name}</p>
+                <p className="text-[10px] text-white/40 font-bold uppercase">{userProfile.role || 'Umugenzi'}</p>
+              </div>
+              <div className="size-10 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden border-2 border-primary/30">
+                 <User className="size-6 text-primary" />
+              </div>
+           </div>
+        </div>
       </header>
 
-      <div className="absolute top-24 right-4 z-40 flex flex-col gap-2 pointer-events-auto">
-        <Button variant="secondary" size="icon" onClick={() => setMapType('roadmap')} className={`rounded-xl shadow-lg border-2 ${mapType === 'roadmap' ? 'border-primary' : 'border-white'}`}><MapIcon className="size-5" /></Button>
-        <Button variant="secondary" size="icon" onClick={() => setMapType('satellite')} className={`rounded-xl shadow-lg border-2 ${mapType === 'satellite' ? 'border-primary' : 'border-white'}`}><Globe className="size-5" /></Button>
-        <Button variant="secondary" size="icon" onClick={() => setMapType('hybrid')} className={`rounded-xl shadow-lg border-2 ${mapType === 'hybrid' ? 'border-primary' : 'border-white'}`}><Layers className="size-5" /></Button>
+      {/* Main Navigation Menu */}
+      <nav className="p-6 flex flex-wrap justify-center gap-4">
+         <div className="flex bg-[#1a1a1a] p-1.5 rounded-[1.25rem] shadow-2xl border border-white/5">
+            <Button variant="ghost" className="rounded-xl h-12 px-6 gap-2 bg-primary text-white font-black italic uppercase text-xs shadow-[0_0_20px_rgba(37,99,235,0.4)]">
+               <Navigation className="size-4" /> UMUGENZI
+            </Button>
+            <Button variant="ghost" className="rounded-xl h-12 px-6 gap-2 text-white/40 font-black italic uppercase text-xs hover:text-white">
+               <History className="size-4" /> IBYATAMBUTSE
+            </Button>
+            <Button variant="ghost" className="rounded-xl h-12 px-6 gap-2 text-white/40 font-black italic uppercase text-xs hover:text-white">
+               <Info className="size-4" /> IGISOBANURO
+            </Button>
+            <Button variant="ghost" className="rounded-xl h-12 px-6 gap-2 text-white/40 font-black italic uppercase text-xs hover:text-white">
+               <PhoneCall className="size-4" /> CONTACT
+            </Button>
+            <Button variant="ghost" className="rounded-xl h-12 px-6 gap-2 text-white/40 font-black italic uppercase text-xs hover:text-white">
+               <UserCircle className="size-4" /> UMWIRONDORO
+            </Button>
+         </div>
+      </nav>
+
+      {/* Sub-Navigation (Request, Reports, Analytics) */}
+      <div className="px-6 flex justify-center mb-8">
+         <div className="bg-[#1a1a1a] rounded-2xl p-1 flex gap-2 border border-white/5 w-full max-w-2xl">
+            <Button onClick={() => setActiveTab('request')} variant="ghost" className={`flex-1 h-12 rounded-xl gap-2 font-black uppercase text-xs tracking-widest transition-all ${activeTab === 'request' ? 'bg-[#333] text-white shadow-inner' : 'text-white/40 hover:text-white'}`}>
+               <LayoutDashboard className="size-4" /> Request
+            </Button>
+            <Button onClick={() => setActiveTab('reports')} variant="ghost" className={`flex-1 h-12 rounded-xl gap-2 font-black uppercase text-xs tracking-widest transition-all ${activeTab === 'reports' ? 'bg-[#333] text-white shadow-inner' : 'text-white/40 hover:text-white'}`}>
+               <FileText className="size-4" /> Reports
+            </Button>
+            <Button onClick={() => setActiveTab('analytics')} variant="ghost" className={`flex-1 h-12 rounded-xl gap-2 font-black uppercase text-xs tracking-widest transition-all ${activeTab === 'analytics' ? 'bg-[#333] text-white shadow-inner' : 'text-white/40 hover:text-white'}`}>
+               <BarChart3 className="size-4" /> Analytics
+            </Button>
+         </div>
       </div>
 
-      <main className="flex-1 flex flex-col justify-end p-4 md:p-8 space-y-4 relative z-30 pointer-events-none">
-        <div className="pointer-events-auto w-full max-w-xl mx-auto">
-          {currentRide ? (
-            <Card className="rounded-[2.5rem] border-none shadow-2xl overflow-hidden bg-white animate-in slide-in-from-bottom-20 duration-500">
-              <div className={`${currentRide.status === 'requested' ? 'bg-primary' : 'bg-green-600'} p-6 text-white`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="size-14 rounded-2xl bg-white/20 flex items-center justify-center">
-                      {currentRide.status === 'requested' ? <Search className="size-8 animate-pulse" /> : <CheckCircle2 className="size-8" />}
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-black italic uppercase leading-tight">
-                        {currentRide.status === 'requested' ? t.searching : t.rideConfirmed}
-                      </h3>
-                      <p className="text-[10px] font-bold opacity-70 tracking-widest mt-1 uppercase">Mission ID: {currentRide.rideId.slice(-6)}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <CardContent className="p-8 space-y-8">
-                 {currentRide.status !== 'requested' && currentRide.driverId && (
-                   <div className="flex items-center justify-between bg-slate-50 p-5 rounded-[2rem] border-2 border-white shadow-sm">
-                     <div className="flex items-center gap-4">
-                       <div className="size-16 rounded-2xl bg-white flex items-center justify-center text-primary shadow-sm">
-                         <User className="size-10" />
-                       </div>
-                       <div>
-                         <p className="font-black text-slate-900 italic text-xl uppercase leading-none">{currentRide.driverName || 'Verified Rider'}</p>
-                         <div className="flex items-center gap-2 mt-2">
-                           <div className="flex items-center gap-1 px-2 py-0.5 bg-yellow-400 text-[10px] font-black rounded-lg">
-                             <Star className="size-3 fill-black" /> 4.9
-                           </div>
-                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{currentRide.vehicleType}</p>
-                         </div>
-                       </div>
-                     </div>
-                     <a href={`tel:${currentRide.driverPhone}`} className="size-16 rounded-[1.25rem] bg-green-500 text-white flex items-center justify-center shadow-xl hover:scale-105 active:scale-95 transition-all">
-                       <Phone className="size-8" />
-                     </a>
-                   </div>
-                 )}
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex gap-4 items-start">
-                      <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0"><MapPin className="size-5" /></div>
-                      <div>
-                        <p className="text-[10px] font-black text-slate-400 tracking-widest mb-1 uppercase">{t.pickupAt}</p>
-                        <p className="font-bold text-slate-900 text-lg leading-tight">{currentRide.pickupLocation}</p>
-                      </div>
-                    </div>
-                    <div className="flex gap-4 items-start">
-                      <div className="size-10 rounded-xl bg-secondary/10 flex items-center justify-center text-secondary shrink-0"><Navigation className="size-5" /></div>
-                      <div>
-                        <p className="text-[10px] font-black text-slate-400 tracking-widest mb-1 uppercase">{t.destination}</p>
-                        <p className="font-bold text-slate-900 text-lg leading-tight">{currentRide.destination}</p>
-                      </div>
-                    </div>
-                 </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card className="rounded-[3rem] border-none shadow-2xl p-8 space-y-8 bg-white/95 backdrop-blur-xl animate-in fade-in slide-in-from-bottom-10">
-              <div className="space-y-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                   <h2 className="text-2xl font-black italic text-slate-900 uppercase tracking-tighter">Where to?</h2>
-                   <div className="flex gap-2">
-                      <Button 
-                        variant={vehicleTypeFilter === 'moto' ? 'default' : 'outline'} 
-                        onClick={() => setVehicleTypeFilter('moto')}
-                        className={`rounded-xl h-12 px-5 font-black italic gap-2 ${vehicleTypeFilter === 'moto' ? 'bg-secondary' : 'text-slate-400 border-slate-100'}`}
-                      >
-                        <Bike className="size-4" /> {t.moto}
-                      </Button>
-                      <Button 
-                        variant={vehicleTypeFilter === 'taxi' ? 'default' : 'outline'} 
-                        onClick={() => setVehicleTypeFilter('taxi')}
-                        className={`rounded-xl h-12 px-5 font-black italic gap-2 ${vehicleTypeFilter === 'taxi' ? 'bg-primary' : 'text-slate-400 border-slate-100'}`}
-                      >
-                        <CarIcon className="size-4" /> {t.taxi}
-                      </Button>
-                   </div>
-                </div>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">Current Location</Label>
-                    <div className="relative">
-                      <div className="absolute left-5 top-1/2 -translate-y-1/2 size-2 bg-primary rounded-full ring-4 ring-primary/20" />
-                      <Input 
-                        placeholder="Pickup point..." 
-                        className="h-16 pl-14 rounded-[1.5rem] bg-slate-50 border-none font-bold text-lg" 
-                        value={pickup} 
-                        onChange={(e) => setPickup(e.target.value)} 
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">Destination</Label>
-                    <div className="relative">
-                      <Navigation className="absolute left-5 top-1/2 -translate-y-1/2 size-5 text-secondary" />
-                      <Input 
-                        placeholder="Enter destination..." 
-                        className="h-16 pl-14 rounded-[1.5rem] bg-slate-50 border-none font-bold text-lg" 
-                        value={destination} 
-                        onChange={(e) => setDestination(e.target.value)} 
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <Button 
-                onClick={handleRequestRide} 
-                disabled={!destination || isRequesting} 
-                className={`w-full h-20 rounded-[1.75rem] text-2xl font-black shadow-2xl uppercase italic ${vehicleTypeFilter === 'moto' ? 'bg-secondary hover:bg-secondary/90' : 'bg-primary hover:bg-primary/90'}`}
-              >
-                {isRequesting ? <Loader2 className="size-8 animate-spin" /> : t.confirmed}
-              </Button>
-            </Card>
-          )}
+      <main className="flex-1 max-w-4xl mx-auto w-full px-6 pb-20 space-y-8 animate-in fade-in duration-700">
+        
+        {/* Purple Hero Banner */}
+        <div className="relative overflow-hidden rounded-[3rem] bg-gradient-to-br from-[#6b21a8] to-[#3b0764] p-12 shadow-[0_20px_50px_rgba(107,33,168,0.3)]">
+           <div className="relative z-10 space-y-2">
+              <h2 className="text-5xl font-black italic uppercase tracking-tighter">Urerekeza he?</h2>
+              <p className="text-white/60 font-bold italic">Saba urugendo mu masegonda make.</p>
+           </div>
+           {/* Decorative circles */}
+           <div className="absolute top-0 right-0 size-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+           <div className="absolute bottom-0 left-10 size-32 bg-white/5 rounded-full translate-y-1/2" />
         </div>
+
+        {/* Input Fields */}
+        <div className="space-y-4">
+           <div className="bg-[#1a1a1a] rounded-[2rem] p-6 border border-white/5 shadow-2xl space-y-3">
+              <div className="relative group">
+                 <div className="absolute left-6 top-1/2 -translate-y-1/2 size-2 bg-green-500 rounded-full shadow-[0_0_10px_#22c55e]" />
+                 <Input 
+                   value={pickup}
+                   onChange={(e) => setPickup(e.target.value)}
+                   className="h-16 pl-14 pr-20 bg-transparent border-none text-lg font-bold placeholder:text-white/20 focus-visible:ring-0" 
+                   placeholder="Aho uherereye" 
+                 />
+                 <div className="absolute right-6 top-1/2 -translate-y-1/2 flex gap-4 text-white/40">
+                    <LocateFixed className="size-5 hover:text-white cursor-pointer transition-colors" />
+                    <Search className="size-5 hover:text-white cursor-pointer transition-colors" />
+                 </div>
+              </div>
+              <div className="h-px bg-white/5 mx-4" />
+              <div className="relative group">
+                 <div className="absolute left-6 top-1/2 -translate-y-1/2 size-2 bg-red-500 rounded-full shadow-[0_0_10px_#ef4444]" />
+                 <Input 
+                   value={destination}
+                   onChange={(e) => setDestination(e.target.value)}
+                   className="h-16 pl-14 pr-12 bg-transparent border-none text-lg font-bold placeholder:text-white/20 focus-visible:ring-0" 
+                   placeholder="Aho ugiye" 
+                 />
+                 <div className="absolute right-6 top-1/2 -translate-y-1/2 text-white/40">
+                    <Search className="size-5 hover:text-white cursor-pointer transition-colors" />
+                 </div>
+              </div>
+           </div>
+        </div>
+
+        {/* Vehicle Choice */}
+        <div className="space-y-4">
+           <p className="text-[10px] font-black tracking-[0.2em] text-white/40 uppercase px-2">CHOOSE VEHICLE</p>
+           <div className="grid grid-cols-2 gap-6">
+              <Button 
+                onClick={() => setVehicleTypeFilter('taxi')}
+                className={`h-40 rounded-[2.5rem] flex flex-col gap-4 font-black italic uppercase transition-all ${vehicleTypeFilter === 'taxi' ? 'bg-[#1d72d2] text-white shadow-[0_0_30px_rgba(29,114,210,0.3)]' : 'bg-[#1a1a1a] text-white/20 border border-white/5'}`}
+              >
+                 <CarIcon className="size-12" />
+                 <span className="text-sm tracking-widest">Car</span>
+              </Button>
+              <Button 
+                onClick={() => setVehicleTypeFilter('moto')}
+                className={`h-40 rounded-[2.5rem] flex flex-col gap-4 font-black italic uppercase transition-all ${vehicleTypeFilter === 'moto' ? 'bg-[#1d72d2] text-white shadow-[0_0_30px_rgba(29,114,210,0.3)]' : 'bg-[#1a1a1a] text-white/20 border border-white/5'}`}
+              >
+                 <Bike className="size-12" />
+                 <span className="text-sm tracking-widest">Moto</span>
+              </Button>
+           </div>
+        </div>
+
+        {/* Nearby Drivers & Map */}
+        <div className="space-y-6">
+           <div className="flex items-center justify-between px-2">
+              <p className="text-[10px] font-black tracking-[0.2em] text-white/40 uppercase">ABASHOFERI BARI HAFI</p>
+              <div className="bg-green-500/10 px-3 py-1 rounded-full">
+                 <p className="text-[10px] font-black text-green-500 uppercase tracking-widest">{availableDrivers?.length || 0} NARIYO</p>
+              </div>
+           </div>
+
+           <div className="relative rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl">
+              {isLoaded ? (
+                <GoogleMap
+                  mapContainerStyle={containerStyle}
+                  center={passengerLocation}
+                  zoom={14}
+                  mapTypeId={mapType}
+                  options={{
+                    disableDefaultUI: true,
+                    styles: [
+                        { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
+                        { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
+                        { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
+                        {
+                          featureType: "administrative.locality",
+                          elementType: "labels.text.fill",
+                          stylers: [{ color: "#d59563" }],
+                        },
+                        {
+                          featureType: "poi",
+                          elementType: "labels.text.fill",
+                          stylers: [{ color: "#d59563" }],
+                        },
+                        {
+                          featureType: "poi.park",
+                          elementType: "geometry",
+                          stylers: [{ color: "#263c3f" }],
+                        },
+                        {
+                          featureType: "poi.park",
+                          elementType: "labels.text.fill",
+                          stylers: [{ color: "#6b9a76" }],
+                        },
+                        {
+                          featureType: "road",
+                          elementType: "geometry",
+                          stylers: [{ color: "#38414e" }],
+                        },
+                        {
+                          featureType: "road",
+                          elementType: "geometry.stroke",
+                          stylers: [{ color: "#212a37" }],
+                        },
+                        {
+                          featureType: "road",
+                          elementType: "labels.text.fill",
+                          stylers: [{ color: "#9ca5b3" }],
+                        },
+                        {
+                          featureType: "road.highway",
+                          elementType: "geometry",
+                          stylers: [{ color: "#746855" }],
+                        },
+                        {
+                          featureType: "road.highway",
+                          elementType: "geometry.stroke",
+                          stylers: [{ color: "#1f2835" }],
+                        },
+                        {
+                          featureType: "road.highway",
+                          elementType: "labels.text.fill",
+                          stylers: [{ color: "#f3d19c" }],
+                        },
+                        {
+                          featureType: "transit",
+                          elementType: "geometry",
+                          stylers: [{ color: "#2f3948" }],
+                        },
+                        {
+                          featureType: "transit.station",
+                          elementType: "labels.text.fill",
+                          stylers: [{ color: "#d59563" }],
+                        },
+                        {
+                          featureType: "water",
+                          elementType: "geometry",
+                          stylers: [{ color: "#17263c" }],
+                        },
+                        {
+                          featureType: "water",
+                          elementType: "labels.text.fill",
+                          stylers: [{ color: "#515c6d" }],
+                        },
+                        {
+                          featureType: "water",
+                          elementType: "labels.text.stroke",
+                          stylers: [{ color: "#17263c" }],
+                        },
+                      ],
+                  }}
+                >
+                  <Marker 
+                    position={passengerLocation} 
+                    icon={{
+                      url: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+                      scaledSize: { width: 40, height: 40 } as any
+                    }}
+                  />
+                  {availableDrivers?.map((driver) => (
+                    <Marker
+                      key={driver.id}
+                      position={driver.currentLocation || passengerLocation}
+                      icon={{
+                        url: driver.vehicleType === 'moto' 
+                          ? 'https://cdn-icons-png.flaticon.com/512/3194/3194514.png' 
+                          : 'https://cdn-icons-png.flaticon.com/512/3082/3082383.png',
+                        scaledSize: { width: 35, height: 35 } as any
+                      }}
+                    />
+                  ))}
+                </GoogleMap>
+              ) : (
+                <div className="h-[500px] w-full flex items-center justify-center bg-[#1a1a1a]">
+                  <Loader2 className="size-10 animate-spin text-white/10" />
+                </div>
+              )}
+
+              {/* Map Type Controls */}
+              <div className="absolute top-6 left-1/2 -translate-x-1/2 flex p-1 bg-white rounded-2xl shadow-2xl z-20">
+                 <Button onClick={() => setMapType('roadmap')} variant="ghost" className={`h-10 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest ${mapType === 'roadmap' ? 'bg-black text-white' : 'text-black/40'}`}>
+                    Map
+                 </Button>
+                 <Button onClick={() => setMapType('hybrid')} variant="ghost" className={`h-10 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest ${mapType === 'hybrid' ? 'bg-black text-white' : 'text-black/40'}`}>
+                    <span className="flex items-center gap-1">
+                       <CheckCircle2 className={`size-3 ${mapType === 'hybrid' ? 'block' : 'hidden'}`} /> Hybrid
+                    </span>
+                 </Button>
+                 <Button onClick={() => setMapType('satellite')} variant="ghost" className={`h-10 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest ${mapType === 'satellite' ? 'bg-black text-white' : 'text-black/40'}`}>
+                    Satellite
+                 </Button>
+              </div>
+
+              {/* Map Zoom Controls */}
+              <div className="absolute right-6 bottom-6 flex flex-col gap-2 z-20">
+                 <Button variant="secondary" className="size-12 rounded-xl bg-white text-black font-black text-2xl shadow-xl">+</Button>
+                 <Button variant="secondary" className="size-12 rounded-xl bg-white text-black font-black text-2xl shadow-xl">-</Button>
+              </div>
+           </div>
+        </div>
+
+        {/* Request Button */}
+        <Button 
+           onClick={handleRequestRide} 
+           disabled={!destination || isRequesting} 
+           className="w-full h-20 rounded-[2rem] bg-primary hover:bg-primary/90 text-2xl font-black italic uppercase tracking-tighter shadow-[0_20px_50px_rgba(37,99,235,0.4)]"
+        >
+           {isRequesting ? <Loader2 className="size-8 animate-spin" /> : 'Confirm Order'}
+        </Button>
       </main>
+
+      {/* Logout Footer */}
+      <footer className="p-8 flex justify-center border-t border-white/5">
+         <Button onClick={handleLogout} variant="ghost" className="text-white/20 hover:text-red-500 font-black italic uppercase text-[10px] tracking-[0.4em]">
+            <LogOut className="size-4 mr-2" /> LOGOUT SYSTEM
+         </Button>
+      </footer>
     </div>
   );
 }
