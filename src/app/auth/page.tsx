@@ -47,11 +47,11 @@ export default function AuthPage() {
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
   useEffect(() => {
-    // Only redirect if BOTH user and profile are fully resolved and present
-    if (user && profile && !isLoading && !isSuccess && !profileLoading && !authLoading) {
+    // If user and profile are already there, go to root to let it handle redirection
+    if (user && profile && !isLoading && !isSuccess) {
       router.replace('/');
     }
-  }, [user, profile, profileLoading, authLoading, router, isLoading, isSuccess]);
+  }, [user, profile, router, isLoading, isSuccess]);
 
   const getErrorMessage = (error: any) => {
     const code = error.code;
@@ -161,17 +161,13 @@ export default function AuthPage() {
       </div>
 
       <div className="flex-1 flex flex-col justify-center p-6 md:p-12 bg-white relative">
-        {(isSuccess || authLoading) && (
+        {isSuccess && (
           <div className="absolute inset-0 z-50 bg-white/95 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300">
              <div className="size-24 rounded-[2rem] bg-green-100 flex items-center justify-center text-green-600 mb-6 scale-110">
-                {authLoading ? <Loader2 className="size-12 animate-spin text-primary" /> : <CheckCircle2 className="size-12" />}
+                <CheckCircle2 className="size-12" />
              </div>
-             <h2 className="text-4xl font-black italic uppercase tracking-tighter text-slate-900">
-                {authLoading ? "SYNCHRONIZING" : "SUCCESSFUL"}
-             </h2>
-             <p className="text-slate-500 font-bold italic mt-2">
-               {authLoading ? "Restoring your session..." : "Redirecting to dashboard..."}
-             </p>
+             <h2 className="text-4xl font-black italic uppercase tracking-tighter text-slate-900">SUCCESSFUL</h2>
+             <p className="text-slate-500 font-bold italic mt-2">Redirecting to dashboard...</p>
           </div>
         )}
 

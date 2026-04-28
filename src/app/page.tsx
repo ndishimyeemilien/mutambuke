@@ -3,7 +3,7 @@
 
 import { useUser, useDoc } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Loader2 } from 'lucide-react';
@@ -12,23 +12,29 @@ export default function RootPage() {
   const { user, loading: authLoading } = useUser();
   const router = useRouter();
   const { data: profile, loading: profileLoading } = useDoc(user ? `users/${user.uid}` : null);
-  const [isRedirecting, setIsRedirecting] = useState(false);
+  const redirecting = useRef(false);
+  
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
   useEffect(() => {
-    if (authLoading || isRedirecting) return;
+    // If we are already in the process of redirecting, don't do anything else.
+    if (redirecting.current) return;
 
+    // Wait for auth to resolve
+    if (authLoading) return;
+
+    // If no user, go to landing
     if (!user) {
-      setIsRedirecting(true);
+      redirecting.current = true;
       router.replace('/landing');
       return;
     }
 
-    // Wait specifically for profile if user is authenticated
+    // If user exists, wait for profile to resolve
     if (profileLoading) return;
 
     if (profile) {
-      setIsRedirecting(true);
+      redirecting.current = true;
       const role = profile.role;
       if (role === 'admin') {
         router.replace('/dashboard/admin');
@@ -37,23 +43,20 @@ export default function RootPage() {
       } else {
         router.replace('/dashboard/passenger');
       }
-    } else if (user) {
-      // User is logged in but profile is still not found after loading finished
-      // This might happen right after signup or for legacy users
-      if (user.email === 'admin@mutambuke.com') {
-        setIsRedirecting(true);
-        router.replace('/dashboard/admin');
-      } else {
-        setIsRedirecting(true);
+    } else {
+      // User is logged in but profile not found (maybe first-time setup or race condition)
+      // Only redirect if we've actually confirmed the profile doesn't exist after loading.
+      if (!profileLoading) {
+        redirecting.current = true;
         router.replace('/auth');
       }
     }
-  }, [user, authLoading, profile, profileLoading, router, isRedirecting]);
+  }, [user, authLoading, profile, profileLoading, router]);
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
       <div className="flex flex-col items-center gap-8 max-w-sm w-full">
-        <div className="relative w-32 h-32 animate-pulse">
+        <div className="relative w-32 h-32">
           {logo && <Image src={logo.imageUrl} alt="MUTAMBUKE" fill className="object-contain rounded-[2.5rem]" priority />}
         </div>
         <div className="space-y-4 text-center">
