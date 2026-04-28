@@ -17,6 +17,7 @@ export const translations = {
     moto: "MOTO",
     taxi: "TAXI",
     vehicleType: "VEHICLE TYPE",
+    plateNumber: "PLATE NUMBER",
     goOnline: "GO ONLINE",
     readyToRide: "READY TO RIDE",
     offline: "OFFLINE",
@@ -37,7 +38,10 @@ export const translations = {
     startMission: "START MISSION",
     endMission: "END MISSION",
     earnings: "EARNINGS",
-    trips: "TRIPS"
+    trips: "TRIPS",
+    errorEmailInUse: "This email is already registered.",
+    errorInvalidAuth: "Invalid email or password.",
+    errorGeneric: "An error occurred. Please try again."
   },
   rw: {
     welcome: "MURAKAZA NEZA",
@@ -54,6 +58,7 @@ export const translations = {
     moto: "MOTO",
     taxi: "TAGISI",
     vehicleType: "UBWOKO BW'IKINYABIZIGA",
+    plateNumber: "NIMERO Y'IKINYABIZIGA",
     goOnline: "JYA KUMURONGO",
     readyToRide: "NITEGUYE GUTWARA",
     offline: "NTAGO NDI KUMURONGO",
@@ -74,7 +79,10 @@ export const translations = {
     startMission: "TANGIRA AKAZI",
     endMission: "SOZA AKAZI",
     earnings: "AYO WAKOREYE",
-    trips: "INGENDO"
+    trips: "INGENDO",
+    errorEmailInUse: "Iyi email isanzwe ikoreshwa.",
+    errorInvalidAuth: "Email cyangwa ijambo ry'ibanga ntabwo ari byo.",
+    errorGeneric: "Havutse ikosa. Ongera ugerageze."
   },
   fr: {
     welcome: "BIENVENUE",
@@ -91,6 +99,7 @@ export const translations = {
     moto: "MOTO",
     taxi: "TAXI",
     vehicleType: "TYPE DE VÉHICULE",
+    plateNumber: "NUMÉRO DE PLAQUE",
     goOnline: "ALLER EN LIGNE",
     readyToRide: "PRÊT À PARTIR",
     offline: "HORS LIGNE",
@@ -111,6 +120,9 @@ export const translations = {
     startMission: "COMMENCER MISSION",
     endMission: "TERMINER MISSION",
     earnings: "REVENUS",
-    trips: "COURSES"
+    trips: "COURSES",
+    errorEmailInUse: "Cet e-mail est déjà utilisé.",
+    errorInvalidAuth: "E-mail ou mot de passe invalide.",
+    errorGeneric: "Une erreur est survenue. Veuillez réessayer."
   }
 };

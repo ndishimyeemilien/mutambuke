@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -8,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Bike, User, Lock, ArrowLeft, Loader2, Car, Globe } from 'lucide-react';
+import { Bike, User, Lock, ArrowLeft, Loader2, Car, Globe, Hash } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useAuth, useFirestore, useUser } from '@/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
@@ -27,6 +28,7 @@ export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [role, setRole] = useState<'passenger' | 'driver'>('passenger');
   const [vehicleType, setVehicleType] = useState<'moto' | 'taxi'>('moto');
+  const [plateNumber, setPlateNumber] = useState('');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -47,6 +49,13 @@ export default function AuthPage() {
     }
   }, [user, router, isLoading]);
 
+  const getErrorMessage = (error: any) => {
+    const code = error.code;
+    if (code === 'auth/email-already-in-use') return t.errorEmailInUse;
+    if (code === 'auth/invalid-credential' || code === 'auth/user-not-found' || code === 'auth/wrong-password') return t.errorInvalidAuth;
+    return error.message || t.errorGeneric;
+  };
+
   async function handleAuth(e: React.FormEvent) {
     e.preventDefault();
     if (!auth || !db) return;
@@ -56,14 +65,13 @@ export default function AuthPage() {
       if (isLogin) {
         let loginEmail = identifier.trim().toLowerCase();
         
-        // Handle login by phone number
         if (!loginEmail.includes('@')) {
           const q = query(collection(db, 'users'), where('phone', '==', identifier.trim()), limit(1));
           const snapshot = await getDocs(q);
           if (!snapshot.empty) {
             loginEmail = snapshot.docs[0].data().email;
           } else {
-            throw new Error(lang === 'rw' ? 'Nta konti ibonetse kuri iyi telefone.' : 'No account found with this phone number.');
+            throw { code: 'auth/user-not-found', message: 'No account found with this phone number.' };
           }
         }
 
@@ -72,17 +80,15 @@ export default function AuthPage() {
         const cleanEmail = email.trim().toLowerCase();
         const cleanPhone = phone.trim();
 
-        // Check if email already exists manually to provide better error
-        const emailQuery = query(collection(db, 'users'), where('email', '==', cleanEmail), limit(1));
-        const emailSnapshot = await getDocs(emailQuery);
-        if (!emailSnapshot.empty) {
-          throw new Error(lang === 'rw' ? 'Iyi email isanzwe ikoreshwa.' : 'This email is already in use.');
-        }
-
+        // Check if phone already exists
         const phoneQuery = query(collection(db, 'users'), where('phone', '==', cleanPhone), limit(1));
         const phoneSnapshot = await getDocs(phoneQuery);
         if (!phoneSnapshot.empty) {
-          throw new Error(lang === 'rw' ? 'Iyi telefone isanzwe ikoreshwa.' : 'This phone number is already in use.');
+          throw { code: 'custom/phone-in-use', message: lang === 'rw' ? 'Iyi telefone isanzwe ikoreshwa.' : 'This phone number is already in use.' };
+        }
+
+        if (role === 'driver' && !plateNumber.trim()) {
+          throw { code: 'custom/missing-plate', message: lang === 'rw' ? 'Ntabwo washyizeho plaque.' : 'Plate number is required.' };
         }
 
         const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
@@ -99,16 +105,15 @@ export default function AuthPage() {
           createdAt: serverTimestamp(),
         };
 
-        // Save User Profile
         await setDoc(doc(db, 'users', newUser.uid), userData);
 
-        // If driver, create driver status profile
         if (userRole === 'driver') {
           await setDoc(doc(db, 'drivers', newUser.uid), {
             driverId: newUser.uid,
             status: 'offline',
             verificationStatus: 'pending',
             vehicleType: vehicleType,
+            plateNumber: plateNumber.trim().toUpperCase(),
             updatedAt: serverTimestamp(),
           });
         }
@@ -124,7 +129,7 @@ export default function AuthPage() {
       toast({
         variant: "destructive",
         title: lang === 'rw' ? "Ikosa" : "Error",
-        description: error.message,
+        description: getErrorMessage(error),
       });
     } finally {
       setIsLoading(false);
@@ -251,24 +256,39 @@ export default function AuthPage() {
                 </div>
 
                 {role === 'driver' && (
-                  <div className="space-y-3">
-                    <Label className="text-xs font-black text-slate-400 tracking-widest uppercase">{t.vehicleType}</Label>
-                    <RadioGroup defaultValue="moto" className="flex gap-4" onValueChange={(v) => setVehicleType(v as any)}>
-                      <div className={`flex flex-1 items-center justify-between p-4 rounded-2xl border-2 cursor-pointer transition-all ${vehicleType === 'moto' ? 'border-secondary bg-secondary/5 text-secondary' : 'border-slate-100'}`}>
-                        <div className="flex items-center gap-2">
-                          <Bike className="size-4" />
-                          <span className="text-sm font-bold">{t.moto}</span>
-                        </div>
-                        <RadioGroupItem value="moto" className="border-slate-200" />
+                  <div className="animate-in slide-in-from-top-2 space-y-4">
+                    <div className="space-y-1">
+                      <Label className="text-xs font-black text-slate-400 tracking-widest uppercase">{t.plateNumber}</Label>
+                      <div className="relative">
+                        <Hash className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                        <Input 
+                          placeholder="RAA 000 A" 
+                          className="h-14 pl-12 rounded-2xl border-slate-100 bg-slate-50 font-bold uppercase" 
+                          required 
+                          value={plateNumber} 
+                          onChange={(e) => setPlateNumber(e.target.value)} 
+                        />
                       </div>
-                      <div className={`flex flex-1 items-center justify-between p-4 rounded-2xl border-2 cursor-pointer transition-all ${vehicleType === 'taxi' ? 'border-secondary bg-secondary/5 text-secondary' : 'border-slate-100'}`}>
-                        <div className="flex items-center gap-2">
-                          <Car className="size-4" />
-                          <span className="text-sm font-bold">{t.taxi}</span>
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-xs font-black text-slate-400 tracking-widest uppercase">{t.vehicleType}</Label>
+                      <RadioGroup defaultValue="moto" className="flex gap-4" onValueChange={(v) => setVehicleType(v as any)}>
+                        <div className={`flex flex-1 items-center justify-between p-4 rounded-2xl border-2 cursor-pointer transition-all ${vehicleType === 'moto' ? 'border-secondary bg-secondary/5 text-secondary' : 'border-slate-100'}`}>
+                          <div className="flex items-center gap-2">
+                            <Bike className="size-4" />
+                            <span className="text-sm font-bold">{t.moto}</span>
+                          </div>
+                          <RadioGroupItem value="moto" className="border-slate-200" />
                         </div>
-                        <RadioGroupItem value="taxi" className="border-slate-200" />
-                      </div>
-                    </RadioGroup>
+                        <div className={`flex flex-1 items-center justify-between p-4 rounded-2xl border-2 cursor-pointer transition-all ${vehicleType === 'taxi' ? 'border-secondary bg-secondary/5 text-secondary' : 'border-slate-100'}`}>
+                          <div className="flex items-center gap-2">
+                            <Car className="size-4" />
+                            <span className="text-sm font-bold">{t.taxi}</span>
+                          </div>
+                          <RadioGroupItem value="taxi" className="border-slate-200" />
+                        </div>
+                      </RadioGroup>
+                    </div>
                   </div>
                 )}
               </TabsContent>

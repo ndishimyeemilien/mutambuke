@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -22,7 +23,8 @@ import {
   Layers,
   Map as MapIcon,
   Globe,
-  CheckCircle2
+  CheckCircle2,
+  Hash
 } from 'lucide-react';
 import { collection, doc, updateDoc, query, where, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
@@ -61,6 +63,7 @@ export default function DriverDashboard() {
   const verificationStatus = driverProfile?.verificationStatus || 'pending';
   const isApproved = verificationStatus === 'approved';
   const vehicleType = driverProfile?.vehicleType || 'moto';
+  const plateNumber = driverProfile?.plateNumber || '---';
 
   const requestsQuery = useMemoFirebase(() => {
     if (!db || !isOnline || !isApproved) return null;
@@ -140,7 +143,6 @@ export default function DriverDashboard() {
       driverName: userProfile?.name || 'Driver',
       driverPhone: userProfile?.phone || ''
     });
-    // Mark driver as busy so others can't see them
     await updateDoc(doc(db, 'drivers', user.uid), {
       status: 'busy',
       updatedAt: serverTimestamp()
@@ -149,7 +151,6 @@ export default function DriverDashboard() {
 
   async function rejectRide(rideId: string) {
     if (!db) return;
-    // For this prototype, rejecting simply cancels the request for everyone
     await updateDoc(doc(db, 'rides', rideId), { status: 'cancelled' });
   }
 
@@ -161,7 +162,6 @@ export default function DriverDashboard() {
   async function completeRide(rideId: string) {
     if (!db || !user) return;
     await updateDoc(doc(db, 'rides', rideId), { status: 'completed' });
-    // Make driver available again
     await updateDoc(doc(db, 'drivers', user.uid), {
       status: 'online',
       updatedAt: serverTimestamp()
@@ -186,7 +186,7 @@ export default function DriverDashboard() {
         </div>
         <h1 className="text-3xl font-black italic text-slate-900 uppercase mb-2">Account Under Review</h1>
         <p className="text-slate-500 font-medium max-w-xs mx-auto mb-8">
-          The MUTAMBUKE admin team is verifying your documents. This usually takes 24 hours.
+          The MUTAMBUKE admin team is verifying your documents and plate: <span className="text-primary font-bold">{plateNumber}</span>. This usually takes 24 hours.
         </p>
         <Button onClick={handleLogout} variant="outline" className="rounded-xl font-bold uppercase italic">
           <LogOut className="size-4 mr-2" /> {t.logout}
@@ -232,7 +232,12 @@ export default function DriverDashboard() {
                 {vehicleType === 'moto' ? <Bike className="size-6" /> : <Car className="size-6" />}
               </div>
               <div>
-                <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase leading-none mb-1">{userProfile.name}</p>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase leading-none">{userProfile.name}</p>
+                  <span className="text-[9px] font-bold bg-slate-100 px-1.5 py-0.5 rounded text-slate-500 uppercase tracking-tighter flex items-center gap-1">
+                    <Hash className="size-2" /> {plateNumber}
+                  </span>
+                </div>
                 <div className="flex items-center gap-2">
                   <div className={`size-2 rounded-full ${isOnline ? 'bg-green-500 animate-pulse' : isBusy ? 'bg-orange-500' : 'bg-slate-300'}`} />
                   <p className="font-black text-slate-900 italic uppercase leading-none">

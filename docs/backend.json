@@ -22,9 +22,10 @@
       "type": "object",
       "properties": {
         "driverId": { "type": "string" },
-        "status": { "type": "string", "enum": ["online", "offline"] },
+        "status": { "type": "string", "enum": ["online", "offline", "busy"] },
         "verificationStatus": { "type": "string", "enum": ["pending", "approved", "rejected"] },
         "vehicleType": { "type": "string", "enum": ["moto", "taxi"] },
+        "plateNumber": { "type": "string" },
         "currentLocation": {
           "type": "object",
           "properties": {
@@ -35,7 +36,7 @@
         },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["driverId", "status", "verificationStatus", "vehicleType"]
+      "required": ["driverId", "status", "verificationStatus", "vehicleType", "plateNumber"]
     },
     "RideRequest": {
       "title": "Ride Request",
@@ -45,7 +46,10 @@
         "rideId": { "type": "string" },
         "passengerId": { "type": "string" },
         "passengerName": { "type": "string" },
+        "passengerPhone": { "type": "string" },
         "driverId": { "type": "string" },
+        "driverName": { "type": "string" },
+        "driverPhone": { "type": "string" },
         "vehicleType": { "type": "string" },
         "pickupLocation": { "type": "string" },
         "destination": { "type": "string" },
