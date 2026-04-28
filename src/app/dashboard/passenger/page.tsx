@@ -62,7 +62,7 @@ export default function PassengerDashboard() {
     if (!db) return null;
     return query(
       collection(db, 'drivers'), 
-      where('status', '==', 'online'), 
+      where('status', '==', 'online'), // Only show drivers who are online and NOT busy
       where('verificationStatus', '==', 'approved'),
       where('vehicleType', '==', vehicleTypeFilter)
     );
@@ -92,7 +92,8 @@ export default function PassengerDashboard() {
             lng: position.coords.longitude
           });
         },
-        () => console.log("Using default Kigali center")
+        () => console.log("Using default Kigali center"),
+        { enableHighAccuracy: true }
       );
     }
   }, []);
@@ -148,30 +149,30 @@ export default function PassengerDashboard() {
             mapTypeId={mapType}
             options={{
               disableDefaultUI: true,
-              styles: mapType === 'roadmap' ? [
-                { featureType: "all", elementType: "labels.text.fill", color: "#9ca3af" },
-                { featureType: "water", elementType: "geometry", color: "#e5e7eb" }
-              ] : []
             }}
           >
-            <Marker 
-              position={passengerLocation} 
-              icon={typeof window !== 'undefined' && window.google?.maps?.Size ? {
-                url: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
-                scaledSize: new window.google.maps.Size(40, 40)
-              } : undefined}
-            />
-            {availableDrivers?.map((driver) => (
-              <Marker
-                key={driver.driverId}
-                position={driver.currentLocation || { lat: passengerLocation.lat + 0.005, lng: passengerLocation.lng + 0.005 }}
-                icon={typeof window !== 'undefined' && window.google?.maps?.Size ? {
-                  url: driver.vehicleType === 'moto' 
-                    ? 'https://cdn-icons-png.flaticon.com/512/3194/3194514.png' 
-                    : 'https://cdn-icons-png.flaticon.com/512/3082/3082383.png',
-                  scaledSize: new window.google.maps.Size(35, 35)
-                } : undefined}
+            {typeof google !== 'undefined' && (
+              <Marker 
+                position={passengerLocation} 
+                icon={{
+                  url: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+                  scaledSize: new google.maps.Size(40, 40)
+                }}
               />
+            )}
+            {availableDrivers?.map((driver) => (
+              typeof google !== 'undefined' && (
+                <Marker
+                  key={driver.driverId}
+                  position={driver.currentLocation || passengerLocation}
+                  icon={{
+                    url: driver.vehicleType === 'moto' 
+                      ? 'https://cdn-icons-png.flaticon.com/512/3194/3194514.png' 
+                      : 'https://cdn-icons-png.flaticon.com/512/3082/3082383.png',
+                    scaledSize: new google.maps.Size(35, 35)
+                  }}
+                />
+              )
             ))}
           </GoogleMap>
         </LoadScript>
@@ -200,35 +201,10 @@ export default function PassengerDashboard() {
         </Card>
       </header>
 
-      {/* Floating Map Controls */}
       <div className="absolute top-24 right-4 z-40 flex flex-col gap-2">
-        <Button 
-          variant="secondary" 
-          size="icon" 
-          onClick={() => setMapType('roadmap')}
-          className={`rounded-xl shadow-lg border-2 ${mapType === 'roadmap' ? 'border-primary' : 'border-white'}`}
-          title="Map View"
-        >
-          <MapIcon className="size-5" />
-        </Button>
-        <Button 
-          variant="secondary" 
-          size="icon" 
-          onClick={() => setMapType('satellite')}
-          className={`rounded-xl shadow-lg border-2 ${mapType === 'satellite' ? 'border-primary' : 'border-white'}`}
-          title="Satellite View"
-        >
-          <Globe className="size-5" />
-        </Button>
-        <Button 
-          variant="secondary" 
-          size="icon" 
-          onClick={() => setMapType('hybrid')}
-          className={`rounded-xl shadow-lg border-2 ${mapType === 'hybrid' ? 'border-primary' : 'border-white'}`}
-          title="Hybrid View"
-        >
-          <Layers className="size-5" />
-        </Button>
+        <Button variant="secondary" size="icon" onClick={() => setMapType('roadmap')} className="rounded-xl shadow-lg border-2 border-white"><MapIcon className="size-5" /></Button>
+        <Button variant="secondary" size="icon" onClick={() => setMapType('satellite')} className="rounded-xl shadow-lg border-2 border-white"><Globe className="size-5" /></Button>
+        <Button variant="secondary" size="icon" onClick={() => setMapType('hybrid')} className="rounded-xl shadow-lg border-2 border-white"><Layers className="size-5" /></Button>
       </div>
 
       <main className="flex-1 flex flex-col justify-end p-4 md:p-8 space-y-4 relative z-30 pointer-events-none">
