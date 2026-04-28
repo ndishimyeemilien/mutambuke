@@ -21,6 +21,7 @@ import {
   PhoneCall,
   UserCircle,
   Moon,
+  Sun,
   LayoutDashboard,
   FileText,
   BarChart3,
@@ -65,6 +66,7 @@ export default function PassengerDashboard() {
   const [passengerLocation, setPassengerLocation] = useState(kigaliCenter);
   const [mapType, setMapType] = useState<google.maps.MapTypeId | string>('roadmap');
   const [activeTab, setActiveTab] = useState<'request' | 'reports' | 'analytics' | 'profile'>('request');
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
@@ -158,7 +160,7 @@ export default function PassengerDashboard() {
 
   if (authLoading || profileLoading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+      <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-[#0a0a0a]' : 'bg-[#F0F0F4]'}`}>
         <Loader2 className="size-12 animate-spin text-primary" />
       </div>
     );
@@ -166,23 +168,34 @@ export default function PassengerDashboard() {
 
   if (!user || !userProfile) return null;
 
+  const bgClass = isDarkMode ? 'bg-[#0a0a0a]' : 'bg-[#F0F0F4]';
+  const textClass = isDarkMode ? 'text-white' : 'text-slate-900';
+  const cardBg = isDarkMode ? 'bg-[#1a1a1a]' : 'bg-white';
+  const borderClass = isDarkMode ? 'border-white/5' : 'border-slate-200';
+  const mutedText = isDarkMode ? 'text-white/40' : 'text-slate-500';
+
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col font-body">
+    <div className={`min-h-screen ${bgClass} ${textClass} flex flex-col font-body transition-colors duration-300`}>
       {/* Top Header */}
-      <header className="px-6 py-4 flex items-center justify-between border-b border-white/5 bg-[#0a0a0a] sticky top-0 z-50">
+      <header className={`px-6 py-4 flex items-center justify-between border-b ${borderClass} ${bgClass} sticky top-0 z-50`}>
         <div className="flex items-center gap-2">
            <h1 className="text-2xl font-black italic tracking-tighter text-blue-500 uppercase">MUTAMBUKE</h1>
         </div>
         <div className="flex items-center gap-8">
-           <Button variant="ghost" size="icon" className="text-white/40 hover:text-white hidden md:flex">
-              <Moon className="size-5" />
+           <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setIsDarkMode(!isDarkMode)}
+            className={`${mutedText} hover:text-blue-500`}
+           >
+              {isDarkMode ? <Sun className="size-5" /> : <Moon className="size-5" />}
            </Button>
            <div className="flex items-center gap-4">
               <div className="text-right hidden sm:block">
-                <p className="text-sm font-black tracking-widest uppercase leading-none mb-1">{userProfile.name}</p>
-                <p className="text-[10px] text-white/40 font-bold uppercase tracking-tighter">{userProfile.role || 'Umugenzi'}</p>
+                <p className={`text-sm font-black tracking-widest uppercase leading-none mb-1 ${textClass}`}>{userProfile.name}</p>
+                <p className={`text-[10px] ${mutedText} font-bold uppercase tracking-tighter`}>{userProfile.role || 'Umugenzi'}</p>
               </div>
-              <div className="size-12 rounded-2xl bg-primary/20 flex items-center justify-center overflow-hidden border-2 border-primary/30 shadow-[0_0_20px_rgba(37,99,235,0.2)]">
+              <div className={`size-12 rounded-2xl ${isDarkMode ? 'bg-primary/20 border-primary/30' : 'bg-white border-slate-200'} flex items-center justify-center overflow-hidden border-2 shadow-lg`}>
                  <User className="size-7 text-primary" />
               </div>
            </div>
@@ -191,27 +204,27 @@ export default function PassengerDashboard() {
 
       {/* Main Navigation Menu */}
       <nav className="p-4 md:p-8 flex flex-wrap justify-center gap-4">
-         <div className="flex bg-[#1a1a1a] p-2 rounded-[1.5rem] shadow-2xl border border-white/5 w-full max-w-4xl overflow-x-auto no-scrollbar">
+         <div className={`${cardBg} p-2 rounded-[1.5rem] shadow-2xl border ${borderClass} w-full max-w-4xl overflow-x-auto no-scrollbar flex`}>
             <Button 
               onClick={() => setActiveTab('request')}
               variant="ghost" 
-              className={`flex-1 rounded-xl h-14 px-8 gap-2 font-black italic uppercase text-xs md:text-sm transition-all whitespace-nowrap ${activeTab !== 'profile' ? 'bg-primary text-white shadow-[0_0_25px_rgba(37,99,235,0.4)]' : 'text-white/40 hover:text-white'}`}
+              className={`flex-1 rounded-xl h-14 px-8 gap-2 font-black italic uppercase text-xs md:text-sm transition-all whitespace-nowrap ${activeTab !== 'profile' ? 'bg-primary text-white shadow-lg' : mutedText + ' hover:text-primary'}`}
             >
                <Navigation className="size-5" /> UMUGENZI
             </Button>
-            <Button variant="ghost" className="flex-1 rounded-xl h-14 px-8 gap-2 text-white/40 font-black italic uppercase text-xs md:text-sm hover:text-white whitespace-nowrap">
+            <Button variant="ghost" className={`flex-1 rounded-xl h-14 px-8 gap-2 ${mutedText} font-black italic uppercase text-xs md:text-sm hover:text-primary whitespace-nowrap`}>
                <History className="size-5" /> IBYATAMBUTSE
             </Button>
-            <Button variant="ghost" className="flex-1 rounded-xl h-14 px-8 gap-2 text-white/40 font-black italic uppercase text-xs md:text-sm hover:text-white whitespace-nowrap">
+            <Button variant="ghost" className={`flex-1 rounded-xl h-14 px-8 gap-2 ${mutedText} font-black italic uppercase text-xs md:text-sm hover:text-primary whitespace-nowrap`}>
                <Info className="size-5" /> IGISOBANURO
             </Button>
-            <Button variant="ghost" className="flex-1 rounded-xl h-14 px-8 gap-2 text-white/40 font-black italic uppercase text-xs md:text-sm hover:text-white whitespace-nowrap">
+            <Button variant="ghost" className={`flex-1 rounded-xl h-14 px-8 gap-2 ${mutedText} font-black italic uppercase text-xs md:text-sm hover:text-primary whitespace-nowrap`}>
                <PhoneCall className="size-5" /> CONTACT
             </Button>
             <Button 
               onClick={() => setActiveTab('profile')}
               variant="ghost" 
-              className={`flex-1 rounded-xl h-14 px-8 gap-2 font-black italic uppercase text-xs md:text-sm transition-all whitespace-nowrap ${activeTab === 'profile' ? 'bg-primary text-white shadow-[0_0_25px_rgba(37,99,235,0.4)]' : 'text-white/40 hover:text-white'}`}
+              className={`flex-1 rounded-xl h-14 px-8 gap-2 font-black italic uppercase text-xs md:text-sm transition-all whitespace-nowrap ${activeTab === 'profile' ? 'bg-primary text-white shadow-lg' : mutedText + ' hover:text-primary'}`}
             >
                <UserCircle className="size-5" /> UMWIRONDORO
             </Button>
@@ -220,14 +233,14 @@ export default function PassengerDashboard() {
 
       {activeTab !== 'profile' && (
         <div className="px-6 flex justify-center mb-8">
-           <div className="bg-[#1a1a1a] rounded-[1.75rem] p-1.5 flex gap-2 border border-white/5 w-full max-w-2xl">
-              <Button onClick={() => setActiveTab('request')} variant="ghost" className={`flex-1 h-14 rounded-2xl gap-2 font-black uppercase text-xs tracking-[0.15em] transition-all ${activeTab === 'request' ? 'bg-[#333] text-white shadow-inner' : 'text-white/40 hover:text-white'}`}>
+           <div className={`${cardBg} rounded-[1.75rem] p-1.5 flex gap-2 border ${borderClass} w-full max-w-2xl`}>
+              <Button onClick={() => setActiveTab('request')} variant="ghost" className={`flex-1 h-14 rounded-2xl gap-2 font-black uppercase text-xs tracking-[0.15em] transition-all ${activeTab === 'request' ? (isDarkMode ? 'bg-[#333] text-white' : 'bg-slate-100 text-slate-900') : mutedText}`}>
                  <LayoutDashboard className="size-5" /> Request
               </Button>
-              <Button onClick={() => setActiveTab('reports')} variant="ghost" className={`flex-1 h-14 rounded-2xl gap-2 font-black uppercase text-xs tracking-[0.15em] transition-all ${activeTab === 'reports' ? 'bg-[#333] text-white shadow-inner' : 'text-white/40 hover:text-white'}`}>
+              <Button onClick={() => setActiveTab('reports')} variant="ghost" className={`flex-1 h-14 rounded-2xl gap-2 font-black uppercase text-xs tracking-[0.15em] transition-all ${activeTab === 'reports' ? (isDarkMode ? 'bg-[#333] text-white' : 'bg-slate-100 text-slate-900') : mutedText}`}>
                  <FileText className="size-5" /> Reports
               </Button>
-              <Button onClick={() => setActiveTab('analytics')} variant="ghost" className={`flex-1 h-14 rounded-2xl gap-2 font-black uppercase text-xs tracking-[0.15em] transition-all ${activeTab === 'analytics' ? 'bg-[#333] text-white shadow-inner' : 'text-white/40 hover:text-white'}`}>
+              <Button onClick={() => setActiveTab('analytics')} variant="ghost" className={`flex-1 h-14 rounded-2xl gap-2 font-black uppercase text-xs tracking-[0.15em] transition-all ${activeTab === 'analytics' ? (isDarkMode ? 'bg-[#333] text-white' : 'bg-slate-100 text-slate-900') : mutedText}`}>
                  <BarChart3 className="size-5" /> Analytics
               </Button>
            </div>
@@ -242,12 +255,12 @@ export default function PassengerDashboard() {
              <div className="relative overflow-hidden rounded-[3.5rem] bg-gradient-to-br from-[#4c1d95] to-[#1e1b4b] p-10 md:p-14 shadow-2xl">
                 <div className="relative z-10 flex flex-col lg:flex-row items-center lg:items-end justify-between gap-10">
                    <div className="flex flex-col md:flex-row items-center gap-10">
-                      <div className="size-40 md:size-48 rounded-[3.5rem] bg-[#1a1a1a] border-[6px] border-[#312e81] flex items-center justify-center overflow-hidden relative shadow-2xl">
-                         <User className="size-24 text-white/20" />
+                      <div className={`size-40 md:size-48 rounded-[3.5rem] ${isDarkMode ? 'bg-[#1a1a1a]' : 'bg-white'} border-[6px] border-[#312e81] flex items-center justify-center overflow-hidden relative shadow-2xl`}>
+                         <User className={`size-24 ${isDarkMode ? 'text-white/20' : 'text-slate-200'}`} />
                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                       </div>
                       <div className="text-center md:text-left space-y-3">
-                         <h2 className="text-5xl md:text-6xl font-black italic uppercase tracking-tighter">{userProfile.name}</h2>
+                         <h2 className="text-5xl md:text-6xl font-black italic uppercase tracking-tighter text-white">{userProfile.name}</h2>
                          <p className="text-lg font-bold text-white/60 uppercase tracking-[0.2em]">
                             {userProfile.role || 'Umugenzi'} • {userProfile.phone}@swiftride.app
                          </p>
@@ -257,100 +270,67 @@ export default function PassengerDashboard() {
                       <Pencil className="size-5" /> Hindura umwirondoro
                    </Button>
                 </div>
-                {/* Decorative elements */}
-                <div className="absolute top-0 right-0 size-96 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
-                <div className="absolute bottom-0 left-10 size-48 bg-white/5 rounded-full translate-y-1/2 blur-2xl" />
              </div>
 
              {/* Stats Cards */}
              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                <div className="bg-[#1a1a1a] rounded-[2.5rem] p-10 border border-white/5 flex flex-col items-center justify-center gap-4 text-center group hover:bg-[#222] transition-all hover:scale-[1.02] shadow-xl">
+                <div className={`${cardBg} rounded-[2.5rem] p-10 border ${borderClass} flex flex-col items-center justify-center gap-4 text-center group transition-all hover:scale-[1.02] shadow-xl`}>
                    <div className="size-16 rounded-2xl bg-orange-500/10 flex items-center justify-center text-orange-500">
                       <Star className="size-8 fill-orange-500" />
                    </div>
                    <div className="space-y-1">
-                      <p className="text-5xl font-black italic">4.8</p>
-                      <p className="text-xs font-black text-white/40 uppercase tracking-[0.3em]">INYENYERI</p>
+                      <p className={`text-5xl font-black italic ${textClass}`}>4.8</p>
+                      <p className={`text-xs font-black ${mutedText} uppercase tracking-[0.3em]`}>INYENYERI</p>
                    </div>
                 </div>
-                <div className="bg-[#1a1a1a] rounded-[2.5rem] p-10 border border-white/5 flex flex-col items-center justify-center gap-4 text-center group hover:bg-[#222] transition-all hover:scale-[1.02] shadow-xl">
+                <div className={`${cardBg} rounded-[2.5rem] p-10 border ${borderClass} flex flex-col items-center justify-center gap-4 text-center group transition-all hover:scale-[1.02] shadow-xl`}>
                    <div className="size-16 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-500">
                       <Flag className="size-8" />
                    </div>
                    <div className="space-y-1">
-                      <p className="text-5xl font-black italic">12</p>
-                      <p className="text-xs font-black text-white/40 uppercase tracking-[0.3em]">INGENDO ZOSE</p>
+                      <p className={`text-5xl font-black italic ${textClass}`}>12</p>
+                      <p className={`text-xs font-black ${mutedText} uppercase tracking-[0.3em]`}>INGENDO ZOSE</p>
                    </div>
                 </div>
-                <div className="bg-[#1a1a1a] rounded-[2.5rem] p-10 border border-white/5 flex flex-col items-center justify-center gap-4 text-center group hover:bg-[#222] transition-all hover:scale-[1.02] shadow-xl">
+                <div className={`${cardBg} rounded-[2.5rem] p-10 border ${borderClass} flex flex-col items-center justify-center gap-4 text-center group transition-all hover:scale-[1.02] shadow-xl`}>
                    <div className="size-16 rounded-2xl bg-green-500/10 flex items-center justify-center text-green-500">
                       <Calendar className="size-8" />
                    </div>
                    <div className="space-y-1">
-                      <p className="text-5xl font-black italic">2025</p>
-                      <p className="text-xs font-black text-white/40 uppercase tracking-[0.3em]">WATANGIYE MURI</p>
+                      <p className={`text-5xl font-black italic ${textClass}`}>2025</p>
+                      <p className={`text-xs font-black ${mutedText} uppercase tracking-[0.3em]`}>WATANGIYE MURI</p>
                    </div>
                 </div>
              </div>
 
              {/* Account Info List */}
              <div className="space-y-6">
-                <p className="text-xs font-black tracking-[0.3em] text-white/40 uppercase px-4">IBIRANGA KONTI</p>
-                <div className="bg-[#1a1a1a] rounded-[3rem] overflow-hidden border border-white/5 shadow-2xl">
-                   <div className="p-8 md:p-10 flex items-center justify-between group cursor-pointer hover:bg-[#222] transition-colors">
+                <p className={`text-xs font-black tracking-[0.3em] ${mutedText} uppercase px-4`}>IBIRANGA KONTI</p>
+                <div className={`${cardBg} rounded-[3rem] overflow-hidden border ${borderClass} shadow-2xl`}>
+                   <div className={`p-8 md:p-10 flex items-center justify-between group cursor-pointer transition-colors ${isDarkMode ? 'hover:bg-[#222]' : 'hover:bg-slate-50'}`}>
                       <div className="flex items-center gap-6">
-                         <div className="size-16 rounded-2xl bg-blue-600 flex items-center justify-center shadow-[0_0_30px_rgba(37,99,235,0.3)]">
-                            <Mail className="size-8" />
+                         <div className="size-16 rounded-2xl bg-blue-600 flex items-center justify-center shadow-lg">
+                            <Mail className="size-8 text-white" />
                          </div>
                          <div>
-                            <p className="text-xs font-black text-white/40 uppercase tracking-[0.2em] leading-none mb-2">EMAIL</p>
-                            <p className="font-bold text-xl">{userProfile.phone}@mutambuke.com</p>
+                            <p className={`text-xs font-black ${mutedText} uppercase tracking-[0.2em] leading-none mb-2`}>EMAIL</p>
+                            <p className={`font-bold text-xl ${textClass}`}>{userProfile.phone}@mutambuke.com</p>
                          </div>
                       </div>
-                      <ChevronRight className="size-8 text-white/20 group-hover:text-white transition-all group-hover:translate-x-1" />
+                      <ChevronRight className={`size-8 ${mutedText} group-hover:text-primary transition-all`} />
                    </div>
-                   <div className="h-px bg-white/5 mx-8" />
-                   <div className="p-8 md:p-10 flex items-center justify-between group cursor-pointer hover:bg-[#222] transition-colors">
+                   <div className={`h-px ${isDarkMode ? 'bg-white/5' : 'bg-slate-100'} mx-8`} />
+                   <div className={`p-8 md:p-10 flex items-center justify-between group cursor-pointer transition-colors ${isDarkMode ? 'hover:bg-[#222]' : 'hover:bg-slate-50'}`}>
                       <div className="flex items-center gap-6">
-                         <div className="size-16 rounded-2xl bg-green-600 flex items-center justify-center shadow-[0_0_30px_rgba(22,163,74,0.3)]">
-                            <Phone className="size-8" />
+                         <div className="size-16 rounded-2xl bg-green-600 flex items-center justify-center shadow-lg">
+                            <Phone className="size-8 text-white" />
                          </div>
                          <div>
-                            <p className="text-xs font-black text-white/40 uppercase tracking-[0.2em] leading-none mb-2">NIMERO YA TEREFONE</p>
-                            <p className="font-bold text-xl">{userProfile.phone}</p>
+                            <p className={`text-xs font-black ${mutedText} uppercase tracking-[0.2em] leading-none mb-2`}>NIMERO YA TEREFONE</p>
+                            <p className={`font-bold text-xl ${textClass}`}>{userProfile.phone}</p>
                          </div>
                       </div>
-                      <ChevronRight className="size-8 text-white/20 group-hover:text-white transition-all group-hover:translate-x-1" />
-                   </div>
-                   <div className="h-px bg-white/5 mx-8" />
-                   <div className="p-8 md:p-10 flex items-center justify-between group cursor-pointer hover:bg-[#222] transition-colors">
-                      <div className="flex items-center gap-6">
-                         <div className="size-16 rounded-2xl bg-pink-600 flex items-center justify-center shadow-[0_0_30px_rgba(219,39,119,0.3)]">
-                            <UserRound className="size-8" />
-                         </div>
-                         <div>
-                            <p className="text-xs font-black text-white/40 uppercase tracking-[0.2em] leading-none mb-2">IGITSINA</p>
-                            <p className="font-bold text-xl">Ntabwo cyashyizweho</p>
-                         </div>
-                      </div>
-                      <ChevronRight className="size-8 text-white/20 group-hover:text-white transition-all group-hover:translate-x-1" />
-                   </div>
-                </div>
-             </div>
-
-             {/* Safety/Emergency Section */}
-             <div className="space-y-6">
-                <div className="flex items-center justify-between px-4">
-                   <p className="text-xs font-black tracking-[0.3em] text-white/40 uppercase">UMUTEKANO</p>
-                   <button className="text-xs font-black text-primary uppercase tracking-[0.15em] hover:underline">Ongera uwo twakubaza</button>
-                </div>
-                <div className="bg-[#1a1a1a] rounded-[3rem] p-8 border border-white/5 flex items-center gap-6 shadow-xl">
-                   <div className="size-16 rounded-2xl bg-red-600/20 flex items-center justify-center text-red-600">
-                      <AlertCircle className="size-8" />
-                   </div>
-                   <div className="space-y-1">
-                      <p className="font-bold text-lg text-white/80">No emergency contact</p>
-                      <p className="text-xs font-black text-white/20 uppercase tracking-[0.2em]">ADD FOR SAFETY</p>
+                      <ChevronRight className={`size-8 ${mutedText} group-hover:text-primary transition-all`} />
                    </div>
                 </div>
              </div>
@@ -367,44 +347,42 @@ export default function PassengerDashboard() {
           </div>
         ) : (
           <>
-            {/* Purple Hero Banner */}
-            <div className="relative overflow-hidden rounded-[4rem] bg-gradient-to-br from-[#6b21a8] to-[#3b0764] p-14 md:p-20 shadow-[0_30px_70px_rgba(107,33,168,0.4)]">
+            {/* Hero Banner */}
+            <div className={`relative overflow-hidden rounded-[4rem] ${isDarkMode ? 'bg-gradient-to-br from-[#6b21a8] to-[#3b0764]' : 'bg-gradient-to-br from-blue-600 to-blue-800'} p-14 md:p-20 shadow-2xl`}>
                <div className="relative z-10 space-y-4 max-w-2xl">
-                  <h2 className="text-6xl md:text-8xl font-black italic uppercase tracking-tighter leading-[0.85]">Urerekeza he?</h2>
+                  <h2 className="text-6xl md:text-8xl font-black italic uppercase tracking-tighter leading-[0.85] text-white">Urerekeza he?</h2>
                   <p className="text-xl md:text-2xl text-white/60 font-bold italic">Saba urugendo mu masegonda make.</p>
                </div>
-               {/* Abstract graphics */}
                <div className="absolute top-0 right-0 size-96 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
-               <div className="absolute bottom-0 left-20 size-64 bg-white/10 rounded-full translate-y-1/2 blur-2xl opacity-50" />
             </div>
 
             {/* Input Fields */}
             <div className="space-y-6">
-               <div className="bg-[#1a1a1a] rounded-[3rem] p-8 border border-white/5 shadow-2xl space-y-4">
+               <div className={`${cardBg} rounded-[3rem] p-8 border ${borderClass} shadow-2xl space-y-4`}>
                   <div className="relative group">
                      <div className="absolute left-8 top-1/2 -translate-y-1/2 size-3 bg-green-500 rounded-full shadow-[0_0_15px_#22c55e]" />
                      <Input 
                        value={pickup}
                        onChange={(e) => setPickup(e.target.value)}
-                       className="h-20 pl-16 pr-24 bg-transparent border-none text-2xl font-bold placeholder:text-white/20 focus-visible:ring-0" 
+                       className={`h-20 pl-16 pr-24 bg-transparent border-none text-2xl font-bold placeholder:${mutedText} focus-visible:ring-0 ${textClass}`} 
                        placeholder="Aho uherereye" 
                      />
-                     <div className="absolute right-8 top-1/2 -translate-y-1/2 flex gap-6 text-white/40">
-                        <LocateFixed className="size-7 hover:text-white cursor-pointer transition-colors" />
-                        <Search className="size-7 hover:text-white cursor-pointer transition-colors" />
+                     <div className={`absolute right-8 top-1/2 -translate-y-1/2 flex gap-6 ${mutedText}`}>
+                        <LocateFixed className="size-7 hover:text-blue-500 cursor-pointer transition-colors" />
+                        <Search className="size-7 hover:text-blue-500 cursor-pointer transition-colors" />
                      </div>
                   </div>
-                  <div className="h-px bg-white/5 mx-6" />
+                  <div className={`h-px ${isDarkMode ? 'bg-white/5' : 'bg-slate-100'} mx-6`} />
                   <div className="relative group">
                      <div className="absolute left-8 top-1/2 -translate-y-1/2 size-3 bg-red-500 rounded-full shadow-[0_0_15px_#ef4444]" />
                      <Input 
                        value={destination}
                        onChange={(e) => setDestination(e.target.value)}
-                       className="h-20 pl-16 pr-16 bg-transparent border-none text-2xl font-bold placeholder:text-white/20 focus-visible:ring-0" 
+                       className={`h-20 pl-16 pr-16 bg-transparent border-none text-2xl font-bold placeholder:${mutedText} focus-visible:ring-0 ${textClass}`} 
                        placeholder="Aho ugiye" 
                      />
-                     <div className="absolute right-8 top-1/2 -translate-y-1/2 text-white/40">
-                        <Search className="size-7 hover:text-white cursor-pointer transition-colors" />
+                     <div className={`absolute right-8 top-1/2 -translate-y-1/2 ${mutedText}`}>
+                        <Search className="size-7 hover:text-blue-500 cursor-pointer transition-colors" />
                      </div>
                   </div>
                </div>
@@ -412,18 +390,18 @@ export default function PassengerDashboard() {
 
             {/* Vehicle Choice */}
             <div className="space-y-6">
-               <p className="text-xs font-black tracking-[0.4em] text-white/40 uppercase px-4">CHOOSE VEHICLE</p>
+               <p className={`text-xs font-black tracking-[0.4em] ${mutedText} uppercase px-4`}>CHOOSE VEHICLE</p>
                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                   <Button 
                     onClick={() => setVehicleTypeFilter('taxi')}
-                    className={`h-56 md:h-64 rounded-[3.5rem] flex flex-col gap-6 font-black italic uppercase transition-all hover:scale-[1.03] ${vehicleTypeFilter === 'taxi' ? 'bg-[#1d72d2] text-white shadow-[0_0_50px_rgba(29,114,210,0.4)]' : 'bg-[#1a1a1a] text-white/20 border border-white/5'}`}
+                    className={`h-56 md:h-64 rounded-[3.5rem] flex flex-col gap-6 font-black italic uppercase transition-all hover:scale-[1.03] ${vehicleTypeFilter === 'taxi' ? 'bg-blue-600 text-white shadow-xl' : isDarkMode ? 'bg-[#1a1a1a] text-white/20 border border-white/5' : 'bg-white text-slate-300 border border-slate-200'}`}
                   >
                      <CarIcon className="size-20" />
                      <span className="text-2xl tracking-[0.2em]">Car</span>
                   </Button>
                   <Button 
                     onClick={() => setVehicleTypeFilter('moto')}
-                    className={`h-56 md:h-64 rounded-[3.5rem] flex flex-col gap-6 font-black italic uppercase transition-all hover:scale-[1.03] ${vehicleTypeFilter === 'moto' ? 'bg-[#1d72d2] text-white shadow-[0_0_50px_rgba(29,114,210,0.4)]' : 'bg-[#1a1a1a] text-white/20 border border-white/5'}`}
+                    className={`h-56 md:h-64 rounded-[3.5rem] flex flex-col gap-6 font-black italic uppercase transition-all hover:scale-[1.03] ${vehicleTypeFilter === 'moto' ? 'bg-blue-600 text-white shadow-xl' : isDarkMode ? 'bg-[#1a1a1a] text-white/20 border border-white/5' : 'bg-white text-slate-300 border border-slate-200'}`}
                   >
                      <Bike className="size-20" />
                      <span className="text-2xl tracking-[0.2em]">Moto</span>
@@ -434,13 +412,13 @@ export default function PassengerDashboard() {
             {/* Nearby Drivers & Map */}
             <div className="space-y-8">
                <div className="flex items-center justify-between px-4">
-                  <p className="text-xs font-black tracking-[0.4em] text-white/40 uppercase">ABASHOFERI BARI HAFI</p>
+                  <p className={`text-xs font-black tracking-[0.4em] ${mutedText} uppercase`}>ABASHOFERI BARI HAFI</p>
                   <div className="bg-green-500/10 px-5 py-2 rounded-full border border-green-500/20">
                      <p className="text-xs font-black text-green-500 uppercase tracking-widest">{availableDrivers?.length || 0} NARIYO</p>
                   </div>
                </div>
 
-               <div className="relative h-[600px] rounded-[4rem] overflow-hidden border border-white/10 shadow-3xl bg-[#1a1a1a]">
+               <div className={`relative h-[600px] rounded-[4rem] overflow-hidden border ${borderClass} shadow-3xl ${isDarkMode ? 'bg-[#1a1a1a]' : 'bg-slate-200'}`}>
                   {isLoaded ? (
                     <GoogleMap
                       mapContainerStyle={containerStyle}
@@ -449,13 +427,13 @@ export default function PassengerDashboard() {
                       mapTypeId={mapType}
                       options={{
                         disableDefaultUI: true,
-                        styles: [
+                        styles: isDarkMode ? [
                             { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
                             { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
                             { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
                             { featureType: "road", elementType: "geometry", stylers: [{ color: "#38414e" }] },
                             { featureType: "water", elementType: "geometry", stylers: [{ color: "#17263c" }] },
-                          ],
+                          ] : [],
                       }}
                     >
                       <Marker 
@@ -480,24 +458,23 @@ export default function PassengerDashboard() {
                     </GoogleMap>
                   ) : (
                     <div className="h-full w-full flex items-center justify-center">
-                      <Loader2 className="size-16 animate-spin text-white/10" />
+                      <Loader2 className={`size-16 animate-spin ${mutedText}`} />
                     </div>
                   )}
 
                   {/* Map Controls */}
-                  <div className="absolute top-8 left-1/2 -translate-x-1/2 flex p-2 bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl z-20 gap-2">
-                     <Button onClick={() => setMapType('roadmap')} variant="ghost" className={`h-12 px-8 rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition-all ${mapType === 'roadmap' ? 'bg-black text-white shadow-xl' : 'text-black/40 hover:bg-black/5'}`}>
+                  <div className={`absolute top-8 left-1/2 -translate-x-1/2 flex p-2 ${isDarkMode ? 'bg-white/10' : 'bg-white/90'} backdrop-blur-md rounded-3xl shadow-2xl z-20 gap-2`}>
+                     <Button onClick={() => setMapType('roadmap')} variant="ghost" className={`h-12 px-8 rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition-all ${mapType === 'roadmap' ? (isDarkMode ? 'bg-white text-black' : 'bg-black text-white') : mutedText}`}>
                         Map
                      </Button>
-                     <Button onClick={() => setMapType('hybrid')} variant="ghost" className={`h-12 px-8 rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition-all ${mapType === 'hybrid' ? 'bg-black text-white shadow-xl' : 'text-black/40 hover:bg-black/5'}`}>
+                     <Button onClick={() => setMapType('hybrid')} variant="ghost" className={`h-12 px-8 rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition-all ${mapType === 'hybrid' ? (isDarkMode ? 'bg-white text-black' : 'bg-black text-white') : mutedText}`}>
                         Hybrid
                      </Button>
-                     <Button onClick={() => setMapType('satellite')} variant="ghost" className={`h-12 px-8 rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition-all ${mapType === 'satellite' ? 'bg-black text-white shadow-xl' : 'text-black/40 hover:bg-black/5'}`}>
+                     <Button onClick={() => setMapType('satellite')} variant="ghost" className={`h-12 px-8 rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition-all ${mapType === 'satellite' ? (isDarkMode ? 'bg-white text-black' : 'bg-black text-white') : mutedText}`}>
                         Satellite
                      </Button>
                   </div>
 
-                  {/* Locate Button */}
                   <Button 
                     variant="secondary" 
                     size="icon" 
@@ -518,7 +495,7 @@ export default function PassengerDashboard() {
             <Button 
                onClick={handleRequestRide} 
                disabled={!destination || isRequesting} 
-               className="w-full h-24 rounded-[3.5rem] bg-primary hover:bg-primary/90 text-3xl font-black italic uppercase tracking-tighter shadow-[0_30px_80px_rgba(37,99,235,0.4)] transition-all active:scale-[0.98] disabled:opacity-50"
+               className="w-full h-24 rounded-[3.5rem] bg-blue-600 hover:bg-blue-700 text-3xl font-black italic uppercase tracking-tighter shadow-2xl transition-all active:scale-[0.98] disabled:opacity-50 text-white"
             >
                {isRequesting ? <Loader2 className="size-10 animate-spin" /> : 'Confirm Order'}
             </Button>
@@ -526,8 +503,8 @@ export default function PassengerDashboard() {
         )}
       </main>
 
-      <footer className="p-12 flex justify-center border-t border-white/5 bg-[#050505]">
-         <p className="text-white/10 font-black italic uppercase text-xs tracking-[0.5em]">
+      <footer className={`p-12 flex justify-center border-t ${borderClass} ${isDarkMode ? 'bg-[#050505]' : 'bg-white'}`}>
+         <p className={`${mutedText} font-black italic uppercase text-xs tracking-[0.5em]`}>
             MUTAMBUKE SMART SYSTEM © 2025
          </p>
       </footer>
