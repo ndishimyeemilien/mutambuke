@@ -6,23 +6,31 @@ import { useEffect } from 'react';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
+/**
+ * RootPage acts as the primary traffic controller.
+ * It detects the user's role and routes them to the correct dashboard.
+ */
 export default function RootPage() {
   const { user, loading: authLoading } = useUser();
   const router = useRouter();
+  
+  // Only fetch profile if user is authenticated
   const { data: profile, loading: profileLoading } = useDoc(user ? `users/${user.uid}` : null);
 
   useEffect(() => {
-    // Wait until both Auth and Profile (if user exists) are finished loading
+    // 1. Wait for Firebase Auth to initialize
     if (authLoading) return;
 
+    // 2. No user? Send to landing page
     if (!user) {
       router.replace('/landing');
       return;
     }
 
-    // If we have a user, wait for the profile to load
+    // 3. User exists? Wait for their Firestore profile to load
     if (!profileLoading) {
       if (profile) {
+        // Route based on role
         if (profile.role === 'admin') {
           router.replace('/dashboard/admin');
         } else if (profile.role === 'driver') {
@@ -31,13 +39,12 @@ export default function RootPage() {
           router.replace('/dashboard/passenger');
         }
       } else {
-        // User is logged in but has no profile record yet (possible during registration)
-        // We stay here or push to auth to complete if truly missing
-        // Using replace to prevent back-button loops
-        const checkMissing = setTimeout(() => {
+        // If user exists but no profile found, they might be in the middle of registration
+        // or a slow write. We wait here. Only redirect to auth if truly stuck.
+        const timeout = setTimeout(() => {
           if (!profile) router.replace('/auth');
-        }, 2000);
-        return () => clearTimeout(checkMissing);
+        }, 3000);
+        return () => clearTimeout(timeout);
       }
     }
   }, [user, authLoading, profile, profileLoading, router]);
@@ -47,17 +54,24 @@ export default function RootPage() {
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center">
-      {logo && (
-        <div className="relative w-24 h-24 animate-pulse">
-          <Image 
-            src={logo.imageUrl} 
-            alt="Logo" 
-            fill 
-            className="object-contain rounded-3xl"
-            priority 
-          />
+      <div className="flex flex-col items-center gap-6 animate-in fade-in duration-700">
+        {logo && (
+          <div className="relative w-24 h-24">
+            <Image 
+              src={logo.imageUrl} 
+              alt="Logo" 
+              fill 
+              className="object-contain rounded-3xl"
+              priority 
+            />
+          </div>
+        )}
+        <div className="flex items-center gap-2">
+           <div className="size-2 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]" />
+           <div className="size-2 rounded-full bg-primary animate-bounce [animation-delay:-0.15s]" />
+           <div className="size-2 rounded-full bg-primary animate-bounce" />
         </div>
-      )}
+      </div>
     </div>
   );
 }

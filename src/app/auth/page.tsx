@@ -41,7 +41,7 @@ export default function AuthPage() {
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
   useEffect(() => {
-    // Only redirect if a user is settled and we are NOT currently trying to log in/register
+    // Only redirect if user is authenticated AND we aren't currently processing a form
     if (user && !isLoading && !authChecking) {
       router.replace('/');
     }
@@ -54,11 +54,11 @@ export default function AuthPage() {
     setIsLoading(true);
     try {
       if (isLogin) {
-        let loginEmail = identifier.trim();
+        let loginEmail = identifier.trim().toLowerCase();
         
         // Phone number lookup logic
         if (!loginEmail.includes('@')) {
-          const q = query(collection(db, 'users'), where('phone', '==', loginEmail), limit(1));
+          const q = query(collection(db, 'users'), where('phone', '==', identifier.trim()), limit(1));
           const snapshot = await getDocs(q);
           if (!snapshot.empty) {
             loginEmail = snapshot.docs[0].data().email;
@@ -72,7 +72,7 @@ export default function AuthPage() {
         const cleanEmail = email.trim().toLowerCase();
         const cleanPhone = phone.trim();
 
-        // Unique checks
+        // Unique checks for Email and Phone
         const emailQuery = query(collection(db, 'users'), where('email', '==', cleanEmail), limit(1));
         const emailSnapshot = await getDocs(emailQuery);
         if (!emailSnapshot.empty) {
@@ -88,6 +88,7 @@ export default function AuthPage() {
         const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
         const newUser = userCredential.user;
 
+        // Custom Admin Logic
         const userRole = cleanEmail === 'adimini@gmail.com' ? 'admin' : role;
 
         const userData = {
@@ -100,8 +101,10 @@ export default function AuthPage() {
           createdAt: serverTimestamp(),
         };
 
+        // Write user profile to Firestore
         await setDoc(doc(db, 'users', newUser.uid), userData);
 
+        // Additional Driver Profile if applicable
         if (userRole === 'driver') {
           await setDoc(doc(db, 'drivers', newUser.uid), {
             driverId: newUser.uid,
@@ -116,9 +119,11 @@ export default function AuthPage() {
           title: "Success",
           description: lang === 'rw' ? "Konti yafunguwe neza!" : "Account created successfully!",
         });
+        
+        // Force redirect to root to handle dashboard selection
+        router.replace('/');
       }
     } catch (error: any) {
-      console.error(error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -130,12 +135,16 @@ export default function AuthPage() {
   }
 
   if (authChecking && !user) {
-    return <div className="min-h-screen bg-white" />;
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <Loader2 className="animate-spin size-8 text-primary" />
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-white flex flex-col md:flex-row overflow-hidden">
-      {/* Left side Illustration - Hidden on mobile */}
+      {/* Left side Illustration - Brand Message */}
       <div className="hidden md:flex md:w-1/2 relative bg-slate-900">
         {authImage && (
           <Image
