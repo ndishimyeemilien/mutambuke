@@ -53,14 +53,12 @@ export default function PassengerDashboard() {
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
   const [activeTab, setActiveTab] = useState<'home' | 'profile' | 'history'>('home');
-  const [pickup, setPickup] = useState('Current Location');
-  const [destination, setDestination] = useState('');
   const [isRequesting, setIsRequesting] = useState(false);
   const [vehicleType, setVehicleType] = useState<'moto' | 'taxi'>('moto');
   const [passengerLocation, setPassengerLocation] = useState(kigaliCenter);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [mapType, setMapType] = useState<'roadmap' | 'satellite' | 'hybrid'>('roadmap');
-  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
@@ -92,15 +90,15 @@ export default function PassengerDashboard() {
     }
   }, []);
 
-  async function handleRequestRide() {
-    if (!db || !user || !destination) return;
+  async function handleQuickRequest() {
+    if (!db || !user) return;
     setIsRequesting(true);
     try {
       const rideId = doc(collection(db, 'rides')).id;
       await setDoc(doc(db, 'rides', rideId), {
         rideId, passengerId: user.uid, passengerName: userProfile?.name,
-        passengerPhone: userProfile?.phone, pickupLocation: pickup,
-        destination, status: 'requested', vehicleType, createdAt: serverTimestamp()
+        passengerPhone: userProfile?.phone, pickupLocation: 'Current Location',
+        destination: 'To be specified', status: 'requested', vehicleType, createdAt: serverTimestamp()
       });
       toast({ title: t.searching, description: "Connecting to MUTAMBUKE network..." });
     } catch (e: any) {
@@ -119,9 +117,9 @@ export default function PassengerDashboard() {
   const isDark = theme === 'dark';
 
   return (
-    <div className={`min-h-screen flex flex-col font-body overflow-x-hidden pb-10 transition-colors duration-500 ${isDark ? 'bg-black' : 'bg-[#F0F0F4]'}`}>
+    <div className={`min-h-screen flex flex-col font-body overflow-x-hidden pb-10 transition-colors duration-500 ${isDark ? 'bg-[#0F172A]' : 'bg-[#F0F0F4]'}`}>
       {/* HEADER NAVIGATION */}
-      <header className={`sticky top-0 z-[60] backdrop-blur-md p-6 flex items-center justify-between border-b transition-colors ${isDark ? 'bg-black/95 border-white/5' : 'bg-white/90 border-slate-200'}`}>
+      <header className={`sticky top-0 z-[60] backdrop-blur-md p-6 flex items-center justify-between border-b transition-colors ${isDark ? 'bg-[#0F172A]/95 border-white/5' : 'bg-white/90 border-slate-200'}`}>
         <div className="flex items-center gap-10">
           <div className="flex items-center gap-3">
             <div className="relative w-10 h-10 cursor-pointer" onClick={() => setActiveTab('home')}>
@@ -170,7 +168,7 @@ export default function PassengerDashboard() {
         {activeTab === 'home' ? (
           <>
             {/* MAP SECTION */}
-            <div className={`relative h-[400px] md:h-[500px] w-full rounded-[2.5rem] overflow-hidden shadow-2xl border-4 transition-colors ${isDark ? 'border-white/5 bg-slate-900' : 'border-white bg-slate-200'}`}>
+            <div className={`relative h-[450px] md:h-[550px] w-full rounded-[2.5rem] overflow-hidden shadow-2xl border-4 transition-colors ${isDark ? 'border-white/5 bg-[#1a2632]' : 'border-white bg-slate-200'}`}>
               {isLoaded ? (
                 <GoogleMap
                   mapContainerStyle={{ width: '100%', height: '100%' }}
@@ -193,24 +191,42 @@ export default function PassengerDashboard() {
               </div>
             </div>
 
+            {/* QUICK REQUEST BUTTONS */}
+            <div className="flex flex-col md:flex-row gap-6 pt-4">
+               <Button 
+                 onClick={() => { setVehicleType('moto'); handleQuickRequest(); }} 
+                 disabled={isRequesting}
+                 className={`flex-1 h-28 rounded-[2rem] flex items-center justify-center gap-6 text-2xl font-black uppercase italic transition-all shadow-2xl ${vehicleType === 'moto' ? 'bg-secondary text-white ring-4 ring-secondary/20' : 'bg-white/5 text-white/40 border border-white/10'}`}
+               >
+                 <Bike className="size-10" /> {t.moto}
+               </Button>
+               <Button 
+                 onClick={() => { setVehicleType('taxi'); handleQuickRequest(); }} 
+                 disabled={isRequesting}
+                 className={`flex-1 h-28 rounded-[2rem] flex items-center justify-center gap-6 text-2xl font-black uppercase italic transition-all shadow-2xl ${vehicleType === 'taxi' ? 'bg-secondary text-white ring-4 ring-secondary/20' : 'bg-white/5 text-white/40 border border-white/10'}`}
+               >
+                 <CarIcon className="size-10" /> {t.taxi}
+               </Button>
+            </div>
+
             {/* NEARBY DRIVERS LIST */}
-            <section className="space-y-4 pt-4">
+            <section className="space-y-4 pt-6">
                <div className="flex items-center justify-between px-2">
                   <h3 className={`text-xl font-black italic uppercase tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`}>Abashoferi bari hafi</h3>
                   <span className={`text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest ${isDark ? 'text-secondary bg-secondary/10' : 'text-secondary bg-secondary/20'}`}>
                     {availableDrivers?.length || 0} bari hafi
                   </span>
                </div>
-               <div className="grid gap-3">
+               <div className="grid gap-4">
                   {availableDrivers?.map((driver: any) => (
-                    <div key={driver.driverId} className={`group relative border rounded-full p-4 flex items-center justify-between transition-all duration-300 shadow-xl hover:scale-[1.01] active:scale-[0.99] ${isDark ? 'bg-[#1A1A1A] hover:bg-[#222222] border-white/5' : 'bg-white hover:bg-slate-50 border-slate-100'}`}>
+                    <div key={driver.driverId} className={`group relative border rounded-[2.5rem] p-6 flex items-center justify-between transition-all duration-300 shadow-xl hover:scale-[1.01] active:scale-[0.99] ${isDark ? 'bg-white/5 hover:bg-white/10 border-white/5' : 'bg-white hover:bg-slate-50 border-slate-100'}`}>
                       <div className="flex items-center gap-6">
-                        <Avatar className={`size-14 border-2 ${isDark ? 'border-white/10' : 'border-slate-100'}`}>
+                        <Avatar className={`size-16 border-2 ${isDark ? 'border-white/10' : 'border-slate-100'}`}>
                           <AvatarImage src={`https://picsum.photos/seed/${driver.driverId}/200`} />
                           <AvatarFallback className="bg-slate-800 text-white"><User /></AvatarFallback>
                         </Avatar>
                         <div className="space-y-1">
-                          <h4 className={`text-lg font-black italic leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}>{driver.name || 'Umushoferi'}</h4>
+                          <h4 className={`text-xl font-black italic leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}>{driver.name || 'Umushoferi'}</h4>
                           <div className="flex items-center gap-3">
                             <span className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-white/40' : 'text-slate-500'}`}>{driver.vehicleType === 'moto' ? 'MOTORCYCLE' : 'CAR'}</span>
                             <div className="flex items-center gap-1 text-[#FACC15]">
@@ -220,56 +236,43 @@ export default function PassengerDashboard() {
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 pr-2">
-                        <Button variant="ghost" size="icon" className={`size-12 rounded-full transition-all ${isDark ? 'bg-white/5 text-white/40 hover:text-white hover:bg-white/10' : 'bg-slate-100 text-slate-400 hover:text-slate-900 hover:bg-slate-200'}`}><Heart className="size-5" /></Button>
-                        <a href={`tel:${driver.phone || '0780000000'}`}><Button size="icon" className={`size-12 rounded-full shadow-xl transition-all ${isDark ? 'bg-white text-black hover:bg-white/90' : 'bg-slate-900 text-white hover:bg-slate-800'}`}><Phone className="size-5" /></Button></a>
+                      <div className="flex items-center gap-4 pr-2">
+                        <Button variant="ghost" size="icon" className={`size-14 rounded-full transition-all ${isDark ? 'bg-white/5 text-white/40 hover:text-white hover:bg-white/10' : 'bg-slate-100 text-slate-400 hover:text-slate-900 hover:bg-slate-200'}`}><Heart className="size-6" /></Button>
+                        <a href={`tel:${driver.phone || '0780000000'}`}>
+                          <Button size="icon" className={`size-14 rounded-full shadow-2xl transition-all ${isDark ? 'bg-secondary text-white hover:bg-secondary/90' : 'bg-slate-900 text-white hover:bg-slate-800'}`}>
+                            <Phone className="size-6" />
+                          </Button>
+                        </a>
                       </div>
                     </div>
                   ))}
                   {(!availableDrivers || availableDrivers.length === 0) && (
-                    <div className={`py-20 text-center space-y-4 rounded-[3rem] border-2 border-dashed ${isDark ? 'bg-white/5 border-white/5' : 'bg-slate-100 border-slate-200'}`}>
-                      <Navigation className="size-12 mx-auto text-slate-400 animate-pulse" />
-                      <p className={`font-black italic uppercase tracking-widest ${isDark ? 'text-white/40' : 'text-slate-500'}`}>Nta mushoferi uri hafi muri uyu mwanya</p>
+                    <div className={`py-24 text-center space-y-6 rounded-[3rem] border-2 border-dashed ${isDark ? 'bg-white/5 border-white/5' : 'bg-slate-100 border-slate-200'}`}>
+                      <Navigation className="size-16 mx-auto text-slate-500 animate-pulse" />
+                      <p className={`text-lg font-black italic uppercase tracking-widest ${isDark ? 'text-white/30' : 'text-slate-400'}`}>Nta mushoferi uri hafi muri uyu mwanya</p>
                     </div>
                   )}
                </div>
             </section>
-
-            {/* REQUEST SECTION */}
-            <section className="bg-gradient-to-r from-[#0F172A] to-[#1E293B] p-8 md:p-12 rounded-[3rem] shadow-3xl space-y-8 border border-white/5">
-               <div className="space-y-2">
-                 <h2 className="text-3xl md:text-5xl font-black italic uppercase tracking-tighter text-white">Urerekeza he?</h2>
-                 <p className="text-white/40 font-medium italic">Saba urugendo mu masegonda make kuri MUTAMBUKE.</p>
-               </div>
-               <div className="grid md:grid-cols-2 gap-6">
-                  <div className="relative"><MapPin className="absolute left-6 top-1/2 -translate-y-1/2 size-5 text-secondary" /><Input value={pickup} onChange={(e) => setPickup(e.target.value)} className="h-20 pl-16 rounded-3xl bg-black/40 border-white/10 text-white font-bold text-lg focus:ring-secondary/20" /></div>
-                  <div className="relative"><Navigation className="absolute left-6 top-1/2 -translate-y-1/2 size-5 text-accent" /><Input placeholder={t.destination} value={destination} onChange={(e) => setDestination(e.target.value)} className="h-20 pl-16 rounded-3xl bg-black/40 border-white/10 text-white font-bold text-lg focus:ring-accent/20" /></div>
-               </div>
-               <div className="flex flex-col md:flex-row gap-4">
-                  <Button onClick={() => setVehicleType('moto')} className={`flex-1 h-24 rounded-3xl flex items-center justify-center gap-4 text-xl font-black uppercase italic transition-all shadow-xl ${vehicleType === 'moto' ? 'bg-secondary text-white scale-105 ring-4 ring-secondary/20' : 'bg-white/5 text-white/60 hover:bg-white/10'}`}><Bike className="size-8" /> {t.moto}</Button>
-                  <Button onClick={() => setVehicleType('taxi')} className={`flex-1 h-24 rounded-3xl flex items-center justify-center gap-4 text-xl font-black uppercase italic transition-all shadow-xl ${vehicleType === 'taxi' ? 'bg-secondary text-white scale-105 ring-4 ring-secondary/20' : 'bg-white/5 text-white/60 hover:bg-white/10'}`}><CarIcon className="size-8" /> {t.taxi}</Button>
-               </div>
-               <Button onClick={handleRequestRide} disabled={!destination || isRequesting} className="w-full h-24 rounded-[2rem] bg-white hover:bg-white/90 text-black text-3xl font-black italic uppercase tracking-tighter shadow-2xl transition-all active:scale-95 disabled:opacity-50">{isRequesting ? <Loader2 className="size-10 animate-spin" /> : 'FIND A RIDE'}</Button>
-            </section>
           </>
         ) : activeTab === 'profile' ? (
           /* PROFILE VIEW */
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
-            <header className="flex flex-col md:flex-row items-center justify-between gap-8 pb-10 border-b border-white/10">
-              <div className="flex items-center gap-8">
-                <Avatar className="size-32 border-4 border-secondary shadow-2xl">
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-10">
+            <header className="flex flex-col md:flex-row items-center justify-between gap-8 pb-12 border-b border-white/5">
+              <div className="flex items-center gap-10">
+                <Avatar className="size-40 border-4 border-secondary shadow-3xl">
                   <AvatarImage src={`https://picsum.photos/seed/${user?.uid}/400`} />
-                  <AvatarFallback className="bg-slate-800 text-white text-5xl font-black uppercase">{userProfile?.name?.charAt(0)}</AvatarFallback>
+                  <AvatarFallback className="bg-slate-800 text-white text-6xl font-black uppercase">{userProfile?.name?.charAt(0)}</AvatarFallback>
                 </Avatar>
-                <div className="space-y-2">
-                  <h2 className={`text-4xl md:text-6xl font-black italic uppercase tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`}>{userProfile?.name}</h2>
-                  <div className="flex items-center gap-3">
-                    <span className="px-4 py-1.5 rounded-full bg-secondary/20 text-secondary text-[10px] font-black uppercase tracking-widest">Premium Member</span>
-                    <div className="flex items-center gap-1 text-[#FACC15]"><Star className="size-4 fill-current" /><span className="text-sm font-black">4.9</span></div>
+                <div className="space-y-3">
+                  <h2 className={`text-5xl md:text-7xl font-black italic uppercase tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`}>{userProfile?.name}</h2>
+                  <div className="flex items-center gap-4">
+                    <span className="px-5 py-2 rounded-full bg-secondary/10 text-secondary text-[11px] font-black uppercase tracking-widest border border-secondary/20">Premium Member</span>
+                    <div className="flex items-center gap-1 text-[#FACC15]"><Star className="size-5 fill-current" /><span className="text-lg font-black">4.9</span></div>
                   </div>
                 </div>
               </div>
-              <Button className="h-16 px-10 rounded-2xl bg-white/5 border border-white/10 text-white font-black uppercase italic hover:bg-white/10"><Settings className="size-5 mr-3" /> Edit Profile</Button>
+              <Button className="h-20 px-12 rounded-[1.5rem] bg-white/5 border border-white/10 text-white font-black uppercase italic hover:bg-white/10 transition-all shadow-xl"><Settings className="size-6 mr-3" /> Edit Profile</Button>
             </header>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -281,32 +284,34 @@ export default function PassengerDashboard() {
                 { icon: Bell, label: 'Notifications', value: 'Enabled' },
                 { icon: ShieldCheck, label: 'Security', value: 'Verified' }
               ].map((item, i) => (
-                <div key={i} className={`p-8 rounded-[2.5rem] border transition-all ${isDark ? 'bg-white/5 border-white/5' : 'bg-white border-slate-100 shadow-xl'}`}>
-                  <div className="flex items-center justify-between mb-4">
-                    <item.icon className="size-6 text-secondary" />
-                    <ChevronRight className="size-4 text-white/20" />
+                <div key={i} className={`p-10 rounded-[3rem] border transition-all ${isDark ? 'bg-white/5 border-white/5 hover:bg-white/10' : 'bg-white border-slate-100 shadow-xl'}`}>
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="size-14 rounded-2xl bg-secondary/10 flex items-center justify-center text-secondary">
+                      <item.icon className="size-7" />
+                    </div>
+                    <ChevronRight className="size-5 text-white/10" />
                   </div>
-                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{item.label}</p>
-                  <p className={`text-xl font-black italic truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>{item.value}</p>
+                  <p className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-2">{item.label}</p>
+                  <p className={`text-2xl font-black italic truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>{item.value}</p>
                 </div>
               ))}
             </div>
 
-            <div className="pt-20">
+            <div className="pt-24">
               <Button 
                 onClick={() => signOut(auth!)}
-                className="w-full h-24 rounded-[2.5rem] bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white border-2 border-red-600/20 text-3xl font-black italic uppercase tracking-tighter shadow-2xl transition-all active:scale-95 group"
+                className="w-full h-28 rounded-[3rem] bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white border-2 border-red-600/20 text-4xl font-black italic uppercase tracking-tighter shadow-3xl transition-all active:scale-95 group"
               >
-                <LogOut className="size-8 mr-4 group-hover:rotate-12 transition-transform" /> 
+                <LogOut className="size-10 mr-4 group-hover:rotate-12 transition-transform" /> 
                 {t.logout}
               </Button>
             </div>
           </div>
         ) : (
-          <div className="py-20 text-center space-y-6">
-            <History className="size-20 mx-auto text-slate-500 opacity-20" />
-            <h3 className={`text-2xl font-black italic uppercase tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`}>Nta mateka y'ingendo ahari</h3>
-            <Button onClick={() => setActiveTab('home')} className="h-16 px-10 rounded-2xl bg-secondary text-white font-black italic uppercase">Shaka urugendo rwawe rwa mbere</Button>
+          <div className="py-32 text-center space-y-8">
+            <History className="size-28 mx-auto text-slate-500 opacity-20" />
+            <h3 className={`text-3xl font-black italic uppercase tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`}>Nta mateka y'ingendo ahari</h3>
+            <Button onClick={() => setActiveTab('home')} className="h-20 px-12 rounded-3xl bg-secondary text-white text-xl font-black italic uppercase shadow-2xl">Shaka urugendo rwawe rwa mbere</Button>
           </div>
         )}
       </main>
@@ -314,7 +319,7 @@ export default function PassengerDashboard() {
       {/* MOBILE MENU */}
       {isMenuOpen && (
         <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-xl animate-in fade-in duration-300 flex justify-end">
-           <div className={`w-80 h-full p-8 space-y-10 animate-in slide-in-from-right duration-500 border-l ${isDark ? 'bg-[#121b24] border-white/10' : 'bg-white border-slate-200'}`}>
+           <div className={`w-80 h-full p-8 space-y-10 animate-in slide-in-from-right duration-500 border-l ${isDark ? 'bg-[#0F172A] border-white/10' : 'bg-white border-slate-200'}`}>
               <div className="flex justify-between items-center">
                  <div className="flex items-center gap-3">
                     <div className="relative w-8 h-8">{logo && <Image src={logo.imageUrl} alt="Logo" fill className="object-contain" />}</div>
