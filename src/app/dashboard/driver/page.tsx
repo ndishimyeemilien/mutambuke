@@ -31,8 +31,8 @@ export default function DriverDashboard() {
   const router = useRouter();
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
-  const { data: userProfile } = useDoc(user ? `users/${user.uid}` : null);
-  const { data: driverProfile } = useDoc(user ? `drivers/${user.uid}` : null);
+  const { data: userProfile, loading: userLoading } = useDoc(user ? `users/${user.uid}` : null);
+  const { data: driverProfile, loading: driverLoading } = useDoc(user ? `drivers/${user.uid}` : null);
 
   const lang = (userProfile?.language as Language) || 'rw';
   const t = translations[lang];
@@ -41,11 +41,12 @@ export default function DriverDashboard() {
   const isVerified = driverProfile?.isVerified === true;
   const vehicleType = driverProfile?.vehicleType || 'moto';
 
-  // HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
+  // HOOKS MUST BE CALLED AT THE TOP LEVEL, BEFORE ANY CONDITIONAL RETURNS
   const requestsQuery = useMemoFirebase(() => {
     if (!db || !isOnline || !isVerified) return null;
     return query(collection(db, 'rides'), where('status', '==', 'requested'), where('vehicleType', '==', vehicleType));
   }, [db, isOnline, isVerified, vehicleType]);
+  
   const { data: incomingRequests } = useCollection(requestsQuery);
 
   const activeRideQuery = useMemoFirebase(() => {
@@ -56,6 +57,7 @@ export default function DriverDashboard() {
       where('status', 'in', ['accepted', 'started'])
     );
   }, [db, user, isVerified]);
+  
   const { data: activeRides } = useCollection(activeRideQuery);
   const currentRide = activeRides?.[0];
 
@@ -94,8 +96,8 @@ export default function DriverDashboard() {
     }
   }
 
-  // Content rendering based on state
-  if (!user || !userProfile || !driverProfile) {
+  // Early returns ONLY after all hooks have been declared
+  if (userLoading || driverLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="relative w-20 h-20 animate-pulse">
@@ -103,6 +105,10 @@ export default function DriverDashboard() {
         </div>
       </div>
     );
+  }
+
+  if (!user || !userProfile || !driverProfile) {
+     return null; // Should be handled by root redirect
   }
 
   if (!isVerified) {
