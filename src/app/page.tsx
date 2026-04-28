@@ -49,7 +49,6 @@ export default function RootPage() {
 
     // 4. User exists but NO profile found in Firestore?
     // This happens for new signups or incomplete registrations.
-    // Send to /auth but DON'T loop back here if /auth redirects to /
     if (user && !profile && !profileLoading) {
       redirecting.current = true;
       // Special case for the manual admin account

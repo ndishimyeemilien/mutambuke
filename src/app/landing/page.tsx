@@ -11,7 +11,7 @@ import { useUser } from "@/firebase";
 
 export default function LandingPage() {
   const { user } = useUser();
-  const heroImage = PlaceHolderImages.find(img => img.id === 'hero-moto');
+  const heroImage = { imageUrl: "https://i.pinimg.com/736x/bc/74/3b/bc743bcdaf44a57ab619ecfd5056768f.jpg", description: "Premium Rider" };
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
   return (
@@ -64,16 +64,14 @@ export default function LandingPage() {
             </div>
             
             <div className="relative aspect-square md:aspect-[4/5] rounded-[3.5rem] overflow-hidden shadow-[0_40px_100px_-20px_rgba(0,0,0,0.3)] animate-in zoom-in-95 duration-700 border-[12px] border-white ring-1 ring-slate-100">
-              {heroImage && (
-                <Image
-                  src={heroImage.imageUrl}
-                  alt={heroImage.description}
-                  fill
-                  className="object-cover"
-                  priority
-                  data-ai-hint="motorcycle rider"
-                />
-              )}
+              <Image
+                src={heroImage.imageUrl}
+                alt={heroImage.description}
+                fill
+                className="object-cover"
+                priority
+                data-ai-hint="motorcycle rider"
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent" />
               <div className="absolute bottom-10 left-10 right-10 text-white">
                 <div className="flex gap-4">
