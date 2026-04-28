@@ -195,7 +195,7 @@ export default function DriverDashboard() {
         </div>
         <h1 className="text-3xl font-black italic text-slate-900 uppercase mb-2">Account Under Review</h1>
         <p className="text-slate-500 font-medium max-w-xs mx-auto mb-8">
-          The MUTAMBUKE admin team is verifying your documents and plate: <span className="text-primary font-bold">{plateNumber}</span>. This usually takes 24 hours.
+          The MUTAMBUKE admin team is verifying your documents and plate: <span className="text-primary font-bold">{plateNumber}</span>.
         </p>
         <Button onClick={handleLogout} variant="outline" className="h-14 rounded-2xl px-10 font-black uppercase italic border-slate-200">
           <LogOut className="size-4 mr-2" /> {t.logout}
@@ -232,7 +232,6 @@ export default function DriverDashboard() {
             <Loader2 className="size-10 animate-spin text-slate-300" />
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/40 via-transparent to-slate-900/60 pointer-events-none" />
       </div>
 
       <header className="relative z-20 p-4">
@@ -275,23 +274,6 @@ export default function DriverDashboard() {
 
       <main className="flex-1 relative z-10 flex flex-col justify-end p-4 md:p-6 space-y-4 pointer-events-none">
         <div className="pointer-events-auto w-full max-w-xl mx-auto space-y-4">
-          <div className="flex gap-4">
-            <Card className="flex-1 rounded-3xl border-none shadow-xl bg-white/95 backdrop-blur-md p-4 flex items-center gap-3">
-              <div className="size-10 rounded-xl bg-green-100 text-green-600 flex items-center justify-center"><DollarSign className="size-5" /></div>
-              <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase leading-none mb-1">{t.earnings}</p>
-                <p className="font-black text-slate-900 leading-none">{stats.totalEarnings} RWF</p>
-              </div>
-            </Card>
-            <Card className="flex-1 rounded-3xl border-none shadow-xl bg-white/95 backdrop-blur-md p-4 flex items-center gap-3">
-              <div className="size-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center"><TrendingUp className="size-5" /></div>
-              <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase leading-none mb-1">{t.trips}</p>
-                <p className="font-black text-slate-900 leading-none">{stats.totalTrips}</p>
-              </div>
-            </Card>
-          </div>
-
           {currentRide ? (
             <Card className="rounded-[2.5rem] border-none shadow-2xl overflow-hidden bg-white animate-in slide-in-from-bottom-10">
               <div className="bg-primary p-6 text-white flex items-center justify-between">

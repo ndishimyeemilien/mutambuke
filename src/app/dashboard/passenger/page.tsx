@@ -155,11 +155,10 @@ export default function PassengerDashboard() {
     );
   }
 
-  if (!user) return null;
+  if (!user || !userProfile) return null;
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col relative overflow-hidden">
-      {/* MAP LAYER */}
       <div className="absolute inset-0 z-0 bg-slate-200">
         {isLoaded ? (
           <GoogleMap
@@ -169,13 +168,6 @@ export default function PassengerDashboard() {
             mapTypeId={mapType}
             options={{
               disableDefaultUI: true,
-              styles: [
-                {
-                  featureType: "all",
-                  elementType: "labels.text.fill",
-                  stylers: [{ color: "#444444" }],
-                },
-              ]
             }}
           >
             <Marker 
@@ -187,7 +179,7 @@ export default function PassengerDashboard() {
             />
             {availableDrivers?.map((driver) => (
               <Marker
-                key={driver.driverId}
+                key={driver.id}
                 position={driver.currentLocation || passengerLocation}
                 icon={{
                   url: driver.vehicleType === 'moto' 
@@ -203,10 +195,8 @@ export default function PassengerDashboard() {
             <Loader2 className="size-10 animate-spin text-slate-300" />
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-transparent to-slate-900/20 pointer-events-none" />
       </div>
 
-      {/* HEADER */}
       <header className="relative z-30 p-4">
         <Card className="rounded-[2rem] border-none shadow-2xl bg-white/95 backdrop-blur-xl p-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -229,14 +219,12 @@ export default function PassengerDashboard() {
         </Card>
       </header>
 
-      {/* MAP CONTROLS */}
       <div className="absolute top-24 right-4 z-40 flex flex-col gap-2 pointer-events-auto">
         <Button variant="secondary" size="icon" onClick={() => setMapType('roadmap')} className={`rounded-xl shadow-lg border-2 ${mapType === 'roadmap' ? 'border-primary' : 'border-white'}`}><MapIcon className="size-5" /></Button>
         <Button variant="secondary" size="icon" onClick={() => setMapType('satellite')} className={`rounded-xl shadow-lg border-2 ${mapType === 'satellite' ? 'border-primary' : 'border-white'}`}><Globe className="size-5" /></Button>
         <Button variant="secondary" size="icon" onClick={() => setMapType('hybrid')} className={`rounded-xl shadow-lg border-2 ${mapType === 'hybrid' ? 'border-primary' : 'border-white'}`}><Layers className="size-5" /></Button>
       </div>
 
-      {/* MAIN CONTENT AREA */}
       <main className="flex-1 flex flex-col justify-end p-4 md:p-8 space-y-4 relative z-30 pointer-events-none">
         <div className="pointer-events-auto w-full max-w-xl mx-auto">
           {currentRide ? (

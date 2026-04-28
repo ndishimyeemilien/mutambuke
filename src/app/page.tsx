@@ -3,7 +3,7 @@
 
 import { useUser, useDoc } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Loader2 } from 'lucide-react';
@@ -12,46 +12,35 @@ export default function RootPage() {
   const { user, loading: authLoading } = useUser();
   const router = useRouter();
   const { data: profile, loading: profileLoading } = useDoc(user ? `users/${user.uid}` : null);
-  const redirecting = useRef(false);
   
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
   useEffect(() => {
-    // 1. Wait for Auth to resolve
+    // 1. Wait for everything to load
     if (authLoading) return;
 
-    // 2. No user? Go to landing
+    // 2. No user? Always land on /landing
     if (!user) {
-      if (!redirecting.current) {
-        redirecting.current = true;
-        router.replace('/landing');
-      }
+      router.replace('/landing');
       return;
     }
 
-    // 3. User exists? Wait for Profile
+    // 3. User exists? Wait for profile to load definitively
     if (profileLoading) return;
 
-    // 4. Profile resolved? Redirect based on role
+    // 4. Once profile is resolved
     if (profile) {
-      if (!redirecting.current) {
-        redirecting.current = true;
-        const role = profile.role;
-        if (role === 'admin') {
-          router.replace('/dashboard/admin');
-        } else if (role === 'driver') {
-          router.replace('/dashboard/driver');
-        } else {
-          router.replace('/dashboard/passenger');
-        }
+      const role = profile.role;
+      if (role === 'admin') {
+        router.replace('/dashboard/admin');
+      } else if (role === 'driver') {
+        router.replace('/dashboard/driver');
+      } else {
+        router.replace('/dashboard/passenger');
       }
     } else {
-      // User exists but no profile yet (maybe first time or slow Firestore)
-      // Redirect to auth to ensure they are set up
-      if (!redirecting.current) {
-        redirecting.current = true;
-        router.replace('/auth');
-      }
+      // User exists but NO profile found in DB (unlikely if they registered correctly)
+      router.replace('/auth');
     }
   }, [user, authLoading, profile, profileLoading, router]);
 

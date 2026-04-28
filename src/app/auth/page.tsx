@@ -23,6 +23,7 @@ export default function AuthPage() {
   const [lang, setLang] = useState<Language>('rw');
   const t = translations[lang];
   const { toast } = useToast();
+  const router = useRouter();
 
   const { user, loading: authLoading } = useUser();
   const { data: profile, loading: profileLoading } = useDoc(user ? `users/${user.uid}` : null);
@@ -38,7 +39,6 @@ export default function AuthPage() {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const router = useRouter();
   
   const auth = useAuth();
   const db = useFirestore();
@@ -47,12 +47,11 @@ export default function AuthPage() {
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
   useEffect(() => {
-    // Only redirect if both user and profile are confirmed to exist
-    // This prevents the flickering loop
-    if (user && profile && !isLoading && !isSuccess) {
+    // If user is logged in AND profile exists, go to home
+    if (user && profile && !isLoading) {
       router.replace('/');
     }
-  }, [user, profile, router, isLoading, isSuccess]);
+  }, [user, profile, router, isLoading]);
 
   const getErrorMessage = (error: any) => {
     const code = error.code;
@@ -70,7 +69,6 @@ export default function AuthPage() {
       if (isLogin) {
         let loginEmail = identifier.trim().toLowerCase();
         
-        // Handle phone login fallback (search email by phone)
         if (!loginEmail.includes('@')) {
           const q = query(collection(db, 'users'), where('phone', '==', identifier.trim()), limit(1));
           const snapshot = await getDocs(q);
@@ -83,13 +81,8 @@ export default function AuthPage() {
 
         await signInWithEmailAndPassword(auth, loginEmail, password);
         setIsSuccess(true);
-        setTimeout(() => {
-          router.replace('/');
-        }, 1200);
-
       } else {
         const cleanEmail = email.trim().toLowerCase();
-        
         if (role === 'driver' && !plateNumber.trim()) {
           throw new Error(lang === 'rw' ? 'Ntabwo washyizeho plaque.' : 'Plate number is required.');
         }
@@ -122,9 +115,6 @@ export default function AuthPage() {
         }
 
         setIsSuccess(true);
-        setTimeout(() => {
-          router.replace('/');
-        }, 1200);
       }
     } catch (error: any) {
       setIsLoading(false);
@@ -163,12 +153,12 @@ export default function AuthPage() {
 
       <div className="flex-1 flex flex-col justify-center p-6 md:p-12 bg-white relative">
         {isSuccess && (
-          <div className="absolute inset-0 z-50 bg-white/95 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300">
+          <div className="absolute inset-0 z-50 bg-white flex flex-col items-center justify-center animate-in fade-in duration-300">
              <div className="size-24 rounded-[2rem] bg-green-100 flex items-center justify-center text-green-600 mb-6 scale-110">
                 <CheckCircle2 className="size-12" />
              </div>
              <h2 className="text-4xl font-black italic uppercase tracking-tighter text-slate-900">SUCCESSFUL</h2>
-             <p className="text-slate-500 font-bold italic mt-2">Redirecting to network...</p>
+             <p className="text-slate-500 font-bold italic mt-2">Connecting to Mutambuke network...</p>
           </div>
         )}
 
@@ -279,25 +269,6 @@ export default function AuthPage() {
                           onChange={(e) => setPlateNumber(e.target.value)} 
                         />
                       </div>
-                    </div>
-                    <div className="space-y-3">
-                      <Label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">{t.vehicleType}</Label>
-                      <RadioGroup defaultValue="moto" className="flex gap-4" onValueChange={(v) => setVehicleType(v as any)}>
-                        <div className={`flex flex-1 items-center justify-between p-5 rounded-[1.25rem] border-2 cursor-pointer transition-all ${vehicleType === 'moto' ? 'border-secondary bg-secondary/5 text-secondary' : 'border-slate-100'}`}>
-                          <div className="flex items-center gap-2">
-                            <Bike className="size-4" />
-                            <span className="text-xs font-black uppercase tracking-widest">{t.moto}</span>
-                          </div>
-                          <RadioGroupItem value="moto" className="border-slate-200" />
-                        </div>
-                        <div className={`flex flex-1 items-center justify-between p-5 rounded-[1.25rem] border-2 cursor-pointer transition-all ${vehicleType === 'taxi' ? 'border-secondary bg-secondary/5 text-secondary' : 'border-slate-100'}`}>
-                          <div className="flex items-center gap-2">
-                            <Car className="size-4" />
-                            <span className="text-xs font-black uppercase tracking-widest">{t.taxi}</span>
-                          </div>
-                          <RadioGroupItem value="taxi" className="border-slate-200" />
-                        </div>
-                      </RadioGroup>
                     </div>
                   </div>
                 )}
