@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ShieldCheck, User, LogOut, CheckCircle2, Clock, MapPin, Bike } from 'lucide-react';
 import { collection, doc, updateDoc, query, where } from 'firebase/firestore';
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'navigation';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '@/firebase';
 
