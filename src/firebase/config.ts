@@ -1,11 +1,11 @@
 'use client';
 
 export const firebaseConfig = {
-  apiKey: "AIzaSyDh4DEMftlxrU708lu0GDzQqw8iB4SINLw",
-  authDomain: "taxi-4cd78.firebaseapp.com",
-  projectId: "taxi-4cd78",
-  storageBucket: "taxi-4cd78.firebasestorage.app",
-  messagingSenderId: "190447657622",
-  appId: "1:190447657622:web:ea6f542b74aafae05c58b7",
-  measurementId: "G-48G6DLSZJV"
+  apiKey: "AIzaSyCQP4ISoJgdr9etzIIX0fFEv1VjQ1WZ5Zo",
+  authDomain: "auction-origin.firebaseapp.com",
+  projectId: "auction-origin",
+  storageBucket: "auction-origin.firebasestorage.app",
+  messagingSenderId: "881371645224",
+  appId: "1:881371645224:web:1c63fc32262322eaa8fc1d",
+  measurementId: ""
 };

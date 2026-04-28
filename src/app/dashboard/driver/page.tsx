@@ -209,11 +209,11 @@ export default function DriverDashboard() {
           >
             <Marker 
               position={driverLocation}
-              icon={typeof google !== 'undefined' ? {
+              icon={typeof window !== 'undefined' && window.google?.maps?.Size ? {
                 url: vehicleType === 'moto' 
                   ? 'https://cdn-icons-png.flaticon.com/512/3194/3194514.png' 
                   : 'https://cdn-icons-png.flaticon.com/512/3082/3082383.png',
-                scaledSize: new google.maps.Size(45, 45)
+                scaledSize: new window.google.maps.Size(45, 45)
               } : undefined}
             />
           </GoogleMap>

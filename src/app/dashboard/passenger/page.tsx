@@ -151,20 +151,20 @@ export default function PassengerDashboard() {
           >
             <Marker 
               position={passengerLocation} 
-              icon={typeof google !== 'undefined' ? {
+              icon={typeof window !== 'undefined' && window.google?.maps?.Size ? {
                 url: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
-                scaledSize: new google.maps.Size(40, 40)
+                scaledSize: new window.google.maps.Size(40, 40)
               } : undefined}
             />
             {availableDrivers?.map((driver) => (
               <Marker
                 key={driver.driverId}
                 position={driver.currentLocation || { lat: passengerLocation.lat + 0.005, lng: passengerLocation.lng + 0.005 }}
-                icon={typeof google !== 'undefined' ? {
+                icon={typeof window !== 'undefined' && window.google?.maps?.Size ? {
                   url: driver.vehicleType === 'moto' 
                     ? 'https://cdn-icons-png.flaticon.com/512/3194/3194514.png' 
                     : 'https://cdn-icons-png.flaticon.com/512/3082/3082383.png',
-                  scaledSize: new google.maps.Size(35, 35)
+                  scaledSize: new window.google.maps.Size(35, 35)
                 } : undefined}
               />
             ))}
