@@ -25,7 +25,7 @@ export default function AuthPage() {
   const { toast } = useToast();
 
   const { user } = useUser();
-  const { data: profile } = useDoc(user ? `users/${user.uid}` : null);
+  const { data: profile, loading: profileLoading } = useDoc(user ? `users/${user.uid}` : null);
   const [isLogin, setIsLogin] = useState(true);
   const [role, setRole] = useState<'passenger' | 'driver'>('passenger');
   const [vehicleType, setVehicleType] = useState<'moto' | 'taxi'>('moto');
@@ -46,10 +46,11 @@ export default function AuthPage() {
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
   useEffect(() => {
-    if (user && profile && !isLoading && !isSuccess) {
+    // Only redirect if the profile is confirmed and we aren't currently in a successful auth flow
+    if (user && profile && !isLoading && !isSuccess && !profileLoading) {
       router.replace('/');
     }
-  }, [user, profile, router, isLoading, isSuccess]);
+  }, [user, profile, profileLoading, router, isLoading, isSuccess]);
 
   const getErrorMessage = (error: any) => {
     const code = error.code;

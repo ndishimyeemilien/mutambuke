@@ -13,7 +13,11 @@ export function useDoc(path: string | null) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Reset loading state when path changes to prevent stale data usage
+    setLoading(true);
+
     if (!db || !path) {
+      setData(null);
       setLoading(false);
       return;
     }

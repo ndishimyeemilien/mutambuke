@@ -11,7 +11,10 @@ export function useCollection(query: Query | null) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setLoading(true);
+
     if (!query) {
+      setData(null);
       setLoading(false);
       return;
     }

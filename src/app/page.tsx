@@ -16,6 +16,7 @@ export default function RootPage() {
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
   useEffect(() => {
+    // Wait for auth to resolve
     if (authLoading || redirecting.current) return;
 
     if (!user) {
@@ -24,6 +25,7 @@ export default function RootPage() {
       return;
     }
 
+    // Once we have a user, wait for the profile to load
     if (profileLoading) return;
 
     if (profile) {
@@ -36,13 +38,13 @@ export default function RootPage() {
       } else {
         router.replace('/dashboard/passenger');
       }
-    } else if (user && !profileLoading) {
-      // If user exists but profile doesn't (might be in progress), check admin email
+    } else {
+      // User is logged in but profile doc is missing in Firestore
+      // Check for hardcoded admin or redirect to complete registration
       if (user.email === 'admin@mutambuke.com') {
         redirecting.current = true;
         router.replace('/dashboard/admin');
       } else {
-        // Fallback to auth if something is wrong
         redirecting.current = true;
         router.replace('/auth');
       }
