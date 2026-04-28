@@ -18,7 +18,10 @@ import {
   TrendingUp,
   X,
   XCircle,
-  Clock
+  Clock,
+  Layers,
+  Map as MapIcon,
+  Globe
 } from 'lucide-react';
 import { collection, doc, updateDoc, query, where, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
@@ -43,6 +46,7 @@ export default function DriverDashboard() {
   const router = useRouter();
   
   const [driverLocation, setDriverLocation] = useState(kigaliCenter);
+  const [mapType, setMapType] = useState<google.maps.MapTypeId | string>('roadmap');
 
   const { data: userProfile, loading: userLoading } = useDoc(user ? `users/${user.uid}` : null);
   const { data: driverProfile, loading: driverLoading } = useDoc(user ? `drivers/${user.uid}` : null);
@@ -197,12 +201,13 @@ export default function DriverDashboard() {
             mapContainerStyle={containerStyle}
             center={driverLocation}
             zoom={15}
+            mapTypeId={mapType}
             options={{
               disableDefaultUI: true,
-              styles: [
+              styles: mapType === 'roadmap' ? [
                 { featureType: "all", elementType: "labels.text.fill", color: "#9ca3af" },
                 { featureType: "water", elementType: "geometry", color: "#e5e7eb" }
-              ]
+              ] : []
             }}
           >
             <Marker 
@@ -243,6 +248,37 @@ export default function DriverDashboard() {
           </CardContent>
         </Card>
       </header>
+
+      {/* Floating Map Controls */}
+      <div className="absolute top-24 right-4 z-40 flex flex-col gap-2">
+        <Button 
+          variant="secondary" 
+          size="icon" 
+          onClick={() => setMapType('roadmap')}
+          className={`rounded-xl shadow-lg border-2 ${mapType === 'roadmap' ? 'border-primary' : 'border-white'}`}
+          title="Map View"
+        >
+          <MapIcon className="size-5" />
+        </Button>
+        <Button 
+          variant="secondary" 
+          size="icon" 
+          onClick={() => setMapType('satellite')}
+          className={`rounded-xl shadow-lg border-2 ${mapType === 'satellite' ? 'border-primary' : 'border-white'}`}
+          title="Satellite View"
+        >
+          <Globe className="size-5" />
+        </Button>
+        <Button 
+          variant="secondary" 
+          size="icon" 
+          onClick={() => setMapType('hybrid')}
+          className={`rounded-xl shadow-lg border-2 ${mapType === 'hybrid' ? 'border-primary' : 'border-white'}`}
+          title="Hybrid View"
+        >
+          <Layers className="size-5" />
+        </Button>
+      </div>
 
       <main className="flex-1 relative z-10 flex flex-col justify-end p-4 md:p-6 space-y-4 pointer-events-none">
         <div className="pointer-events-auto w-full space-y-4">
