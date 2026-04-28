@@ -20,18 +20,20 @@ export default function RootPage() {
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
   useEffect(() => {
-    // Avoid double redirection if one is already in progress
+    // If we're already redirecting or still checking auth, do nothing
     if (authLoading || redirecting.current) return;
 
+    // 1. No user logged in? Go to landing
     if (!user) {
       redirecting.current = true;
       router.replace('/landing');
       return;
     }
 
-    // Wait for the profile to load if a user is present
+    // 2. User exists, wait for profile data
     if (profileLoading) return;
 
+    // 3. Profile found? Go to role-specific dashboard
     if (profile) {
       redirecting.current = true;
       const role = profile.role;
@@ -42,9 +44,15 @@ export default function RootPage() {
       } else {
         router.replace('/dashboard/passenger');
       }
-    } else if (user) {
-      // User is logged in but profile hasn't been created yet (or failed to load)
+      return;
+    }
+
+    // 4. User exists but NO profile found in Firestore?
+    // This happens for new signups or incomplete registrations.
+    // Send to /auth but DON'T loop back here if /auth redirects to /
+    if (user && !profile && !profileLoading) {
       redirecting.current = true;
+      // Special case for the manual admin account
       if (user.email === 'admin@mutambuke.com') {
         router.replace('/dashboard/admin');
       } else {
@@ -55,7 +63,7 @@ export default function RootPage() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
-      <div className="flex flex-col items-center gap-8 max-w-sm w-full">
+      <div className="flex flex-col items-center gap-8 max-w-sm w-full animate-pulse">
         <div className="relative w-32 h-32">
           {logo && <Image src={logo.imageUrl} alt="MUTAMBUKE" fill className="object-contain rounded-[2.5rem]" priority />}
         </div>

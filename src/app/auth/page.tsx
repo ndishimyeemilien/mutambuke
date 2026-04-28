@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Bike, User, Lock, ArrowLeft, Loader2, Car, Globe, Hash } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { useAuth, useFirestore, useUser } from '@/firebase';
+import { useAuth, useFirestore, useUser, useDoc } from '@/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp, collection, query, where, getDocs, limit } from 'firebase/firestore';
 import Link from 'next/link';
@@ -25,6 +25,7 @@ export default function AuthPage() {
   const { toast } = useToast();
 
   const { user } = useUser();
+  const { data: profile } = useDoc(user ? `users/${user.uid}` : null);
   const [isLogin, setIsLogin] = useState(true);
   const [role, setRole] = useState<'passenger' | 'driver'>('passenger');
   const [vehicleType, setVehicleType] = useState<'moto' | 'taxi'>('moto');
@@ -43,11 +44,13 @@ export default function AuthPage() {
   const authImage = PlaceHolderImages.find(img => img.id === 'auth-illustration');
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
+  // Only redirect if a profile actually exists. 
+  // If user exists but no profile, they stay here to finish registration.
   useEffect(() => {
-    if (user && !isLoading) {
+    if (user && profile && !isLoading) {
       router.replace('/');
     }
-  }, [user, router, isLoading]);
+  }, [user, profile, router, isLoading]);
 
   const getErrorMessage = (error: any) => {
     const code = error.code;
@@ -67,7 +70,6 @@ export default function AuthPage() {
       if (isLogin) {
         let loginEmail = identifier.trim().toLowerCase();
         
-        // Support phone login by looking up email
         if (!loginEmail.includes('@')) {
           const q = query(collection(db, 'users'), where('phone', '==', identifier.trim()), limit(1));
           const snapshot = await getDocs(q);
@@ -83,7 +85,6 @@ export default function AuthPage() {
         const cleanEmail = email.trim().toLowerCase();
         const cleanPhone = phone.trim();
 
-        // Check if phone already exists
         const phoneQuery = query(collection(db, 'users'), where('phone', '==', cleanPhone), limit(1));
         const phoneSnapshot = await getDocs(phoneQuery);
         if (!phoneSnapshot.empty) {
