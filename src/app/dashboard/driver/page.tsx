@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
@@ -15,9 +15,13 @@ import {
   Flag, 
   ShieldAlert, 
   Loader2,
-  Car
+  Car,
+  Navigation,
+  DollarSign,
+  TrendingUp,
+  X
 } from 'lucide-react';
-import { collection, doc, updateDoc, query, where, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, updateDoc, query, where, serverTimestamp, getDocs } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '@/firebase';
@@ -29,8 +33,11 @@ export default function DriverDashboard() {
   const db = useFirestore();
   const auth = useAuth();
   const router = useRouter();
+  
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
+  const mapImage = PlaceHolderImages.find(img => img.id === 'map-preview');
 
+  // Hooks called at top level
   const { data: userProfile, loading: userLoading } = useDoc(user ? `users/${user.uid}` : null);
   const { data: driverProfile, loading: driverLoading } = useDoc(user ? `drivers/${user.uid}` : null);
 
@@ -41,14 +48,19 @@ export default function DriverDashboard() {
   const isVerified = driverProfile?.isVerified === true;
   const vehicleType = driverProfile?.vehicleType || 'moto';
 
-  // HOOKS MUST BE CALLED AT THE TOP LEVEL, BEFORE ANY CONDITIONAL RETURNS
+  // Real-time requests listener
   const requestsQuery = useMemoFirebase(() => {
     if (!db || !isOnline || !isVerified) return null;
-    return query(collection(db, 'rides'), where('status', '==', 'requested'), where('vehicleType', '==', vehicleType));
+    return query(
+      collection(db, 'rides'), 
+      where('status', '==', 'requested'), 
+      where('vehicleType', '==', vehicleType)
+    );
   }, [db, isOnline, isVerified, vehicleType]);
   
   const { data: incomingRequests } = useCollection(requestsQuery);
 
+  // Active ride listener
   const activeRideQuery = useMemoFirebase(() => {
     if (!db || !user || !isVerified) return null;
     return query(
@@ -60,6 +72,26 @@ export default function DriverDashboard() {
   
   const { data: activeRides } = useCollection(activeRideQuery);
   const currentRide = activeRides?.[0];
+
+  // Completed rides for earnings calculation
+  const completedRidesQuery = useMemoFirebase(() => {
+    if (!db || !user) return null;
+    return query(
+      collection(db, 'rides'),
+      where('driverId', '==', user.uid),
+      where('status', '==', 'completed')
+    );
+  }, [db, user]);
+  const { data: completedRides } = useCollection(completedRidesQuery);
+
+  const stats = useMemo(() => {
+    const count = completedRides?.length || 0;
+    const baseRate = vehicleType === 'moto' ? 500 : 1500;
+    return {
+      totalTrips: count,
+      totalEarnings: count * baseRate
+    };
+  }, [completedRides, vehicleType]);
 
   async function toggleStatus() {
     if (!db || !user) return;
@@ -75,7 +107,7 @@ export default function DriverDashboard() {
     updateDoc(doc(db, 'rides', rideId), {
       status: 'accepted',
       driverId: user.uid,
-      driverPhone: userProfile?.phone || ''
+      driverName: userProfile?.name || 'Driver'
     });
   }
 
@@ -96,148 +128,186 @@ export default function DriverDashboard() {
     }
   }
 
-  // Early returns ONLY after all hooks have been declared
   if (userLoading || driverLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="relative w-20 h-20 animate-pulse">
-           {logo && <Image src={logo.imageUrl} alt="Loading..." fill className="object-contain" />}
-        </div>
+        <Loader2 className="size-10 animate-spin text-primary" />
       </div>
     );
   }
 
-  if (!user || !userProfile || !driverProfile) {
-     return null; // Should be handled by root redirect
-  }
+  if (!user || !userProfile || !driverProfile) return null;
 
   if (!isVerified) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col">
-        <header className="bg-white border-b p-4 flex justify-between items-center">
-          <div className="flex items-center gap-2 font-black text-xl italic text-primary">
-            <div className="relative w-8 h-8">
-               {logo && <Image src={logo.imageUrl} alt="Logo" fill className="object-contain" />}
-            </div>
-            MUTAMBUKE
-          </div>
-          <Button variant="ghost" size="sm" onClick={handleLogout} className="text-slate-400 font-bold uppercase">
-            <LogOut className="size-4 mr-2" /> {t.logout}
-          </Button>
-        </header>
-        <main className="flex-1 flex items-center justify-center p-6 text-center">
-          <div className="max-w-sm space-y-6">
-            <div className="size-24 rounded-[2rem] bg-orange-100 flex items-center justify-center text-orange-600 mx-auto">
-              <ShieldAlert className="size-12" />
-            </div>
-            <div className="space-y-2">
-              <h1 className="text-3xl font-black italic text-slate-900 uppercase">{t.verificationPending}</h1>
-              <p className="text-slate-500 font-medium leading-relaxed">
-                Your account is currently being reviewed by our team.
-              </p>
-            </div>
-          </div>
-        </main>
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
+        <div className="size-24 rounded-[2rem] bg-orange-100 flex items-center justify-center text-orange-600 mb-6">
+          <ShieldAlert className="size-12" />
+        </div>
+        <h1 className="text-3xl font-black italic text-slate-900 uppercase mb-2">{t.verificationPending}</h1>
+        <p className="text-slate-500 font-medium max-w-xs mx-auto mb-8">
+          Your documents are being reviewed by the MUTAMBUKE admin team.
+        </p>
+        <Button onClick={handleLogout} variant="outline" className="rounded-xl font-bold uppercase italic">
+          <LogOut className="size-4 mr-2" /> {t.logout}
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <header className="bg-secondary text-white px-6 h-16 flex items-center justify-between sticky top-0 z-50">
-        <div className="flex items-center gap-2 font-black text-xl italic tracking-tighter">
-          {vehicleType === 'moto' ? <Bike className="size-7" /> : <Car className="size-7" />}
-          {vehicleType.toUpperCase()} CONSOLE
-        </div>
-        <div className="flex items-center gap-3">
-          <div className={`px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase flex items-center gap-1.5 ${isOnline ? 'bg-green-500/20 text-white' : 'bg-black/20 text-white/60'}`}>
-            <div className={`size-1.5 rounded-full ${isOnline ? 'bg-green-400 animate-pulse' : 'bg-white/40'}`} />
-            {isOnline ? 'Online' : 'Offline'}
-          </div>
-          <Button variant="ghost" size="icon" onClick={handleLogout} className="text-white/80 hover:bg-white/10 rounded-full">
-            <LogOut className="size-5" />
-          </Button>
-        </div>
-      </header>
+    <div className="min-h-screen bg-slate-50 flex flex-col relative overflow-hidden">
+      {/* Real-time Map Background */}
+      <div className="absolute inset-0 z-0">
+        {mapImage && (
+          <Image src={mapImage.imageUrl} alt="Map" fill className="object-cover opacity-80" priority />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/40 via-transparent to-slate-900/60" />
+      </div>
 
-      <main className="flex-1 p-4 md:p-6 max-w-2xl mx-auto w-full space-y-6">
-        <Card className="rounded-[2.5rem] border-none shadow-xl overflow-hidden bg-white">
-          <CardContent className="p-8 flex items-center justify-between">
-            <div className="flex items-center gap-5">
-              <div className={`size-16 rounded-[1.5rem] flex items-center justify-center transition-all duration-500 ${isOnline ? 'bg-green-100 text-green-600 scale-105' : 'bg-slate-100 text-slate-400'}`}>
-                {vehicleType === 'moto' ? <Bike className="size-8" /> : <Car className="size-8" />}
+      {/* Floating Header */}
+      <header className="relative z-20 p-4">
+        <Card className="rounded-3xl border-none shadow-2xl bg-white/90 backdrop-blur-xl">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center">
+                {vehicleType === 'moto' ? <Bike className="size-6" /> : <Car className="size-6" />}
               </div>
               <div>
-                <h2 className="text-2xl font-black italic text-slate-900 uppercase leading-none">
-                  {isOnline ? t.readyToRide : t.goOnline}
-                </h2>
-                <p className="text-slate-500 text-sm font-bold mt-1 uppercase tracking-widest">
-                  {isOnline ? 'Waiting for requests...' : 'Activate to start earning'}
-                </p>
+                <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase">{userProfile.name}</p>
+                <div className="flex items-center gap-2">
+                  <div className={`size-2 rounded-full ${isOnline ? 'bg-green-500 animate-pulse' : 'bg-slate-300'}`} />
+                  <p className="font-black text-slate-900 italic uppercase leading-none">{isOnline ? 'Online' : 'Offline'}</p>
+                </div>
               </div>
             </div>
-            <Switch checked={isOnline} onCheckedChange={toggleStatus} className="data-[state=checked]:bg-green-500 scale-125" />
+            <div className="flex items-center gap-3">
+              <Switch checked={isOnline} onCheckedChange={toggleStatus} className="data-[state=checked]:bg-green-500" />
+              <Button variant="ghost" size="icon" onClick={handleLogout} className="text-slate-400 rounded-full">
+                <LogOut className="size-5" />
+              </Button>
+            </div>
           </CardContent>
         </Card>
+      </header>
 
+      {/* Main Real-time Interface */}
+      <main className="flex-1 relative z-10 flex flex-col justify-end p-4 md:p-6 space-y-4">
+        
+        {/* Earnings Quick View */}
+        <div className="flex gap-4 mb-auto">
+          <Card className="flex-1 rounded-3xl border-none shadow-xl bg-white/95 backdrop-blur-md p-4 flex items-center gap-3">
+            <div className="size-10 rounded-xl bg-green-100 text-green-600 flex items-center justify-center"><DollarSign className="size-5" /></div>
+            <div>
+              <p className="text-[10px] font-black text-slate-400 uppercase leading-none mb-1">Earnings</p>
+              <p className="font-black text-slate-900 leading-none">{stats.totalEarnings} RWF</p>
+            </div>
+          </Card>
+          <Card className="flex-1 rounded-3xl border-none shadow-xl bg-white/95 backdrop-blur-md p-4 flex items-center gap-3">
+            <div className="size-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center"><TrendingUp className="size-5" /></div>
+            <div>
+              <p className="text-[10px] font-black text-slate-400 uppercase leading-none mb-1">Trips</p>
+              <p className="font-black text-slate-900 leading-none">{stats.totalTrips}</p>
+            </div>
+          </Card>
+        </div>
+
+        {/* Dynamic Trip Cards */}
         {currentRide ? (
-          <Card className="rounded-[2.5rem] border-none shadow-2xl overflow-hidden animate-in slide-in-from-bottom-6">
+          <Card className="rounded-[2.5rem] border-none shadow-2xl overflow-hidden bg-white animate-in slide-in-from-bottom-10 duration-500">
             <div className="bg-primary p-6 text-white flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="size-14 rounded-full bg-white/20 flex items-center justify-center"><User className="size-7" /></div>
+                <div className="size-14 rounded-2xl bg-white/20 flex items-center justify-center"><User className="size-8" /></div>
                 <div>
-                  <p className="font-black text-xl italic leading-none">{currentRide.passengerName}</p>
-                  <p className="text-[10px] font-black opacity-70 tracking-widest mt-1 uppercase">{t.passenger}</p>
+                  <h3 className="text-2xl font-black italic uppercase leading-none">{currentRide.passengerName}</h3>
+                  <p className="text-[10px] font-bold opacity-70 tracking-widest mt-1 uppercase">ACTIVE MISSION</p>
                 </div>
               </div>
               <a href={`tel:${currentRide.passengerPhone}`} className="size-12 rounded-2xl bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors">
                 <Phone className="size-6" />
               </a>
             </div>
-            <CardContent className="p-8 space-y-8 bg-white">
-              <div className="flex gap-5">
-                <div className="flex flex-col items-center gap-1">
-                  <div className="size-3 rounded-full bg-primary" />
-                  <div className="w-1 flex-1 bg-slate-100" />
-                  <div className="size-3 rounded-full bg-secondary" />
+            <CardContent className="p-8 space-y-8">
+              <div className="space-y-6">
+                <div className="flex gap-4 items-start">
+                  <MapPin className="size-5 text-primary mt-1" />
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase">Pickup</p>
+                    <p className="font-black text-lg text-slate-900">{currentRide.pickupLocation}</p>
+                  </div>
                 </div>
-                <div className="flex-1 space-y-8">
-                  <div><p className="text-[10px] font-black text-slate-400 tracking-widest mb-1 uppercase">PICKUP</p><p className="font-black text-slate-900 text-lg leading-tight">{currentRide.pickupLocation}</p></div>
-                  <div><p className="text-[10px] font-black text-slate-400 tracking-widest mb-1 uppercase">DROP OFF</p><p className="font-black text-slate-900 text-lg leading-tight">{currentRide.destination}</p></div>
+                <div className="flex gap-4 items-start">
+                  <Flag className="size-5 text-secondary mt-1" />
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase">Destination</p>
+                    <p className="font-black text-lg text-slate-900">{currentRide.destination}</p>
+                  </div>
                 </div>
               </div>
-              <Button onClick={() => currentRide.status === 'accepted' ? startRide(currentRide.rideId) : completeRide(currentRide.rideId)} className="w-full h-16 rounded-[1.5rem] bg-primary text-white text-xl font-black italic">
+              <Button 
+                onClick={() => currentRide.status === 'accepted' ? startRide(currentRide.rideId) : completeRide(currentRide.rideId)}
+                className="w-full h-20 rounded-[1.5rem] bg-primary text-white text-2xl font-black italic shadow-2xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+              >
                 {currentRide.status === 'accepted' ? t.startTrip : t.completeMission}
               </Button>
             </CardContent>
           </Card>
         ) : isOnline ? (
           <div className="space-y-4">
-            <h3 className="text-sm font-black italic text-slate-400 tracking-widest uppercase px-2">LIVE REQUESTS</h3>
+            <div className="flex items-center justify-between px-2">
+              <h3 className="text-xs font-black italic text-white tracking-widest uppercase">Live Requests</h3>
+              <div className="flex items-center gap-2">
+                <div className="size-2 rounded-full bg-green-400 animate-ping" />
+                <p className="text-[10px] font-black text-green-400 tracking-tighter uppercase">Scanning...</p>
+              </div>
+            </div>
             {incomingRequests && incomingRequests.length > 0 ? (
               incomingRequests.map(req => (
-                <Card key={req.rideId} className="rounded-[2rem] border-none shadow-lg p-6">
-                   <div className="flex justify-between items-start mb-6">
-                      <div className="flex items-center gap-4">
-                        <div className="size-12 rounded-full bg-slate-100 flex items-center justify-center"><User className="size-6" /></div>
-                        <div>
-                          <p className="font-black text-lg text-slate-900 leading-none">{req.passengerName}</p>
-                        </div>
-                      </div>
-                   </div>
-                   <div className="space-y-3 mb-8">
-                      <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl"><MapPin className="size-4 text-primary" /><p className="text-sm font-bold text-slate-600 truncate">{req.pickupLocation}</p></div>
-                      <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl"><Flag className="size-4 text-secondary" /><p className="text-sm font-bold text-slate-600 truncate">{req.destination}</p></div>
-                   </div>
-                   <Button onClick={() => acceptRide(req.rideId)} className="w-full h-14 rounded-2xl bg-primary text-white font-black italic">{t.acceptRide}</Button>
+                <Card key={req.rideId} className="rounded-[2rem] border-none shadow-2xl bg-white p-6 animate-in slide-in-from-right-10">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="size-10 rounded-full bg-slate-100 flex items-center justify-center"><User className="size-5" /></div>
+                      <p className="font-black text-slate-900 italic uppercase">{req.passengerName}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div className="space-y-1">
+                      <p className="text-[9px] font-black text-slate-400 uppercase">Pickup</p>
+                      <p className="font-bold text-slate-900 text-sm truncate">{req.pickupLocation}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[9px] font-black text-slate-400 uppercase">Dropoff</p>
+                      <p className="font-bold text-slate-900 text-sm truncate">{req.destination}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <Button variant="ghost" className="flex-1 h-12 rounded-xl text-slate-400 font-bold uppercase italic"><X className="size-4 mr-2" /> Reject</Button>
+                    <Button onClick={() => acceptRide(req.rideId)} className="flex-[2] h-12 rounded-xl bg-primary text-white font-black italic uppercase">Accept Ride</Button>
+                  </div>
                 </Card>
               ))
             ) : (
-              <div className="py-20 text-center"><p className="text-xl font-black italic text-slate-300 uppercase">Scanning...</p></div>
+              <div className="py-20 text-center space-y-4">
+                <div className="relative mx-auto size-20">
+                  <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
+                  <div className="relative size-20 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                    <Navigation className="size-10 animate-pulse" />
+                  </div>
+                </div>
+                <p className="text-xl font-black italic text-white uppercase tracking-tighter">{t.readyToRide}</p>
+              </div>
             )}
           </div>
         ) : (
-          <div className="py-20 text-center text-slate-300 font-black italic uppercase text-2xl">{t.offline}</div>
+          <div className="py-20 text-center space-y-6">
+            <div className="size-24 rounded-[2.5rem] bg-white/10 backdrop-blur-md flex items-center justify-center text-white/40 mx-auto">
+              {vehicleType === 'moto' ? <Bike className="size-12" /> : <Car className="size-12" />}
+            </div>
+            <p className="text-3xl font-black italic text-white/60 uppercase tracking-tighter">{t.offline}</p>
+            <Button onClick={toggleStatus} className="bg-white text-slate-900 h-16 px-10 rounded-2xl font-black italic uppercase shadow-2xl">
+              {t.goOnline}
+            </Button>
+          </div>
         )}
       </main>
     </div>

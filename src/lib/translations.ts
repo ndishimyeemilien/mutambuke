@@ -33,7 +33,11 @@ export const translations = {
     pickupAt: "PICKUP AT",
     destination: "DESTINATION",
     selectRider: "SELECT RIDER",
-    rideConfirmed: "RIDE CONFIRMED"
+    rideConfirmed: "RIDE CONFIRMED",
+    startMission: "START MISSION",
+    endMission: "END MISSION",
+    earnings: "EARNINGS",
+    trips: "TRIPS"
   },
   rw: {
     welcome: "MURAKAZA NEZA",
@@ -66,7 +70,11 @@ export const translations = {
     pickupAt: "HAGURUKIRA",
     destination: "IYO UJYA",
     selectRider: "HITAMO UMUSHOFERI",
-    rideConfirmed: "URUGENDO RWEMEJWE"
+    rideConfirmed: "URUGENDO RWEMEJWE",
+    startMission: "TANGIRA AKAZI",
+    endMission: "SOZA AKAZI",
+    earnings: "AYO WAKOREYE",
+    trips: "INGENDO"
   },
   fr: {
     welcome: "BIENVENUE",
@@ -99,6 +107,10 @@ export const translations = {
     pickupAt: "DÉPART À",
     destination: "DESTINATION",
     selectRider: "CHOISIR UN CHAUFFEUR",
-    rideConfirmed: "COURSE CONFIRMÉE"
+    rideConfirmed: "COURSE CONFIRMÉE",
+    startMission: "COMMENCER MISSION",
+    endMission: "TERMINER MISSION",
+    earnings: "REVENUS",
+    trips: "COURSES"
   }
 };
