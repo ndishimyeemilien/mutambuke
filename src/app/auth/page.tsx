@@ -47,11 +47,12 @@ export default function AuthPage() {
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
   useEffect(() => {
-    // If user is logged in AND profile exists, go to home
-    if (user && profile && !isLoading) {
+    // Only redirect if we ARE NOT currently in the middle of a login/signup process
+    // and both auth and profile are resolved.
+    if (user && profile && !isLoading && !isSuccess) {
       router.replace('/');
     }
-  }, [user, profile, router, isLoading]);
+  }, [user, profile, router, isLoading, isSuccess]);
 
   const getErrorMessage = (error: any) => {
     const code = error.code;
@@ -81,6 +82,7 @@ export default function AuthPage() {
 
         await signInWithEmailAndPassword(auth, loginEmail, password);
         setIsSuccess(true);
+        setTimeout(() => router.replace('/'), 1500);
       } else {
         const cleanEmail = email.trim().toLowerCase();
         if (role === 'driver' && !plateNumber.trim()) {
@@ -115,6 +117,7 @@ export default function AuthPage() {
         }
 
         setIsSuccess(true);
+        setTimeout(() => router.replace('/'), 2000);
       }
     } catch (error: any) {
       setIsLoading(false);

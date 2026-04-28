@@ -3,7 +3,7 @@
 
 import { useUser, useDoc } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Loader2 } from 'lucide-react';
@@ -12,24 +12,24 @@ export default function RootPage() {
   const { user, loading: authLoading } = useUser();
   const router = useRouter();
   const { data: profile, loading: profileLoading } = useDoc(user ? `users/${user.uid}` : null);
+  const redirecting = useRef(false);
   
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
   useEffect(() => {
-    // 1. Wait for everything to load
-    if (authLoading) return;
+    if (authLoading || redirecting.current) return;
 
-    // 2. No user? Always land on /landing
     if (!user) {
+      redirecting.current = true;
       router.replace('/landing');
       return;
     }
 
-    // 3. User exists? Wait for profile to load definitively
+    // If user exists, wait for profile to load definitively
     if (profileLoading) return;
 
-    // 4. Once profile is resolved
     if (profile) {
+      redirecting.current = true;
       const role = profile.role;
       if (role === 'admin') {
         router.replace('/dashboard/admin');
@@ -39,8 +39,15 @@ export default function RootPage() {
         router.replace('/dashboard/passenger');
       }
     } else {
-      // User exists but NO profile found in DB (unlikely if they registered correctly)
-      router.replace('/auth');
+      // If we have a user but NO profile after loading, it might be a new user
+      // or a delay in Firestore. We give it a small grace period.
+      const timer = setTimeout(() => {
+        if (!profile && !redirecting.current) {
+           redirecting.current = true;
+           router.replace('/auth');
+        }
+      }, 2000);
+      return () => clearTimeout(timer);
     }
   }, [user, authLoading, profile, profileLoading, router]);
 
