@@ -4,48 +4,52 @@
 
 @layer base {
   :root {
-    --background: 210 40% 99%;
+    --background: 210 40% 98%;
     --foreground: 222 47% 11%;
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-    --primary: 222 47% 11%; /* #0F172A */
+    --primary: 222 47% 11%; /* #0F172A Dark Blue */
     --primary-foreground: 210 40% 98%;
-    --secondary: 142 70% 45%; /* #22C55E */
+    --secondary: 142 70% 45%; /* #22C55E Green */
     --secondary-foreground: 210 40% 98%;
-    --accent: 47 95% 53%; /* #FACC15 */
+    --accent: 47 95% 53%; /* #FACC15 Yellow */
     --accent-foreground: 222 47% 11%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
     --border: 214 32% 91%;
     --input: 214 32% 91%;
     --ring: 222 47% 11%;
-    --radius: 1.25rem;
+    --radius: 1.5rem;
+  }
+
+  .dark {
+    --background: 222 47% 6%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 8%;
+    --card-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222 47% 11%;
   }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground font-body antialiased; }
 }
 
-.map-gradient-overlay {
-  background: linear-gradient(to bottom, rgba(248, 250, 252, 0.9) 0%, rgba(248, 250, 252, 0) 20%, rgba(248, 250, 252, 0) 80%, rgba(248, 250, 252, 0.9) 100%);
+.map-focused-overlay {
+  background: linear-gradient(to bottom, rgba(15, 23, 42, 0.4) 0%, rgba(15, 23, 42, 0) 25%, rgba(15, 23, 42, 0) 75%, rgba(15, 23, 42, 0.4) 100%);
 }
 
-.glass-panel {
-  @apply bg-white/90 backdrop-blur-md border border-white/20 shadow-2xl;
+.floating-card {
+  @apply bg-white/95 backdrop-blur-lg border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.1)];
 }
 
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+.pill-input {
+  @apply h-14 rounded-full bg-slate-100 border-none px-6 font-bold focus-visible:ring-2 focus-visible:ring-secondary/20 transition-all;
 }
