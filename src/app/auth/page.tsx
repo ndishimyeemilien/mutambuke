@@ -1,7 +1,9 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -27,6 +29,7 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { translations, Language } from '@/lib/translations';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const InputWrapper = ({ icon: Icon, children, className = "" }: { icon: any, children: React.ReactNode, className?: string }) => (
   <div className={`relative group ${className}`}>
@@ -42,8 +45,8 @@ export default function AuthPage() {
   const t = translations[lang];
   const { toast } = useToast();
   const router = useRouter();
-
   const { user } = useUser();
+  const logo = PlaceHolderImages.find(img => img.id === 'logo');
   
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
@@ -69,7 +72,6 @@ export default function AuthPage() {
 
   useEffect(() => {
     if (isSuccess && user) {
-      // Redirect almost immediately (200ms for visual feedback)
       const timer = setTimeout(() => {
         router.replace('/');
       }, 200);
@@ -155,7 +157,10 @@ export default function AuthPage() {
       )}
 
       <div className="max-w-4xl w-full space-y-8 bg-[#1a2632] p-8 md:p-14 rounded-[3rem] shadow-2xl border border-white/5">
-        <div className="flex justify-end">
+        <div className="flex justify-between items-center">
+          <div className="relative w-16 h-16 md:w-20 md:h-20">
+            {logo && <Image src={logo.imageUrl} alt="MUTAMBUKE" fill className="object-contain" priority />}
+          </div>
           <Select value={lang} onValueChange={(v: Language) => setLang(v)}>
             <SelectTrigger className="w-[160px] h-12 rounded-2xl bg-slate-800/50 border-slate-700/50 text-sm font-black">
               <Globe className="size-5 mr-3 text-blue-400" />
