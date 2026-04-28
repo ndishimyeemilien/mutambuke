@@ -4,7 +4,6 @@
 import React, { useState, useEffect } from 'react';
 import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { 
   MapPin, 
   User, 
@@ -13,9 +12,6 @@ import {
   Navigation, 
   Bike, 
   Car as CarIcon, 
-  Search,
-  History,
-  UserCircle,
   Menu,
   X,
   Star,
@@ -30,7 +26,8 @@ import {
   Calendar,
   Settings,
   Bell,
-  ChevronRight
+  ChevronRight,
+  History
 } from 'lucide-react';
 import { collection, doc, setDoc, query, where, serverTimestamp } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
@@ -95,14 +92,13 @@ export default function PassengerDashboard() {
     setIsRequesting(true);
     try {
       const rideId = doc(collection(db, 'rides')).id;
-      // Providing fallback values to ensure no 'undefined' is sent to Firestore
       await setDoc(doc(db, 'rides', rideId), {
         rideId, 
         passengerId: user.uid, 
         passengerName: userProfile?.name || user.displayName || 'User',
         passengerPhone: userProfile?.phone || user.phoneNumber || '',
         pickupLocation: 'Current Location',
-        destination: 'To be specified', 
+        destination: 'Not Specified', 
         status: 'requested', 
         vehicleType, 
         createdAt: serverTimestamp()
@@ -355,3 +351,7 @@ export default function PassengerDashboard() {
     </div>
   );
 }
+
+const UserCircle = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+);
