@@ -4,26 +4,24 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
+    --background: 210 40% 99%;
     --foreground: 222 47% 11%;
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-    --primary: 210 100% 45%;
+    --primary: 222 47% 11%; /* #0F172A */
     --primary-foreground: 210 40% 98%;
-    --secondary: 24 95% 53%;
+    --secondary: 142 70% 45%; /* #22C55E */
     --secondary-foreground: 210 40% 98%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 210 40% 96%;
+    --accent: 47 95% 53%; /* #FACC15 */
     --accent-foreground: 222 47% 11%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
     --border: 214 32% 91%;
     --input: 214 32% 91%;
-    --ring: 210 100% 45%;
-    --radius: 0.75rem;
+    --ring: 222 47% 11%;
+    --radius: 1.25rem;
   }
 }
 
@@ -36,13 +34,18 @@
   }
 }
 
-.auth-header-gradient {
-  background: linear-gradient(180deg, #1d72d2 0%, #76b5f5 100%);
+.map-gradient-overlay {
+  background: linear-gradient(to bottom, rgba(248, 250, 252, 0.9) 0%, rgba(248, 250, 252, 0) 20%, rgba(248, 250, 252, 0) 80%, rgba(248, 250, 252, 0.9) 100%);
 }
 
-.cloud-bg {
-  background-image: url('https://picsum.photos/seed/clouds/1200/400');
-  background-size: cover;
-  background-position: center;
-  opacity: 0.2;
+.glass-panel {
+  @apply bg-white/90 backdrop-blur-md border border-white/20 shadow-2xl;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

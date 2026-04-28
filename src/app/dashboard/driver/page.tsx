@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -16,11 +15,13 @@ import {
   Car,
   Navigation,
   X,
-  Layers,
-  Map as MapIcon,
-  Globe,
   Hash,
-  Loader2
+  Loader2,
+  CheckCircle2,
+  DollarSign,
+  TrendingUp,
+  Clock,
+  Star
 } from 'lucide-react';
 import { collection, doc, updateDoc, query, where, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
@@ -33,7 +34,7 @@ const GOOGLE_MAPS_API_KEY = "AIzaSyBYd7EGaMpDouB0Br1yUSwRarQeToFuiiA";
 
 const containerStyle = {
   width: "100%",
-  height: "100%",
+  height: "100vh",
 };
 
 const kigaliCenter = { lat: -1.9441, lng: 30.0619 };
@@ -45,7 +46,7 @@ export default function DriverDashboard() {
   const router = useRouter();
   
   const [driverLocation, setDriverLocation] = useState(kigaliCenter);
-  const [mapType, setMapType] = useState<google.maps.MapTypeId | string>('roadmap');
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
@@ -135,11 +136,6 @@ export default function DriverDashboard() {
     });
   }
 
-  async function rejectRide(rideId: string) {
-    if (!db) return;
-    await updateDoc(doc(db, 'rides', rideId), { status: 'cancelled' });
-  }
-
   async function startRide(rideId: string) {
     if (!db) return;
     await updateDoc(doc(db, 'rides', rideId), { status: 'started' });
@@ -162,7 +158,7 @@ export default function DriverDashboard() {
   }
 
   if (userLoading || driverLoading) return (
-    <div className="min-h-screen flex items-center justify-center bg-white">
+    <div className="h-screen flex items-center justify-center bg-white">
       <Loader2 className="animate-spin size-12 text-primary" />
     </div>
   );
@@ -171,34 +167,33 @@ export default function DriverDashboard() {
 
   if (verificationStatus === 'pending') {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
-        <div className="size-32 rounded-[2.5rem] bg-orange-100 flex items-center justify-center text-orange-600 mb-8 shadow-xl">
-          <Loader2 className="size-16 animate-spin" />
+      <div className="h-screen bg-slate-50 flex flex-col items-center justify-center p-8 text-center space-y-8">
+        <div className="size-32 rounded-[3rem] bg-accent/20 flex items-center justify-center text-primary shadow-2xl border-4 border-white animate-pulse">
+           <Navigation className="size-16" />
         </div>
-        <h1 className="text-4xl font-black italic text-slate-900 uppercase mb-4 tracking-tighter">Account Under Review</h1>
-        <p className="text-xl text-slate-500 font-medium max-w-md mx-auto mb-10 leading-relaxed">
-          The MUTAMBUKE admin team is verifying your documents and plate: <span className="text-primary font-black">{plateNumber}</span>. This usually takes a few hours.
-        </p>
-        <Button onClick={handleLogout} variant="outline" className="h-16 rounded-2xl px-12 font-black uppercase italic border-slate-200 text-lg hover:bg-slate-100 transition-all">
-          <LogOut className="size-5 mr-3" /> {t.logout}
+        <div className="space-y-2">
+          <h1 className="text-4xl font-black italic text-primary uppercase tracking-tighter">WAITING FOR APPROVAL</h1>
+          <p className="text-slate-500 font-bold max-w-sm mx-auto italic">
+            MUTAMBUKE Admin is verifying your plate: <span className="text-secondary font-black">{plateNumber}</span>. You'll be ready to work soon!
+          </p>
+        </div>
+        <Button onClick={handleLogout} variant="outline" className="h-16 rounded-2xl px-10 font-black uppercase italic border-slate-200 text-slate-400 hover:text-red-500">
+           {t.logout}
         </Button>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col relative overflow-hidden">
-      {/* Background Map - Full Screen */}
-      <div className="absolute inset-0 z-0 bg-slate-200">
+    <div className="h-screen w-screen overflow-hidden bg-slate-100 relative flex flex-col font-body">
+      {/* Full Map Background */}
+      <div className="absolute inset-0 z-0">
         {isLoaded ? (
           <GoogleMap
             mapContainerStyle={containerStyle}
             center={driverLocation}
             zoom={15}
-            mapTypeId={mapType}
-            options={{
-              disableDefaultUI: true,
-            }}
+            options={{ disableDefaultUI: true }}
           >
             <Marker 
               position={driverLocation}
@@ -206,164 +201,162 @@ export default function DriverDashboard() {
                 url: vehicleType === 'moto' 
                   ? 'https://cdn-icons-png.flaticon.com/512/3194/3194514.png' 
                   : 'https://cdn-icons-png.flaticon.com/512/3082/3082383.png',
-                scaledSize: { width: 55, height: 55 } as any
+                scaledSize: { width: 50, height: 50 } as any
               }}
             />
           </GoogleMap>
         ) : (
-          <div className="h-full w-full flex items-center justify-center bg-slate-100">
-            <Loader2 className="size-12 animate-spin text-slate-300" />
+          <div className="h-full w-full flex items-center justify-center">
+            <Loader2 className="size-12 animate-spin text-primary" />
           </div>
         )}
+        <div className="absolute inset-0 pointer-events-none map-gradient-overlay" />
       </div>
 
-      {/* Header Overlay */}
-      <header className="relative z-20 p-6 md:p-10 pointer-events-none">
-        <Card className="rounded-[2.5rem] border-none shadow-3xl bg-white/95 backdrop-blur-2xl max-w-2xl mx-auto pointer-events-auto">
-          <CardContent className="p-6 md:p-8 flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <div className="size-16 rounded-[1.5rem] bg-primary text-white flex items-center justify-center shadow-lg">
-                {vehicleType === 'moto' ? <Bike className="size-8" /> : <Car className="size-8" />}
-              </div>
-              <div className="space-y-1">
-                <div className="flex items-center gap-3">
-                  <p className="text-xs font-black text-slate-400 tracking-[0.2em] uppercase leading-none">{userProfile.name}</p>
-                  <span className="text-[10px] font-black bg-slate-100 px-2 py-1 rounded-lg text-slate-600 uppercase tracking-tighter flex items-center gap-1">
-                    <Hash className="size-3" /> {plateNumber}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className={`size-3 rounded-full ${isOnline ? 'bg-green-500 animate-pulse' : isBusy ? 'bg-orange-500' : 'bg-slate-300'}`} />
-                  <p className="font-black text-2xl text-slate-900 italic uppercase leading-none tracking-tighter">
-                    {isBusy ? 'Busy' : isOnline ? 'Online' : 'Offline'}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-6">
-              {!isBusy && (
-                <div className="flex flex-col items-center gap-1">
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{isOnline ? 'Active' : 'Standby'}</span>
-                    <Switch checked={isOnline} onCheckedChange={toggleStatus} className="scale-125 data-[state=checked]:bg-green-500" />
-                </div>
-              )}
-              <Button variant="ghost" size="icon" onClick={handleLogout} className="size-14 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all">
-                <LogOut className="size-7" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Top Header Overlay */}
+      <header className="absolute top-6 left-6 right-6 z-50 flex items-center justify-between">
+        <div className="glass-panel p-4 rounded-[2rem] flex items-center gap-4 shadow-3xl">
+          <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center">
+             {vehicleType === 'moto' ? <Bike size={24} /> : <Car size={24} />}
+          </div>
+          <div>
+             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">{userProfile.name}</p>
+             <p className="text-lg font-black italic tracking-tighter text-primary">{plateNumber}</p>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-4">
+           {vehicleType === 'taxi' && (
+             <div className="glass-panel px-6 py-4 rounded-3xl hidden md:flex items-center gap-3">
+                <DollarSign className="text-secondary size-5" />
+                <p className="font-black text-xl italic text-primary">24,500 RWF</p>
+             </div>
+           )}
+           <div className={`glass-panel px-8 py-4 rounded-3xl flex items-center gap-4 border-2 transition-all ${isOnline ? 'border-secondary/50' : 'border-slate-200'}`}>
+              <span className="text-xs font-black uppercase italic tracking-widest text-primary">{isOnline ? t.goOnline : 'OFFLINE'}</span>
+              <Switch checked={isOnline} onCheckedChange={toggleStatus} disabled={isBusy} className="data-[state=checked]:bg-secondary" />
+           </div>
+        </div>
       </header>
 
-      {/* Map Style Controls */}
-      <div className="absolute top-40 md:top-48 right-6 md:right-10 z-40 flex flex-col gap-3 pointer-events-auto">
-        <Button variant="secondary" size="icon" onClick={() => setMapType('roadmap')} className={`size-14 rounded-2xl shadow-2xl border-[3px] transition-all hover:scale-110 ${mapType === 'roadmap' ? 'border-primary bg-white' : 'border-white bg-white/80'}`}><MapIcon className="size-7" /></Button>
-        <Button variant="secondary" size="icon" onClick={() => setMapType('satellite')} className={`size-14 rounded-2xl shadow-2xl border-[3px] transition-all hover:scale-110 ${mapType === 'satellite' ? 'border-primary bg-white' : 'border-white bg-white/80'}`}><Globe className="size-7" /></Button>
-        <Button variant="secondary" size="icon" onClick={() => setMapType('hybrid')} className={`size-14 rounded-2xl shadow-2xl border-[3px] transition-all hover:scale-110 ${mapType === 'hybrid' ? 'border-primary bg-white' : 'border-white bg-white/80'}`}><Layers className="size-7" /></Button>
-      </div>
-
-      {/* Active Content Overlay */}
-      <main className="flex-1 relative z-10 flex flex-col justify-end p-6 md:p-12 space-y-6 pointer-events-none overflow-y-auto no-scrollbar">
-        <div className="pointer-events-auto w-full max-w-4xl mx-auto space-y-6">
-          {currentRide ? (
-            <Card className="rounded-[3.5rem] border-none shadow-3xl overflow-hidden bg-white animate-in slide-in-from-bottom-20 duration-500">
-              <div className="bg-primary p-8 md:p-10 text-white flex items-center justify-between">
+      {/* Main Bottom Panel */}
+      <main className="absolute bottom-6 left-6 right-6 z-40 max-w-4xl mx-auto flex flex-col gap-4">
+        {currentRide ? (
+          <Card className="rounded-[3rem] border-none shadow-3xl overflow-hidden bg-white animate-in slide-in-from-bottom-20 duration-500">
+             <div className="bg-primary p-10 text-white flex items-center justify-between">
                 <div className="flex items-center gap-6">
-                  <div className="size-20 rounded-[2rem] bg-white/20 flex items-center justify-center backdrop-blur-lg shadow-inner"><User className="size-10" /></div>
-                  <div className="space-y-1">
-                    <h3 className="text-4xl font-black italic uppercase leading-none tracking-tighter">{currentRide.passengerName}</h3>
-                    <p className="text-xs font-black opacity-80 tracking-[0.3em] uppercase">MISSION IN PROGRESS</p>
-                  </div>
+                   <div className="size-16 rounded-[1.5rem] bg-white/10 flex items-center justify-center backdrop-blur-md">
+                      <User className="size-8" />
+                   </div>
+                   <div>
+                      <h3 className="text-3xl font-black italic uppercase tracking-tighter leading-none mb-1">{currentRide.passengerName}</h3>
+                      <div className="flex items-center gap-2 opacity-70">
+                        <Star className="size-4 fill-accent text-accent" />
+                        <span className="text-sm font-bold">4.8 Rating</span>
+                      </div>
+                   </div>
                 </div>
-                <a href={`tel:${currentRide.passengerPhone}`} className="size-16 rounded-[1.5rem] bg-white text-primary flex items-center justify-center hover:bg-slate-50 transition-all shadow-xl active:scale-95">
+                <a href={`tel:${currentRide.passengerPhone}`} className="size-16 rounded-2xl bg-secondary text-white flex items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition-all">
                   <Phone className="size-8" />
                 </a>
-              </div>
-              <CardContent className="p-10 md:p-14 space-y-12">
-                <div className="grid md:grid-cols-2 gap-10">
-                  <div className="flex gap-6 items-start">
-                    <div className="size-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0"><MapPin className="size-6" /></div>
-                    <div className="space-y-1">
-                      <p className="text-xs font-black text-slate-400 tracking-[0.2em] uppercase">{t.pickupAt}</p>
-                      <p className="font-black text-2xl text-slate-900 leading-tight">{currentRide.pickupLocation}</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-6 items-start">
-                    <div className="size-12 rounded-xl bg-secondary/10 flex items-center justify-center text-secondary shrink-0"><Flag className="size-6" /></div>
-                    <div className="space-y-1">
-                      <p className="text-xs font-black text-slate-400 tracking-[0.2em] uppercase">{t.destination}</p>
-                      <p className="font-black text-2xl text-slate-900 leading-tight">{currentRide.destination}</p>
-                    </div>
-                  </div>
+             </div>
+             <CardContent className="p-10 space-y-8">
+                <div className="grid md:grid-cols-2 gap-8">
+                   <div className="space-y-1">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.pickupAt}</p>
+                      <p className="text-xl font-black text-primary">{currentRide.pickupLocation}</p>
+                   </div>
+                   <div className="space-y-1">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.destination}</p>
+                      <p className="text-xl font-black text-primary">{currentRide.destination}</p>
+                   </div>
                 </div>
+                {vehicleType === 'taxi' && (
+                  <div className="p-6 bg-slate-50 rounded-2xl flex items-center justify-between border-2 border-dashed border-slate-200">
+                    <p className="font-bold text-slate-500 uppercase italic">Estimated Fare</p>
+                    <p className="text-2xl font-black text-secondary">3,500 RWF</p>
+                  </div>
+                )}
                 <Button 
-                  onClick={() => currentRide.status === 'accepted' ? startRide(currentRide.rideId) : completeRide(currentRide.rideId)}
-                  className="w-full h-24 rounded-[2.5rem] bg-primary hover:bg-primary/90 text-3xl font-black italic shadow-3xl transition-all active:scale-[0.98]"
+                   onClick={() => currentRide.status === 'accepted' ? startRide(currentRide.rideId) : completeRide(currentRide.rideId)}
+                   className="w-full h-24 rounded-[2.5rem] bg-primary hover:bg-primary/90 text-2xl font-black italic uppercase tracking-tighter shadow-3xl transition-all"
                 >
-                  {currentRide.status === 'accepted' ? t.startTrip : t.completeMission}
+                   {currentRide.status === 'accepted' ? t.startTrip : t.completeMission}
                 </Button>
-              </CardContent>
-            </Card>
-          ) : isOnline ? (
-            <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-              {incomingRequests && incomingRequests.length > 0 ? (
-                incomingRequests.map(req => (
-                  <Card key={req.rideId} className="rounded-[3rem] border-none shadow-3xl bg-white p-8 animate-in slide-in-from-right-20 duration-500">
-                    <div className="flex justify-between items-center mb-8">
-                      <div className="flex items-center gap-4">
-                        <div className="size-14 rounded-[1.25rem] bg-slate-100 flex items-center justify-center text-slate-400"><User className="size-7" /></div>
-                        <div className="space-y-0.5">
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">NEW REQUEST</p>
-                            <p className="text-2xl font-black text-slate-900 italic uppercase tracking-tighter">{req.passengerName}</p>
-                        </div>
-                      </div>
+             </CardContent>
+          </Card>
+        ) : isOnline ? (
+          <div className="space-y-4">
+             {incomingRequests && incomingRequests.length > 0 ? (
+               incomingRequests.map(req => (
+                 <Card key={req.rideId} className="rounded-[3rem] border-none shadow-3xl bg-white p-8 flex flex-col md:flex-row items-center justify-between gap-6 animate-in slide-in-from-right-20">
+                    <div className="flex items-center gap-6">
+                       <div className="size-16 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400">
+                          <User size={32} />
+                       </div>
+                       <div>
+                          <p className="text-[10px] font-black text-secondary uppercase tracking-[0.3em] mb-1">NEW MISSION</p>
+                          <h3 className="text-2xl font-black text-primary italic uppercase tracking-tighter">{req.passengerName}</h3>
+                          <p className="text-sm font-bold text-slate-400 italic">{req.pickupLocation} → {req.destination}</p>
+                       </div>
                     </div>
-                    <div className="space-y-6 mb-10">
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t.pickupAt}</p>
-                        <p className="font-bold text-slate-900 text-lg line-clamp-1">{req.pickupLocation}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t.destination}</p>
-                        <p className="font-bold text-slate-900 text-lg line-clamp-1">{req.destination}</p>
-                      </div>
+                    <div className="flex gap-4 w-full md:w-auto">
+                       <Button variant="ghost" className="flex-1 md:w-24 h-16 rounded-2xl text-slate-400 font-bold uppercase italic">Ignore</Button>
+                       <Button 
+                        onClick={() => acceptRide(req.rideId)}
+                        className="flex-[2] md:w-48 h-16 rounded-2xl bg-secondary hover:bg-secondary/90 text-white font-black italic uppercase text-lg shadow-xl"
+                       >
+                         {t.acceptRide}
+                       </Button>
                     </div>
-                    <div className="flex gap-4">
-                      <Button onClick={() => rejectRide(req.rideId)} variant="ghost" className="flex-1 h-16 rounded-2xl text-slate-400 font-bold uppercase italic border-slate-100 text-sm"><X className="size-5 mr-2" /> Reject</Button>
-                      <Button onClick={() => acceptRide(req.rideId)} className="flex-[2] h-16 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black italic uppercase text-lg shadow-xl">{t.acceptRide}</Button>
-                    </div>
-                  </Card>
-                ))
-              ) : (
-                <div className="py-24 md:py-32 text-center space-y-6 bg-white/10 backdrop-blur-sm rounded-[4rem] border border-white/20">
-                  <div className="relative mx-auto size-28">
-                    <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
-                    <div className="relative size-28 rounded-full bg-primary/20 flex items-center justify-center text-primary shadow-2xl">
-                      <Navigation className="size-14 animate-pulse" />
-                    </div>
+                 </Card>
+               ))
+             ) : (
+               <div className="glass-panel p-10 rounded-[3rem] flex flex-col items-center gap-4 text-center">
+                  <div className="size-16 rounded-full bg-secondary/10 flex items-center justify-center text-secondary">
+                     <Navigation className="size-8 animate-pulse" />
                   </div>
-                  <div className="space-y-2">
-                    <p className="text-4xl font-black italic text-white uppercase tracking-tighter drop-shadow-lg">{t.readyToRide}</p>
-                    <p className="text-white/60 font-bold italic">Waiting for incoming missions...</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="py-24 md:py-40 text-center">
-              <Button onClick={toggleStatus} className="bg-white text-slate-900 h-28 px-16 rounded-[3.5rem] text-3xl font-black italic uppercase shadow-3xl pointer-events-auto hover:bg-slate-50 active:scale-95 transition-all hover:scale-105">
+                  <p className="text-2xl font-black italic text-primary uppercase tracking-tighter">{t.readyToRide}</p>
+                  <p className="text-slate-400 font-bold italic">Waiting for incoming missions on MUTAMBUKE network...</p>
+               </div>
+             )}
+          </div>
+        ) : (
+          <div className="flex justify-center">
+             <Button 
+                onClick={toggleStatus}
+                className="h-28 px-16 rounded-[4rem] bg-white text-primary text-4xl font-black italic uppercase shadow-3xl hover:bg-slate-50 active:scale-95 transition-all"
+             >
                 {t.goOnline}
-              </Button>
-            </div>
-          )}
-        </div>
+             </Button>
+          </div>
+        )}
+
+        {/* Driver Stats (Only for Taxi or detailed Moto view) */}
+        {!currentRide && isOnline && (
+          <div className="grid grid-cols-3 gap-4 mb-4">
+             <div className="glass-panel p-6 rounded-3xl flex flex-col items-center justify-center text-center">
+                <Clock className="size-5 text-slate-400 mb-2" />
+                <p className="text-lg font-black text-primary leading-none">6.5h</p>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">ONLINE</p>
+             </div>
+             <div className="glass-panel p-6 rounded-3xl flex flex-col items-center justify-center text-center">
+                <TrendingUp className="size-5 text-secondary mb-2" />
+                <p className="text-lg font-black text-primary leading-none">14</p>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">TRIPS</p>
+             </div>
+             <div className="glass-panel p-6 rounded-3xl flex flex-col items-center justify-center text-center">
+                <Star className="size-5 text-accent mb-2" />
+                <p className="text-lg font-black text-primary leading-none">4.9</p>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">RATING</p>
+             </div>
+          </div>
+        )}
       </main>
 
-      {/* Footer System Attribution */}
-      <footer className="relative z-20 p-8 flex justify-center pointer-events-none">
-         <p className="text-slate-400/30 font-black italic uppercase text-[10px] tracking-[0.6em]">
-            MUTAMBUKE SMART SYSTEM © 2025
-         </p>
+      {/* Footer Branding */}
+      <footer className="absolute bottom-4 left-0 right-0 z-40 text-center pointer-events-none">
+         <p className="text-[10px] font-black text-primary/20 uppercase tracking-[0.8em] italic">MUTAMBUKE SMART SYSTEM</p>
       </footer>
     </div>
   );
