@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -86,17 +87,21 @@ export default function DriverDashboard() {
 
   async function acceptRide(rideId: string) {
     if (!db || !user) return;
-    await updateDoc(doc(db, 'rides', rideId), { status: 'accepted', driverId: user.uid, driverName: profile?.name, driverPhone: profile?.phone });
+    // Providing fallback values to ensure no 'undefined' is sent to Firestore
+    await updateDoc(doc(db, 'rides', rideId), { 
+      status: 'accepted', 
+      driverId: user.uid, 
+      driverName: profile?.name || 'Driver', 
+      driverPhone: profile?.phone || '' 
+    });
     await updateDoc(doc(db, 'drivers', user.uid), { status: 'busy', updatedAt: serverTimestamp() });
   }
 
   if (dLoading) return <div className="h-screen flex items-center justify-center bg-[#0F172A]"><Loader2 className="animate-spin text-secondary size-12" /></div>;
 
-  // TAXI VERSION (Detailed, Premium)
   if (vehicleType === 'taxi') {
     return (
       <div className="min-h-screen bg-slate-50 flex font-body">
-        {/* SIDE PANEL FOR TAXI */}
         <aside className="w-96 bg-[#0F172A] text-white p-10 flex flex-col h-screen sticky top-0 overflow-y-auto no-scrollbar">
           <div className="mb-12">
             <h1 className="text-3xl font-black italic tracking-tighter uppercase text-accent">MUTAMBUKE</h1>
@@ -104,14 +109,13 @@ export default function DriverDashboard() {
           </div>
 
           <div className="space-y-8 flex-1">
-            {/* PROFILE CARD */}
             <div className="bg-white/5 rounded-3xl p-6 border border-white/10">
               <div className="flex items-center gap-4 mb-4">
                 <div className="size-12 rounded-2xl bg-secondary flex items-center justify-center">
                   <User className="size-6" />
                 </div>
                 <div>
-                  <h4 className="font-black uppercase tracking-tighter text-lg">{profile?.name}</h4>
+                  <h4 className="font-black uppercase tracking-tighter text-lg">{profile?.name || 'Driver'}</h4>
                   <p className="text-xs text-slate-400 font-bold uppercase">{driver?.plateNumber}</p>
                 </div>
               </div>
@@ -126,7 +130,6 @@ export default function DriverDashboard() {
               </div>
             </div>
 
-            {/* STATS CARDS */}
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-white/5 p-4 rounded-3xl border border-white/10">
                 <DollarSign className="size-5 text-secondary mb-2" />
@@ -140,7 +143,6 @@ export default function DriverDashboard() {
               </div>
             </div>
 
-            {/* STATUS TOGGLE */}
             <div className="bg-white p-6 rounded-3xl flex items-center justify-between shadow-2xl">
               <span className="text-sm font-black uppercase text-[#0F172A]">{isOnline ? t.startWorking : 'START WORKING'}</span>
               <Switch checked={isOnline} onCheckedChange={toggleStatus} disabled={isBusy} className="data-[state=checked]:bg-secondary" />
@@ -152,7 +154,6 @@ export default function DriverDashboard() {
           </Button>
         </aside>
 
-        {/* MAIN MAP AREA */}
         <main className="flex-1 relative">
           {isLoaded ? (
             <GoogleMap mapContainerStyle={containerStyle} center={location} zoom={15} options={{ disableDefaultUI: true }}>
@@ -160,7 +161,6 @@ export default function DriverDashboard() {
             </GoogleMap>
           ) : <div className="h-full w-full bg-slate-200 animate-pulse" />}
           
-          {/* FLOATING REQUESTS FOR TAXI */}
           <div className="absolute bottom-10 left-10 right-10 z-40">
             {currentRide ? (
               <Card className="rounded-[3rem] border-none shadow-3xl bg-white overflow-hidden max-w-2xl mx-auto animate-in slide-in-from-bottom-20">
@@ -236,10 +236,8 @@ export default function DriverDashboard() {
     );
   }
 
-  // MOTO VERSION (Fast, Simple, Map-Focused)
   return (
     <div className="h-screen w-screen overflow-hidden relative flex flex-col font-body bg-slate-50">
-      {/* MAP AS BACKGROUND */}
       <div className="absolute inset-0 z-0">
         {isLoaded ? (
           <GoogleMap mapContainerStyle={containerStyle} center={location} zoom={15} options={{ disableDefaultUI: true }}>
@@ -249,7 +247,6 @@ export default function DriverDashboard() {
         <div className="absolute inset-0 pointer-events-none map-focused-overlay" />
       </div>
 
-      {/* STATUS INDICATOR HEADER */}
       <header className="absolute top-6 left-6 right-6 z-50 flex items-center justify-between">
         <div className="bg-[#0F172A] p-4 rounded-3xl flex items-center gap-4 shadow-2xl text-white">
           <div className="size-12 rounded-2xl bg-secondary flex items-center justify-center">
@@ -266,7 +263,6 @@ export default function DriverDashboard() {
         </div>
       </header>
 
-      {/* BOTTOM PANEL FOR RIDE REQUESTS */}
       <main className="absolute bottom-10 left-6 right-6 z-40 max-w-4xl mx-auto w-full">
         {currentRide ? (
           <Card className="rounded-[2.5rem] border-none shadow-3xl overflow-hidden bg-white animate-in slide-in-from-bottom-10">

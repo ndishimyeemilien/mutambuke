@@ -95,10 +95,17 @@ export default function PassengerDashboard() {
     setIsRequesting(true);
     try {
       const rideId = doc(collection(db, 'rides')).id;
+      // Providing fallback values to ensure no 'undefined' is sent to Firestore
       await setDoc(doc(db, 'rides', rideId), {
-        rideId, passengerId: user.uid, passengerName: userProfile?.name,
-        passengerPhone: userProfile?.phone, pickupLocation: 'Current Location',
-        destination: 'To be specified', status: 'requested', vehicleType, createdAt: serverTimestamp()
+        rideId, 
+        passengerId: user.uid, 
+        passengerName: userProfile?.name || user.displayName || 'User',
+        passengerPhone: userProfile?.phone || user.phoneNumber || '',
+        pickupLocation: 'Current Location',
+        destination: 'To be specified', 
+        status: 'requested', 
+        vehicleType, 
+        createdAt: serverTimestamp()
       });
       toast({ title: t.searching, description: "Connecting to MUTAMBUKE network..." });
     } catch (e: any) {
@@ -118,7 +125,6 @@ export default function PassengerDashboard() {
 
   return (
     <div className={`min-h-screen flex flex-col font-body overflow-x-hidden pb-10 transition-colors duration-500 ${isDark ? 'bg-[#0F172A]' : 'bg-[#F0F0F4]'}`}>
-      {/* HEADER NAVIGATION */}
       <header className={`sticky top-0 z-[60] backdrop-blur-md p-6 flex items-center justify-between border-b transition-colors ${isDark ? 'bg-[#0F172A]/95 border-white/5' : 'bg-white/90 border-slate-200'}`}>
         <div className="flex items-center gap-10">
           <div className="flex items-center gap-3">
@@ -159,7 +165,7 @@ export default function PassengerDashboard() {
              className={`px-5 py-2.5 rounded-2xl flex items-center gap-3 border transition-colors cursor-pointer hover:border-secondary/50 ${isDark ? 'bg-white/5 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900 shadow-sm'}`}
            >
               <User className="size-4 text-secondary" />
-              <span className="font-bold text-xs uppercase tracking-tighter">{userProfile?.name}</span>
+              <span className="font-bold text-xs uppercase tracking-tighter">{userProfile?.name || 'User'}</span>
            </div>
         </div>
       </header>
@@ -167,7 +173,6 @@ export default function PassengerDashboard() {
       <main className="flex-1 w-full max-w-6xl mx-auto p-4 md:p-8 space-y-8">
         {activeTab === 'home' ? (
           <>
-            {/* MAP SECTION */}
             <div className={`relative h-[450px] md:h-[550px] w-full rounded-[2.5rem] overflow-hidden shadow-2xl border-4 transition-colors ${isDark ? 'border-white/5 bg-[#1a2632]' : 'border-white bg-slate-200'}`}>
               {isLoaded ? (
                 <GoogleMap
@@ -191,25 +196,23 @@ export default function PassengerDashboard() {
               </div>
             </div>
 
-            {/* QUICK REQUEST BUTTONS */}
             <div className="flex flex-col md:flex-row gap-6 pt-4">
                <Button 
                  onClick={() => { setVehicleType('moto'); handleQuickRequest(); }} 
                  disabled={isRequesting}
-                 className={`flex-1 h-28 rounded-[2rem] flex items-center justify-center gap-6 text-2xl font-black uppercase italic transition-all shadow-2xl ${vehicleType === 'moto' ? 'bg-secondary text-white ring-4 ring-secondary/20' : 'bg-white/5 text-white/40 border border-white/10'}`}
+                 className={`flex-1 h-28 rounded-[2rem] flex items-center justify-center gap-6 text-2xl font-black uppercase italic transition-all shadow-2xl ${vehicleType === 'moto' ? 'bg-secondary text-white ring-4 ring-secondary/20' : 'bg-[#0F172A]/40 text-white/40 border border-white/10'}`}
                >
                  <Bike className="size-10" /> {t.moto}
                </Button>
                <Button 
                  onClick={() => { setVehicleType('taxi'); handleQuickRequest(); }} 
                  disabled={isRequesting}
-                 className={`flex-1 h-28 rounded-[2rem] flex items-center justify-center gap-6 text-2xl font-black uppercase italic transition-all shadow-2xl ${vehicleType === 'taxi' ? 'bg-secondary text-white ring-4 ring-secondary/20' : 'bg-white/5 text-white/40 border border-white/10'}`}
+                 className={`flex-1 h-28 rounded-[2rem] flex items-center justify-center gap-6 text-2xl font-black uppercase italic transition-all shadow-2xl ${vehicleType === 'taxi' ? 'bg-secondary text-white ring-4 ring-secondary/20' : 'bg-[#0F172A]/40 text-white/40 border border-white/10'}`}
                >
                  <CarIcon className="size-10" /> {t.taxi}
                </Button>
             </div>
 
-            {/* NEARBY DRIVERS LIST */}
             <section className="space-y-4 pt-6">
                <div className="flex items-center justify-between px-2">
                   <h3 className={`text-xl font-black italic uppercase tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`}>Abashoferi bari hafi</h3>
@@ -256,7 +259,6 @@ export default function PassengerDashboard() {
             </section>
           </>
         ) : activeTab === 'profile' ? (
-          /* PROFILE VIEW */
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-10">
             <header className="flex flex-col md:flex-row items-center justify-between gap-8 pb-12 border-b border-white/5">
               <div className="flex items-center gap-10">
@@ -265,7 +267,7 @@ export default function PassengerDashboard() {
                   <AvatarFallback className="bg-slate-800 text-white text-6xl font-black uppercase">{userProfile?.name?.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div className="space-y-3">
-                  <h2 className={`text-5xl md:text-7xl font-black italic uppercase tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`}>{userProfile?.name}</h2>
+                  <h2 className={`text-5xl md:text-7xl font-black italic uppercase tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`}>{userProfile?.name || 'User'}</h2>
                   <div className="flex items-center gap-4">
                     <span className="px-5 py-2 rounded-full bg-secondary/10 text-secondary text-[11px] font-black uppercase tracking-widest border border-secondary/20">Premium Member</span>
                     <div className="flex items-center gap-1 text-[#FACC15]"><Star className="size-5 fill-current" /><span className="text-lg font-black">4.9</span></div>
@@ -277,7 +279,7 @@ export default function PassengerDashboard() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {[
-                { icon: Mail, label: 'Email', value: userProfile?.email || 'N/A' },
+                { icon: Mail, label: 'Email', value: userProfile?.email || user?.email || 'N/A' },
                 { icon: Phone, label: 'Phone', value: userProfile?.phone || 'N/A' },
                 { icon: UserCircle, label: 'Gender', value: userProfile?.gender || 'N/A' },
                 { icon: Calendar, label: 'Joined', value: '2024' },
@@ -316,7 +318,6 @@ export default function PassengerDashboard() {
         )}
       </main>
 
-      {/* MOBILE MENU */}
       {isMenuOpen && (
         <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-xl animate-in fade-in duration-300 flex justify-end">
            <div className={`w-80 h-full p-8 space-y-10 animate-in slide-in-from-right duration-500 border-l ${isDark ? 'bg-[#0F172A] border-white/10' : 'bg-white border-slate-200'}`}>
