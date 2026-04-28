@@ -53,6 +53,8 @@ export default function AuthPage() {
     const code = error.code;
     if (code === 'auth/email-already-in-use') return t.errorEmailInUse;
     if (code === 'auth/invalid-credential' || code === 'auth/user-not-found' || code === 'auth/wrong-password') return t.errorInvalidAuth;
+    if (code === 'custom/phone-in-use') return error.message;
+    if (code === 'custom/missing-plate') return error.message;
     return error.message || t.errorGeneric;
   };
 
@@ -65,13 +67,14 @@ export default function AuthPage() {
       if (isLogin) {
         let loginEmail = identifier.trim().toLowerCase();
         
+        // Support phone login by looking up email
         if (!loginEmail.includes('@')) {
           const q = query(collection(db, 'users'), where('phone', '==', identifier.trim()), limit(1));
           const snapshot = await getDocs(q);
           if (!snapshot.empty) {
             loginEmail = snapshot.docs[0].data().email;
           } else {
-            throw { code: 'auth/user-not-found', message: 'No account found with this phone number.' };
+            throw { code: 'auth/user-not-found', message: 'Nta konti yabonetse kuri iyi telefone.' };
           }
         }
 

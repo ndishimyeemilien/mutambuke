@@ -65,6 +65,7 @@ export default function DriverDashboard() {
   const vehicleType = driverProfile?.vehicleType || 'moto';
   const plateNumber = driverProfile?.plateNumber || '---';
 
+  // Listen for incoming requests when online and approved
   const requestsQuery = useMemoFirebase(() => {
     if (!db || !isOnline || !isApproved) return null;
     return query(
@@ -76,6 +77,7 @@ export default function DriverDashboard() {
   
   const { data: incomingRequests } = useCollection(requestsQuery);
 
+  // Listen for active mission
   const activeRideQuery = useMemoFirebase(() => {
     if (!db || !user || !isApproved) return null;
     return query(
@@ -88,6 +90,7 @@ export default function DriverDashboard() {
   const { data: activeRides } = useCollection(activeRideQuery);
   const currentRide = activeRides?.[0];
 
+  // Stats
   const completedRidesQuery = useMemoFirebase(() => {
     if (!db || !user) return null;
     return query(
@@ -197,6 +200,7 @@ export default function DriverDashboard() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col relative overflow-hidden">
+      {/* Background Map */}
       <div className="absolute inset-0 z-0 bg-slate-200">
         <LoadScript googleMapsApiKey={GOOGLE_MAPS_API_KEY}>
           <GoogleMap
@@ -224,6 +228,7 @@ export default function DriverDashboard() {
         <div className="absolute inset-0 bg-gradient-to-b from-slate-900/40 via-transparent to-slate-900/60 pointer-events-none" />
       </div>
 
+      {/* Top Header Card */}
       <header className="relative z-20 p-4">
         <Card className="rounded-3xl border-none shadow-2xl bg-white/90 backdrop-blur-xl">
           <CardContent className="p-4 flex items-center justify-between">
@@ -256,14 +261,17 @@ export default function DriverDashboard() {
         </Card>
       </header>
 
+      {/* Map Controls */}
       <div className="absolute top-24 right-4 z-40 flex flex-col gap-2">
         <Button variant="secondary" size="icon" onClick={() => setMapType('roadmap')} className="rounded-xl shadow-lg border-2 border-white"><MapIcon className="size-5" /></Button>
         <Button variant="secondary" size="icon" onClick={() => setMapType('satellite')} className="rounded-xl shadow-lg border-2 border-white"><Globe className="size-5" /></Button>
         <Button variant="secondary" size="icon" onClick={() => setMapType('hybrid')} className="rounded-xl shadow-lg border-2 border-white"><Layers className="size-5" /></Button>
       </div>
 
+      {/* Main Content (Floating Bottom) */}
       <main className="flex-1 relative z-10 flex flex-col justify-end p-4 md:p-6 space-y-4 pointer-events-none">
         <div className="pointer-events-auto w-full space-y-4">
+          {/* Stats Bar */}
           <div className="flex gap-4">
             <Card className="flex-1 rounded-3xl border-none shadow-xl bg-white/95 backdrop-blur-md p-4 flex items-center gap-3">
               <div className="size-10 rounded-xl bg-green-100 text-green-600 flex items-center justify-center"><DollarSign className="size-5" /></div>
@@ -281,6 +289,7 @@ export default function DriverDashboard() {
             </Card>
           </div>
 
+          {/* Active Mission Card */}
           {currentRide ? (
             <Card className="rounded-[2.5rem] border-none shadow-2xl overflow-hidden bg-white animate-in slide-in-from-bottom-10">
               <div className="bg-primary p-6 text-white flex items-center justify-between">
