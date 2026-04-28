@@ -41,10 +41,11 @@ export default function AuthPage() {
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
   useEffect(() => {
-    if (user && !isLoading) {
-      router.push('/');
+    // Only redirect if a user is settled and we are NOT currently trying to log in/register
+    if (user && !isLoading && !authChecking) {
+      router.replace('/');
     }
-  }, [user, router, isLoading]);
+  }, [user, router, isLoading, authChecking]);
 
   async function handleAuth(e: React.FormEvent) {
     e.preventDefault();
@@ -55,6 +56,7 @@ export default function AuthPage() {
       if (isLogin) {
         let loginEmail = identifier.trim();
         
+        // Phone number lookup logic
         if (!loginEmail.includes('@')) {
           const q = query(collection(db, 'users'), where('phone', '==', loginEmail), limit(1));
           const snapshot = await getDocs(q);
@@ -70,6 +72,7 @@ export default function AuthPage() {
         const cleanEmail = email.trim().toLowerCase();
         const cleanPhone = phone.trim();
 
+        // Unique checks
         const emailQuery = query(collection(db, 'users'), where('email', '==', cleanEmail), limit(1));
         const emailSnapshot = await getDocs(emailQuery);
         if (!emailSnapshot.empty) {
@@ -126,14 +129,14 @@ export default function AuthPage() {
     }
   }
 
-  // If we're just checking auth, don't show a heavy loader, just keep it blank to allow immediate transition if logged in
-  if (authChecking) {
+  if (authChecking && !user) {
     return <div className="min-h-screen bg-white" />;
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col md:flex-row">
-      <div className="hidden md:flex md:w-1/2 relative bg-slate-900 overflow-hidden">
+    <div className="min-h-screen bg-white flex flex-col md:flex-row overflow-hidden">
+      {/* Left side Illustration - Hidden on mobile */}
+      <div className="hidden md:flex md:w-1/2 relative bg-slate-900">
         {authImage && (
           <Image
             src={authImage.imageUrl}
@@ -143,8 +146,8 @@ export default function AuthPage() {
             priority
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 via-slate-900/40 to-transparent flex flex-col justify-center p-20 text-white z-10">
-          <div className="relative w-40 h-40 mb-10">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900/90 via-slate-900/40 to-transparent flex flex-col justify-center p-20 text-white z-10">
+          <div className="relative w-32 h-32 mb-10">
             {logo && (
               <Image 
                 src={logo.imageUrl} 
@@ -163,10 +166,11 @@ export default function AuthPage() {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col justify-center p-6 md:p-12 bg-white">
+      {/* Right side Form */}
+      <div className="flex-1 flex flex-col justify-center p-6 md:p-12 bg-white relative">
         <div className="max-w-md w-full mx-auto space-y-8">
           <div className="flex justify-between items-center">
-            <Link href="/landing" className="inline-flex items-center gap-2 text-slate-400 hover:text-primary transition-colors font-bold text-sm uppercase italic">
+            <Link href="/landing" className="inline-flex items-center gap-2 text-slate-400 hover:text-primary transition-colors font-bold text-xs uppercase italic">
               <ArrowLeft className="size-4" /> Home
             </Link>
             

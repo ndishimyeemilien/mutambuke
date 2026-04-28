@@ -3,6 +3,8 @@
 import { useUser, useDoc } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import Image from 'next/image';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export default function RootPage() {
   const { user, loading: authLoading } = useUser();
@@ -10,32 +12,52 @@ export default function RootPage() {
   const { data: profile, loading: profileLoading } = useDoc(user ? `users/${user.uid}` : null);
 
   useEffect(() => {
+    // Wait until both Auth and Profile (if user exists) are finished loading
     if (authLoading) return;
 
     if (!user) {
-      router.push('/landing');
+      router.replace('/landing');
       return;
     }
 
+    // If we have a user, wait for the profile to load
     if (!profileLoading) {
       if (profile) {
         if (profile.role === 'admin') {
-          router.push('/dashboard/admin');
+          router.replace('/dashboard/admin');
         } else if (profile.role === 'driver') {
-          router.push('/dashboard/driver');
+          router.replace('/dashboard/driver');
         } else {
-          router.push('/dashboard/passenger');
+          router.replace('/dashboard/passenger');
         }
       } else {
-        // Fallback for new users or missing profiles to prevent hang
-        const timeout = setTimeout(() => {
-          if (!profile) router.push('/auth');
-        }, 1000);
-        return () => clearTimeout(timeout);
+        // User is logged in but has no profile record yet (possible during registration)
+        // We stay here or push to auth to complete if truly missing
+        // Using replace to prevent back-button loops
+        const checkMissing = setTimeout(() => {
+          if (!profile) router.replace('/auth');
+        }, 2000);
+        return () => clearTimeout(checkMissing);
       }
     }
   }, [user, authLoading, profile, profileLoading, router]);
 
-  // Minimal blank state while redirecting to ensure "immediate" feel
-  return <div className="min-h-screen bg-white" />;
+  // Premium minimal splash while deciding route
+  const logo = PlaceHolderImages.find(img => img.id === 'logo');
+
+  return (
+    <div className="min-h-screen bg-white flex items-center justify-center">
+      {logo && (
+        <div className="relative w-24 h-24 animate-pulse">
+          <Image 
+            src={logo.imageUrl} 
+            alt="Logo" 
+            fill 
+            className="object-contain rounded-3xl"
+            priority 
+          />
+        </div>
+      )}
+    </div>
+  );
 }
