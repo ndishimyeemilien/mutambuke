@@ -47,7 +47,8 @@ export default function AuthPage() {
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
   useEffect(() => {
-    // Only redirect if user and profile are confirmed to exist
+    // Only redirect if both user and profile are confirmed to exist
+    // This prevents the flickering loop
     if (user && profile && !isLoading && !isSuccess) {
       router.replace('/');
     }
@@ -69,6 +70,7 @@ export default function AuthPage() {
       if (isLogin) {
         let loginEmail = identifier.trim().toLowerCase();
         
+        // Handle phone login fallback (search email by phone)
         if (!loginEmail.includes('@')) {
           const q = query(collection(db, 'users'), where('phone', '==', identifier.trim()), limit(1));
           const snapshot = await getDocs(q);
@@ -83,7 +85,7 @@ export default function AuthPage() {
         setIsSuccess(true);
         setTimeout(() => {
           router.replace('/');
-        }, 1000);
+        }, 1200);
 
       } else {
         const cleanEmail = email.trim().toLowerCase();
@@ -122,7 +124,7 @@ export default function AuthPage() {
         setIsSuccess(true);
         setTimeout(() => {
           router.replace('/');
-        }, 1000);
+        }, 1200);
       }
     } catch (error: any) {
       setIsLoading(false);

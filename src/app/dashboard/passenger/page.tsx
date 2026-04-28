@@ -91,7 +91,7 @@ export default function PassengerDashboard() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.replace('/auth');
+      router.replace('/landing');
     }
   }, [user, authLoading, router]);
 
@@ -169,6 +169,13 @@ export default function PassengerDashboard() {
             mapTypeId={mapType}
             options={{
               disableDefaultUI: true,
+              styles: [
+                {
+                  featureType: "all",
+                  elementType: "labels.text.fill",
+                  stylers: [{ color: "#444444" }],
+                },
+              ]
             }}
           >
             <Marker 

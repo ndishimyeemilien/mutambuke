@@ -23,8 +23,7 @@ import {
   Map as MapIcon,
   Globe,
   Hash,
-  Loader2,
-  AlertCircle
+  Loader2
 } from 'lucide-react';
 import { collection, doc, updateDoc, query, where, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
@@ -180,7 +179,12 @@ export default function DriverDashboard() {
     }
   }
 
-  if (userLoading || driverLoading) return null;
+  if (userLoading || driverLoading) return (
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <Loader2 className="animate-spin size-10 text-primary" />
+    </div>
+  );
+  
   if (!user || !userProfile || !driverProfile) return null;
 
   if (verificationStatus === 'pending') {

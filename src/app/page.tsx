@@ -17,30 +17,38 @@ export default function RootPage() {
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
   useEffect(() => {
-    if (authLoading || redirecting.current) return;
+    // 1. Wait for Auth to resolve
+    if (authLoading) return;
 
+    // 2. No user? Go to landing
     if (!user) {
-      redirecting.current = true;
-      router.replace('/landing');
+      if (!redirecting.current) {
+        redirecting.current = true;
+        router.replace('/landing');
+      }
       return;
     }
 
+    // 3. User exists? Wait for Profile
     if (profileLoading) return;
 
+    // 4. Profile resolved? Redirect based on role
     if (profile) {
-      redirecting.current = true;
-      const role = profile.role;
-      if (role === 'admin') {
-        router.replace('/dashboard/admin');
-      } else if (role === 'driver') {
-        router.replace('/dashboard/driver');
-      } else {
-        router.replace('/dashboard/passenger');
+      if (!redirecting.current) {
+        redirecting.current = true;
+        const role = profile.role;
+        if (role === 'admin') {
+          router.replace('/dashboard/admin');
+        } else if (role === 'driver') {
+          router.replace('/dashboard/driver');
+        } else {
+          router.replace('/dashboard/passenger');
+        }
       }
     } else {
-      // If user exists but profile doesn't load after auth, check if it's first time
-      // We wait a bit or redirect to auth to complete profile
-      if (!profileLoading) {
+      // User exists but no profile yet (maybe first time or slow Firestore)
+      // Redirect to auth to ensure they are set up
+      if (!redirecting.current) {
         redirecting.current = true;
         router.replace('/auth');
       }
