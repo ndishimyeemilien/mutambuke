@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
@@ -64,6 +64,7 @@ export default function PassengerDashboard() {
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
   const { data: userProfile, loading: profileLoading } = useDoc(user ? `users/${user.uid}` : null);
   
+  // Passenger matching rule: status = "online" AND verificationStatus = "approved"
   const ridersQuery = useMemoFirebase(() => {
     if (!db) return null;
     return query(
@@ -159,21 +160,21 @@ export default function PassengerDashboard() {
           >
             <Marker 
               position={passengerLocation} 
-              icon={typeof google !== 'undefined' ? {
+              icon={{
                 url: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
-                scaledSize: new google.maps.Size(40, 40)
-              } : undefined}
+                scaledSize: { width: 40, height: 40 } as any
+              }}
             />
             {availableDrivers?.map((driver) => (
               <Marker
                 key={driver.driverId}
                 position={driver.currentLocation || passengerLocation}
-                icon={typeof google !== 'undefined' ? {
+                icon={{
                   url: driver.vehicleType === 'moto' 
                     ? 'https://cdn-icons-png.flaticon.com/512/3194/3194514.png' 
                     : 'https://cdn-icons-png.flaticon.com/512/3082/3082383.png',
-                  scaledSize: new google.maps.Size(35, 35)
-                } : undefined}
+                  scaledSize: { width: 35, height: 35 } as any
+                }}
               />
             ))}
           </GoogleMap>
@@ -207,14 +208,14 @@ export default function PassengerDashboard() {
         </Card>
       </header>
 
-      <div className="absolute top-24 right-4 z-40 flex flex-col gap-2">
-        <Button variant="secondary" size="icon" onClick={() => setMapType('roadmap')} className="rounded-xl shadow-lg border-2 border-white"><MapIcon className="size-5" /></Button>
-        <Button variant="secondary" size="icon" onClick={() => setMapType('satellite')} className="rounded-xl shadow-lg border-2 border-white"><Globe className="size-5" /></Button>
-        <Button variant="secondary" size="icon" onClick={() => setMapType('hybrid')} className="rounded-xl shadow-lg border-2 border-white"><Layers className="size-5" /></Button>
+      <div className="absolute top-24 right-4 z-40 flex flex-col gap-2 pointer-events-auto">
+        <Button variant="secondary" size="icon" onClick={() => setMapType('roadmap')} className={`rounded-xl shadow-lg border-2 ${mapType === 'roadmap' ? 'border-primary' : 'border-white'}`}><MapIcon className="size-5" /></Button>
+        <Button variant="secondary" size="icon" onClick={() => setMapType('satellite')} className={`rounded-xl shadow-lg border-2 ${mapType === 'satellite' ? 'border-primary' : 'border-white'}`}><Globe className="size-5" /></Button>
+        <Button variant="secondary" size="icon" onClick={() => setMapType('hybrid')} className={`rounded-xl shadow-lg border-2 ${mapType === 'hybrid' ? 'border-primary' : 'border-white'}`}><Layers className="size-5" /></Button>
       </div>
 
       <main className="flex-1 flex flex-col justify-end p-4 md:p-8 space-y-4 relative z-30 pointer-events-none">
-        <div className="pointer-events-auto">
+        <div className="pointer-events-auto w-full max-w-xl mx-auto">
           {currentRide ? (
             <Card className="rounded-[2.5rem] border-none shadow-2xl overflow-hidden bg-white animate-in slide-in-from-bottom-20 duration-500">
               <div className={`${currentRide.status === 'requested' ? 'bg-primary' : 'bg-green-600'} p-6 text-white`}>
@@ -275,20 +276,20 @@ export default function PassengerDashboard() {
           ) : (
             <Card className="rounded-[3rem] border-none shadow-2xl p-8 space-y-8 bg-white/95 backdrop-blur-xl animate-in fade-in slide-in-from-bottom-10">
               <div className="space-y-6">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                    <h2 className="text-2xl font-black italic text-slate-900 uppercase tracking-tighter">Where to?</h2>
                    <div className="flex gap-2">
                       <Button 
                         variant={vehicleTypeFilter === 'moto' ? 'default' : 'outline'} 
                         onClick={() => setVehicleTypeFilter('moto')}
-                        className={`rounded-xl h-12 px-5 font-black italic gap-2 ${vehicleTypeFilter === 'moto' ? 'bg-secondary' : 'text-slate-400'}`}
+                        className={`rounded-xl h-12 px-5 font-black italic gap-2 ${vehicleTypeFilter === 'moto' ? 'bg-secondary' : 'text-slate-400 border-slate-100'}`}
                       >
                         <Bike className="size-4" /> {t.moto}
                       </Button>
                       <Button 
                         variant={vehicleTypeFilter === 'taxi' ? 'default' : 'outline'} 
                         onClick={() => setVehicleTypeFilter('taxi')}
-                        className={`rounded-xl h-12 px-5 font-black italic gap-2 ${vehicleTypeFilter === 'taxi' ? 'bg-primary' : 'text-slate-400'}`}
+                        className={`rounded-xl h-12 px-5 font-black italic gap-2 ${vehicleTypeFilter === 'taxi' ? 'bg-primary' : 'text-slate-400 border-slate-100'}`}
                       >
                         <CarIcon className="size-4" /> {t.taxi}
                       </Button>
@@ -324,7 +325,7 @@ export default function PassengerDashboard() {
               <Button 
                 onClick={handleRequestRide} 
                 disabled={!destination || isRequesting} 
-                className={`w-full h-20 rounded-[1.75rem] text-2xl font-black shadow-2xl uppercase italic ${vehicleTypeFilter === 'moto' ? 'bg-secondary' : 'bg-primary'}`}
+                className={`w-full h-20 rounded-[1.75rem] text-2xl font-black shadow-2xl uppercase italic ${vehicleTypeFilter === 'moto' ? 'bg-secondary hover:bg-secondary/90' : 'bg-primary hover:bg-primary/90'}`}
               >
                 {isRequesting ? <Loader2 className="size-8 animate-spin" /> : t.confirmed}
               </Button>

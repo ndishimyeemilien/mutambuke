@@ -23,7 +23,8 @@ import {
   Map as MapIcon,
   Globe,
   Hash,
-  Loader2
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 import { collection, doc, updateDoc, query, where, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
@@ -195,7 +196,24 @@ export default function DriverDashboard() {
         <p className="text-slate-500 font-medium max-w-xs mx-auto mb-8">
           The MUTAMBUKE admin team is verifying your documents and plate: <span className="text-primary font-bold">{plateNumber}</span>. This usually takes 24 hours.
         </p>
-        <Button onClick={handleLogout} variant="outline" className="rounded-xl font-bold uppercase italic">
+        <Button onClick={handleLogout} variant="outline" className="h-14 rounded-2xl px-10 font-black uppercase italic border-slate-200">
+          <LogOut className="size-4 mr-2" /> {t.logout}
+        </Button>
+      </div>
+    );
+  }
+
+  if (verificationStatus === 'rejected') {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
+        <div className="size-24 rounded-[2rem] bg-red-100 flex items-center justify-center text-red-600 mb-6">
+          <AlertCircle className="size-12" />
+        </div>
+        <h1 className="text-3xl font-black italic text-slate-900 uppercase mb-2">Application Rejected</h1>
+        <p className="text-slate-500 font-medium max-w-xs mx-auto mb-8">
+          We regret to inform you that your driver application for MUTAMBUKE has been rejected. Please contact support for more information.
+        </p>
+        <Button onClick={handleLogout} variant="outline" className="h-14 rounded-2xl px-10 font-black uppercase italic border-slate-200">
           <LogOut className="size-4 mr-2" /> {t.logout}
         </Button>
       </div>
@@ -217,12 +235,12 @@ export default function DriverDashboard() {
           >
             <Marker 
               position={driverLocation}
-              icon={typeof google !== 'undefined' ? {
+              icon={{
                 url: vehicleType === 'moto' 
                   ? 'https://cdn-icons-png.flaticon.com/512/3194/3194514.png' 
                   : 'https://cdn-icons-png.flaticon.com/512/3082/3082383.png',
-                scaledSize: new google.maps.Size(45, 45)
-              } : undefined}
+                scaledSize: { width: 45, height: 45 } as any
+              }}
             />
           </GoogleMap>
         ) : (
@@ -234,7 +252,7 @@ export default function DriverDashboard() {
       </div>
 
       <header className="relative z-20 p-4">
-        <Card className="rounded-3xl border-none shadow-2xl bg-white/90 backdrop-blur-xl">
+        <Card className="rounded-3xl border-none shadow-2xl bg-white/90 backdrop-blur-xl max-w-md mx-auto">
           <CardContent className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center">
@@ -265,14 +283,14 @@ export default function DriverDashboard() {
         </Card>
       </header>
 
-      <div className="absolute top-24 right-4 z-40 flex flex-col gap-2">
-        <Button variant="secondary" size="icon" onClick={() => setMapType('roadmap')} className="rounded-xl shadow-lg border-2 border-white"><MapIcon className="size-5" /></Button>
-        <Button variant="secondary" size="icon" onClick={() => setMapType('satellite')} className="rounded-xl shadow-lg border-2 border-white"><Globe className="size-5" /></Button>
-        <Button variant="secondary" size="icon" onClick={() => setMapType('hybrid')} className="rounded-xl shadow-lg border-2 border-white"><Layers className="size-5" /></Button>
+      <div className="absolute top-24 right-4 z-40 flex flex-col gap-2 pointer-events-auto">
+        <Button variant="secondary" size="icon" onClick={() => setMapType('roadmap')} className={`rounded-xl shadow-lg border-2 ${mapType === 'roadmap' ? 'border-primary' : 'border-white'}`}><MapIcon className="size-5" /></Button>
+        <Button variant="secondary" size="icon" onClick={() => setMapType('satellite')} className={`rounded-xl shadow-lg border-2 ${mapType === 'satellite' ? 'border-primary' : 'border-white'}`}><Globe className="size-5" /></Button>
+        <Button variant="secondary" size="icon" onClick={() => setMapType('hybrid')} className={`rounded-xl shadow-lg border-2 ${mapType === 'hybrid' ? 'border-primary' : 'border-white'}`}><Layers className="size-5" /></Button>
       </div>
 
       <main className="flex-1 relative z-10 flex flex-col justify-end p-4 md:p-6 space-y-4 pointer-events-none">
-        <div className="pointer-events-auto w-full space-y-4">
+        <div className="pointer-events-auto w-full max-w-xl mx-auto space-y-4">
           <div className="flex gap-4">
             <Card className="flex-1 rounded-3xl border-none shadow-xl bg-white/95 backdrop-blur-md p-4 flex items-center gap-3">
               <div className="size-10 rounded-xl bg-green-100 text-green-600 flex items-center justify-center"><DollarSign className="size-5" /></div>
@@ -323,7 +341,7 @@ export default function DriverDashboard() {
                 </div>
                 <Button 
                   onClick={() => currentRide.status === 'accepted' ? startRide(currentRide.rideId) : completeRide(currentRide.rideId)}
-                  className="w-full h-20 rounded-[1.5rem] bg-primary text-white text-2xl font-black italic shadow-2xl"
+                  className="w-full h-20 rounded-[1.5rem] bg-primary hover:bg-primary/90 text-white text-2xl font-black italic shadow-2xl"
                 >
                   {currentRide.status === 'accepted' ? t.startTrip : t.completeMission}
                 </Button>
@@ -351,8 +369,8 @@ export default function DriverDashboard() {
                       </div>
                     </div>
                     <div className="flex gap-3">
-                      <Button onClick={() => rejectRide(req.rideId)} variant="ghost" className="flex-1 h-12 rounded-xl text-slate-400 font-bold uppercase italic"><X className="size-4 mr-2" /> Reject</Button>
-                      <Button onClick={() => acceptRide(req.rideId)} className="flex-[2] h-12 rounded-xl bg-primary text-white font-black italic uppercase">{t.acceptRide}</Button>
+                      <Button onClick={() => rejectRide(req.rideId)} variant="ghost" className="flex-1 h-12 rounded-xl text-slate-400 font-bold uppercase italic border-slate-100"><X className="size-4 mr-2" /> Reject</Button>
+                      <Button onClick={() => acceptRide(req.rideId)} className="flex-[2] h-12 rounded-xl bg-primary hover:bg-primary/90 text-white font-black italic uppercase">{t.acceptRide}</Button>
                     </div>
                   </Card>
                 ))
@@ -370,7 +388,7 @@ export default function DriverDashboard() {
             </div>
           ) : (
             <div className="py-20 text-center">
-              <Button onClick={toggleStatus} className="bg-white text-slate-900 h-16 px-10 rounded-2xl font-black italic uppercase shadow-2xl pointer-events-auto">
+              <Button onClick={toggleStatus} className="bg-white text-slate-900 h-20 px-12 rounded-[2rem] font-black italic uppercase shadow-2xl pointer-events-auto hover:bg-slate-50 active:scale-95 transition-all">
                 {t.goOnline}
               </Button>
             </div>

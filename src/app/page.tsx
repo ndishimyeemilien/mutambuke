@@ -15,7 +15,6 @@ export default function RootPage() {
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
   useEffect(() => {
-    // Only proceed if everything is done loading
     if (authLoading || isRedirecting) return;
 
     if (!user) {
@@ -38,13 +37,14 @@ export default function RootPage() {
         router.replace('/dashboard/passenger');
       }
     } else if (!profile && !profileLoading && user) {
-      // Small delay for initial document creation propagation
+      // If user is authenticated but no profile exists yet (registration in progress)
+      // we check again after a shorter delay
       const timer = setTimeout(() => {
         if (!profile) {
           setIsRedirecting(true);
           router.replace('/auth');
         }
-      }, 3000);
+      }, 1000);
       return () => clearTimeout(timer);
     }
   }, [user, authLoading, profile, profileLoading, router, isRedirecting]);
