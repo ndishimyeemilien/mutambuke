@@ -26,6 +26,11 @@
         "verificationStatus": { "type": "string", "enum": ["pending", "approved", "rejected"] },
         "vehicleType": { "type": "string", "enum": ["moto", "taxi"] },
         "plateNumber": { "type": "string" },
+        "gender": { "type": "string" },
+        "dob": { "type": "string" },
+        "licenseCategory": { "type": "string" },
+        "vehicleModel": { "type": "string" },
+        "licenseNumber": { "type": "string" },
         "currentLocation": {
           "type": "object",
           "properties": {

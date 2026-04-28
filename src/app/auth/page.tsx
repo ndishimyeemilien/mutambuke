@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -8,11 +9,28 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ArrowLeft, Loader2, Globe, Hash, CheckCircle2, Phone } from 'lucide-react';
+import { 
+  ArrowLeft, 
+  Loader2, 
+  Globe, 
+  CheckCircle2, 
+  Phone, 
+  User, 
+  Lock, 
+  Eye, 
+  EyeOff, 
+  Calendar, 
+  Car, 
+  FileText, 
+  Languages, 
+  Camera,
+  ShieldCheck,
+  ArrowRight
+} from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useAuth, useFirestore, useUser, useDoc } from '@/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp, collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import Link from 'next/link';
 import { translations, Language } from '@/lib/translations';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -28,19 +46,29 @@ export default function AuthPage() {
   const { data: profile } = useDoc(user ? `users/${user.uid}` : null);
   
   const [isLogin, setIsLogin] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState<'passenger' | 'driver'>('passenger');
-  const [vehicleType, setVehicleType] = useState<'moto' | 'taxi'>('moto');
-  const [plateNumber, setPlateNumber] = useState('');
+  
+  // Form fields
+  const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  
+  // Driver specific fields
+  const [gender, setGender] = useState('');
+  const [dob, setDob] = useState('');
+  const [vehicleBrand, setVehicleBrand] = useState('');
+  const [licenseCategory, setLicenseCategory] = useState('');
+  const [vehicleModel, setVehicleModel] = useState('');
+  const [plateNumber, setPlateNumber] = useState('');
+  const [licenseNumber, setLicenseNumber] = useState('');
+  
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   
   const auth = useAuth();
   const db = useFirestore();
 
-  const authImage = PlaceHolderImages.find(img => img.id === 'auth-illustration');
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
 
   useEffect(() => {
@@ -54,7 +82,7 @@ export default function AuthPage() {
 
   const getErrorMessage = (error: any) => {
     const code = error.code;
-    if (code === 'auth/email-already-in-use') return lang === 'rw' ? 'Iyi nimero isanzwe ikoreshwa.' : 'This phone number is already registered.';
+    if (code === 'auth/email-already-in-use') return t.errorEmailInUse;
     if (code === 'auth/invalid-credential' || code === 'auth/user-not-found' || code === 'auth/wrong-password') return t.errorInvalidAuth;
     return error.message || t.errorGeneric;
   };
@@ -72,11 +100,9 @@ export default function AuthPage() {
         await signInWithEmailAndPassword(auth, internalEmail, password);
         setIsSuccess(true);
       } else {
-        if (!name.trim()) throw new Error(lang === 'rw' ? 'Shyiramo amazina yose.' : 'Full name is required.');
-        if (!phone.trim()) throw new Error(lang === 'rw' ? 'Shyiramo nimero ya telefone.' : 'Phone number is required.');
-        if (role === 'driver' && !plateNumber.trim()) {
-          throw new Error(lang === 'rw' ? 'Ntabwo washyizeho plaque.' : 'Plate number is required.');
-        }
+        if (!name.trim()) throw new Error(t.fullName);
+        if (!phone.trim()) throw new Error(t.phone);
+        if (role === 'driver' && !plateNumber.trim()) throw new Error(t.plateNumber);
 
         const userCredential = await createUserWithEmailAndPassword(auth, internalEmail, password);
         const newUser = userCredential.user;
@@ -98,8 +124,13 @@ export default function AuthPage() {
             driverId: newUser.uid,
             status: 'offline',
             verificationStatus: 'pending',
-            vehicleType: vehicleType,
+            vehicleType: vehicleBrand.toLowerCase().includes('moto') ? 'moto' : 'taxi',
             plateNumber: plateNumber.trim().toUpperCase(),
+            gender,
+            dob,
+            licenseCategory,
+            vehicleModel,
+            licenseNumber,
             updatedAt: serverTimestamp(),
           });
         }
@@ -116,162 +147,220 @@ export default function AuthPage() {
     }
   }
 
-  return (
-    <div className="min-h-screen bg-white flex flex-col md:flex-row overflow-hidden">
-      <div className="hidden md:flex md:w-1/2 relative bg-slate-900">
-        {authImage && (
-          <Image
-            src={authImage.imageUrl}
-            alt="Auth illustration"
-            fill
-            className="object-cover opacity-60"
-            priority
-            data-ai-hint="motorcycle rider"
-          />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900/90 via-slate-900/40 to-transparent flex flex-col justify-center p-20 text-white z-10">
-          <div className="relative w-32 h-32 mb-10">
-            {logo && <Image src={logo.imageUrl} alt="Logo" fill className="object-contain rounded-[2.5rem]" />}
-          </div>
-          <h1 className="text-7xl font-black italic mb-6 leading-[0.9] uppercase tracking-tighter">
-            Join the <br /> <span className="text-secondary">Movement.</span>
-          </h1>
-          <p className="text-2xl font-medium opacity-90 max-w-md italic leading-tight">
-            Connecting thousands of riders and passengers across the city every day.
-          </p>
-        </div>
+  const InputWrapper = ({ icon: Icon, children, className = "" }: { icon: any, children: React.ReactNode, className?: string }) => (
+    <div className={`relative group ${className}`}>
+      <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-400 transition-colors">
+        <Icon size={20} />
       </div>
+      {children}
+    </div>
+  );
 
-      <div className="flex-1 flex flex-col justify-center p-6 md:p-12 bg-white relative">
-        {isSuccess && (
-          <div className="absolute inset-0 z-50 bg-white flex flex-col items-center justify-center animate-in fade-in duration-300">
-             <div className="size-24 rounded-[2rem] bg-green-100 flex items-center justify-center text-green-600 mb-6 scale-110">
-                <CheckCircle2 className="size-12" />
-             </div>
-             <h2 className="text-4xl font-black italic uppercase tracking-tighter text-slate-900">SUCCESSFUL</h2>
-             <p className="text-slate-500 font-bold italic mt-2">Connecting to Mutambuke network...</p>
+  return (
+    <div className="min-h-screen bg-[#1f2d3a] flex flex-col items-center justify-center p-4 md:p-8 font-body text-white">
+      {isSuccess && (
+        <div className="fixed inset-0 z-50 bg-[#1f2d3a] flex flex-col items-center justify-center animate-in fade-in duration-300">
+          <div className="size-24 rounded-[2rem] bg-blue-500/10 flex items-center justify-center text-blue-500 mb-6 scale-110 shadow-[0_0_50px_rgba(59,130,246,0.2)]">
+            <CheckCircle2 className="size-12" />
           </div>
-        )}
+          <h2 className="text-3xl font-black italic uppercase tracking-tighter text-white">SUCCESSFUL</h2>
+          <p className="text-slate-400 font-bold italic mt-2">Connecting to Mutambuke network...</p>
+        </div>
+      )}
 
-        <div className="max-w-md w-full mx-auto space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-          <div className="flex justify-between items-center">
-            <Link href="/landing" className="inline-flex items-center gap-2 text-slate-400 hover:text-primary transition-colors font-black text-xs uppercase italic tracking-widest">
-              <ArrowLeft className="size-4" /> Home
-            </Link>
-            
-            <Select value={lang} onValueChange={(v: Language) => setLang(v)}>
-              <SelectTrigger className="w-[120px] h-10 rounded-xl bg-slate-50 border-none font-black text-xs">
-                <Globe className="size-3 mr-2" />
-                <SelectValue placeholder="Lang" />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl border-none shadow-xl">
-                <SelectItem value="rw" className="font-black">RWANDA</SelectItem>
-                <SelectItem value="en" className="font-black">ENGLISH</SelectItem>
-                <SelectItem value="fr" className="font-black">FRANÇAIS</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+      <div className="max-w-md w-full space-y-8">
+        {/* Language Selector */}
+        <div className="flex justify-end">
+          <Select value={lang} onValueChange={(v: Language) => setLang(v)}>
+            <SelectTrigger className="w-[120px] h-10 rounded-xl bg-slate-800/50 border-slate-700/50 text-xs font-black">
+              <Globe className="size-3 mr-2 text-blue-400" />
+              <SelectValue placeholder="Lang" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border-slate-700 bg-slate-900 text-white">
+              <SelectItem value="rw" className="font-black">RWANDA</SelectItem>
+              <SelectItem value="en" className="font-black">ENGLISH</SelectItem>
+              <SelectItem value="fr" className="font-black">FRANÇAIS</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-          <div className="space-y-2">
-            <h2 className="text-4xl font-black italic text-slate-900 uppercase tracking-tighter">
-              {isLogin ? t.welcome : t.createAccount}
-            </h2>
-            <p className="text-slate-500 font-bold italic text-sm">
-              Access the MUTAMBUKE smart urban network.
-            </p>
-          </div>
-
-          <Tabs value={isLogin ? 'login' : 'register'} onValueChange={(v) => setIsLogin(v === 'login')} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 rounded-2xl h-12 bg-slate-100 p-1 mb-8">
-              <TabsTrigger value="login" className="rounded-xl font-black uppercase text-xs tracking-widest">{t.login}</TabsTrigger>
-              <TabsTrigger value="register" className="rounded-xl font-black uppercase text-xs tracking-widest">{t.signup}</TabsTrigger>
-            </TabsList>
-
-            <form onSubmit={handleAuth} className="space-y-4">
-              <TabsContent value="login" className="space-y-4 mt-0">
-                <div className="space-y-1">
-                  <Label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">{t.phone}</Label>
-                  <div className="relative">
-                    <Phone className="absolute left-5 top-1/2 -translate-y-1/2 size-5 text-slate-400" />
-                    <Input 
-                      placeholder="078..." 
-                      className="h-16 pl-14 rounded-[1.25rem] border-slate-100 bg-slate-50 font-bold text-lg" 
-                      required 
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">{t.password}</Label>
-                  <Input 
-                    placeholder="••••••••" 
-                    className="h-16 rounded-[1.25rem] border-slate-100 bg-slate-50 font-bold text-lg" 
-                    type="password" 
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
-              </TabsContent>
-
-              <TabsContent value="register" className="space-y-4 mt-0">
-                <div className="space-y-1">
-                  <Label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">{t.fullName}</Label>
-                  <Input placeholder="John Doe" className="h-16 rounded-[1.25rem] border-slate-100 bg-slate-50 font-bold" required value={name} onChange={(e) => setName(e.target.value)} />
-                </div>
-                
-                <div className="space-y-1">
-                  <Label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">{t.phone}</Label>
-                  <div className="relative">
-                    <Phone className="absolute left-5 top-1/2 -translate-y-1/2 size-5 text-slate-400" />
-                    <Input placeholder="078..." className="h-16 pl-14 rounded-[1.25rem] border-slate-100 bg-slate-50 font-bold" type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} />
-                  </div>
-                </div>
-                
-                <div className="space-y-1">
-                  <Label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">{t.password}</Label>
-                  <Input placeholder="Min. 8 characters" className="h-16 rounded-[1.25rem] border-slate-100 bg-slate-50 font-bold" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
-                </div>
-
-                <div className="space-y-3 pt-2">
-                  <Label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">{t.registerAs}</Label>
-                  <RadioGroup value={role} className="flex gap-4" onValueChange={(v) => setRole(v as any)}>
-                    <div onClick={() => setRole('passenger')} className={`flex flex-1 items-center justify-between p-5 rounded-[1.25rem] border-2 cursor-pointer transition-all ${role === 'passenger' ? 'border-primary bg-primary/5 text-primary' : 'border-slate-100'}`}>
-                      <span className="text-xs font-black uppercase tracking-widest">{t.passenger}</span>
-                      <RadioGroupItem value="passenger" className="border-slate-200" />
-                    </div>
-                    <div onClick={() => setRole('driver')} className={`flex flex-1 items-center justify-between p-5 rounded-[1.25rem] border-2 cursor-pointer transition-all ${role === 'driver' ? 'border-secondary bg-secondary/5 text-secondary' : 'border-slate-100'}`}>
-                      <span className="text-xs font-black uppercase tracking-widest">{t.rider}</span>
-                      <RadioGroupItem value="driver" className="border-slate-200" />
-                    </div>
-                  </RadioGroup>
-                </div>
-
-                {role === 'driver' && (
-                  <div className="animate-in slide-in-from-top-2 space-y-4">
-                    <div className="space-y-1">
-                      <Label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">{t.plateNumber}</Label>
-                      <div className="relative">
-                        <Hash className="absolute left-5 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                        <Input 
-                          placeholder="RAA 000 A" 
-                          className="h-16 pl-14 rounded-[1.25rem] border-slate-100 bg-slate-50 font-black uppercase tracking-widest" 
-                          required 
-                          value={plateNumber} 
-                          onChange={(e) => setPlateNumber(e.target.value)} 
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </TabsContent>
-
-              <Button type="submit" className={`w-full h-20 rounded-[1.5rem] text-2xl font-black shadow-2xl transition-all active:scale-95 italic uppercase tracking-tighter ${role === 'driver' && !isLogin ? 'bg-secondary hover:bg-secondary/90' : 'bg-primary hover:bg-primary/90'}`} disabled={isLoading || isSuccess}>
-                {isLoading ? <Loader2 className="animate-spin" /> : (isLogin ? t.login : t.signup)}
+        {/* Form Container */}
+        <div className="space-y-6">
+          {/* Header Toggle */}
+          {!isLogin && (
+            <div className="grid grid-cols-2 gap-4 mb-8">
+              <Button 
+                onClick={() => setRole('passenger')}
+                className={`h-24 rounded-[1.5rem] border-2 flex flex-col items-center justify-center gap-2 transition-all ${role === 'passenger' ? 'bg-blue-500/10 border-blue-500/50 text-blue-400' : 'bg-slate-800/30 border-slate-700/50 text-slate-500'}`}
+              >
+                <div className="size-8 rounded-full bg-slate-700/50 flex items-center justify-center" />
+                <span className="text-[10px] font-black uppercase tracking-widest">{t.passenger}</span>
               </Button>
-            </form>
-          </Tabs>
+              <Button 
+                onClick={() => setRole('driver')}
+                className={`h-24 rounded-[1.5rem] border-2 flex flex-col items-center justify-center gap-2 transition-all ${role === 'driver' ? 'bg-blue-500/10 border-blue-500/50 text-blue-400' : 'bg-slate-800/30 border-slate-700/50 text-slate-500'}`}
+              >
+                <ShieldCheck className="size-8" />
+                <span className="text-[10px] font-black uppercase tracking-widest">{t.rider}</span>
+              </Button>
+            </div>
+          )}
+
+          <form onSubmit={handleAuth} className="space-y-4">
+            {/* Common Fields */}
+            {!isLogin && (
+              <InputWrapper icon={User}>
+                <Input 
+                  placeholder={t.fullName} 
+                  className="h-14 pl-14 rounded-2xl bg-slate-800/40 border-slate-700/50 focus:border-blue-500/50 transition-all font-bold placeholder:text-slate-500" 
+                  value={name} 
+                  onChange={(e) => setName(e.target.value)} 
+                  required 
+                />
+              </InputWrapper>
+            )}
+
+            <InputWrapper icon={Phone}>
+              <Input 
+                placeholder={t.phone} 
+                className="h-14 pl-14 rounded-2xl bg-slate-800/40 border-slate-700/50 focus:border-blue-500/50 transition-all font-bold placeholder:text-slate-500" 
+                value={phone} 
+                onChange={(e) => setPhone(e.target.value)} 
+                required 
+              />
+            </InputWrapper>
+
+            <InputWrapper icon={Lock}>
+              <Input 
+                type={showPassword ? "text" : "password"}
+                placeholder={t.password} 
+                className="h-14 pl-14 pr-12 rounded-2xl bg-slate-800/40 border-slate-700/50 focus:border-blue-500/50 transition-all font-bold placeholder:text-slate-500" 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)} 
+                required 
+              />
+              <button 
+                type="button" 
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </InputWrapper>
+
+            {/* Driver Specific Section */}
+            {!isLogin && role === 'driver' && (
+              <div className="space-y-4 pt-4 animate-in fade-in slide-in-from-top-4">
+                <div className="flex items-center justify-center gap-2 py-2">
+                   <div className="h-px bg-slate-700/50 flex-1" />
+                   <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                      <CheckCircle2 size={12} className="text-blue-500" />
+                      {t.driverDetails}
+                   </div>
+                   <div className="h-px bg-slate-700/50 flex-1" />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <InputWrapper icon={User}>
+                    <Input 
+                      placeholder={t.gender} 
+                      className="h-14 pl-14 rounded-2xl bg-slate-800/40 border-slate-700/50 font-bold placeholder:text-slate-500" 
+                      value={gender}
+                      onChange={(e) => setGender(e.target.value)}
+                    />
+                  </InputWrapper>
+                  <InputWrapper icon={Calendar}>
+                    <Input 
+                      placeholder={t.dob} 
+                      className="h-14 pl-14 rounded-2xl bg-slate-800/40 border-slate-700/50 font-bold placeholder:text-slate-500" 
+                      value={dob}
+                      onChange={(e) => setDob(e.target.value)}
+                    />
+                  </InputWrapper>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <InputWrapper icon={Car}>
+                    <Input 
+                      placeholder={t.vehicleBrand} 
+                      className="h-14 pl-14 rounded-2xl bg-slate-800/40 border-slate-700/50 font-bold placeholder:text-slate-500" 
+                      value={vehicleBrand}
+                      onChange={(e) => setVehicleBrand(e.target.value)}
+                    />
+                  </InputWrapper>
+                  <InputWrapper icon={FileText}>
+                    <Input 
+                      placeholder={t.licenseCategory} 
+                      className="h-14 pl-14 rounded-2xl bg-slate-800/40 border-slate-700/50 font-bold placeholder:text-slate-500" 
+                      value={licenseCategory}
+                      onChange={(e) => setLicenseCategory(e.target.value)}
+                    />
+                  </InputWrapper>
+                </div>
+
+                <InputWrapper icon={Car}>
+                  <Input 
+                    placeholder={t.vehicleModel} 
+                    className="h-14 pl-14 rounded-2xl bg-slate-800/40 border-slate-700/50 font-bold placeholder:text-slate-500" 
+                    value={vehicleModel}
+                    onChange={(e) => setVehicleModel(e.target.value)}
+                  />
+                </InputWrapper>
+
+                <InputWrapper icon={Languages}>
+                  <Input 
+                    placeholder={t.plateNumber} 
+                    className="h-14 pl-14 rounded-2xl bg-slate-800/40 border-slate-700/50 font-bold placeholder:text-slate-500 uppercase" 
+                    value={plateNumber}
+                    onChange={(e) => setPlateNumber(e.target.value)}
+                  />
+                </InputWrapper>
+
+                <InputWrapper icon={FileText}>
+                  <Input 
+                    placeholder={t.licenseNumber} 
+                    className="h-14 pl-14 rounded-2xl bg-slate-800/40 border-slate-700/50 font-bold placeholder:text-slate-500" 
+                    value={licenseNumber}
+                    onChange={(e) => setLicenseNumber(e.target.value)}
+                  />
+                </InputWrapper>
+
+                <InputWrapper icon={Camera}>
+                  <Input 
+                    placeholder={t.profilePhoto} 
+                    className="h-14 pl-14 rounded-2xl bg-slate-800/40 border-slate-700/50 font-bold placeholder:text-slate-500" 
+                    readOnly
+                  />
+                </InputWrapper>
+              </div>
+            )}
+
+            {/* Submit Button */}
+            <div className="pt-6">
+              <Button 
+                type="submit" 
+                className="w-full h-16 rounded-2xl bg-gradient-to-r from-[#4d6b82] to-[#3a4a58] hover:opacity-90 text-white text-xl font-black italic shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-2 group"
+                disabled={isLoading || isSuccess}
+              >
+                {isLoading ? <Loader2 className="animate-spin" /> : (
+                  <>
+                    {isLogin ? t.login : t.signup}
+                    <ArrowRight className="group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+
+          {/* Toggle Login/Register */}
+          <div className="text-center pt-4">
+            <button 
+              onClick={() => setIsLogin(!isLogin)}
+              className="text-xs font-black uppercase tracking-[0.2em] text-blue-400 hover:text-blue-300 transition-colors"
+            >
+              {isLogin ? "Kora konti nshya" : "Sanzwe ufite konti? Yinjira"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
