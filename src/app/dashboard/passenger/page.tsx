@@ -1,6 +1,7 @@
+
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
@@ -30,7 +31,7 @@ import { useAuth } from '@/firebase';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { translations, Language } from '@/lib/translations';
 import { useToast } from '@/hooks/use-toast';
-import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
 
 const GOOGLE_MAPS_API_KEY = "AIzaSyBYd7EGaMpDouB0Br1yUSwRarQeToFuiiA";
 
@@ -55,6 +56,11 @@ export default function PassengerDashboard() {
   const [passengerLocation, setPassengerLocation] = useState(kigaliCenter);
   const [mapType, setMapType] = useState<google.maps.MapTypeId | string>('roadmap');
 
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY
+  });
+
   const logo = PlaceHolderImages.find(img => img.id === 'logo');
   const { data: userProfile, loading: profileLoading } = useDoc(user ? `users/${user.uid}` : null);
   
@@ -62,7 +68,7 @@ export default function PassengerDashboard() {
     if (!db) return null;
     return query(
       collection(db, 'drivers'), 
-      where('status', '==', 'online'), // Only show drivers who are online and NOT busy
+      where('status', '==', 'online'),
       where('verificationStatus', '==', 'approved'),
       where('vehicleType', '==', vehicleTypeFilter)
     );
@@ -141,7 +147,7 @@ export default function PassengerDashboard() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col relative overflow-hidden">
       <div className="absolute inset-0 z-0 bg-slate-200">
-        <LoadScript googleMapsApiKey={GOOGLE_MAPS_API_KEY}>
+        {isLoaded ? (
           <GoogleMap
             mapContainerStyle={containerStyle}
             center={passengerLocation}
@@ -151,31 +157,31 @@ export default function PassengerDashboard() {
               disableDefaultUI: true,
             }}
           >
-            {typeof google !== 'undefined' && (
-              <Marker 
-                position={passengerLocation} 
-                icon={{
-                  url: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
-                  scaledSize: new google.maps.Size(40, 40)
-                }}
-              />
-            )}
+            <Marker 
+              position={passengerLocation} 
+              icon={typeof google !== 'undefined' ? {
+                url: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+                scaledSize: new google.maps.Size(40, 40)
+              } : undefined}
+            />
             {availableDrivers?.map((driver) => (
-              typeof google !== 'undefined' && (
-                <Marker
-                  key={driver.driverId}
-                  position={driver.currentLocation || passengerLocation}
-                  icon={{
-                    url: driver.vehicleType === 'moto' 
-                      ? 'https://cdn-icons-png.flaticon.com/512/3194/3194514.png' 
-                      : 'https://cdn-icons-png.flaticon.com/512/3082/3082383.png',
-                    scaledSize: new google.maps.Size(35, 35)
-                  }}
-                />
-              )
+              <Marker
+                key={driver.driverId}
+                position={driver.currentLocation || passengerLocation}
+                icon={typeof google !== 'undefined' ? {
+                  url: driver.vehicleType === 'moto' 
+                    ? 'https://cdn-icons-png.flaticon.com/512/3194/3194514.png' 
+                    : 'https://cdn-icons-png.flaticon.com/512/3082/3082383.png',
+                  scaledSize: new google.maps.Size(35, 35)
+                } : undefined}
+              />
             ))}
           </GoogleMap>
-        </LoadScript>
+        ) : (
+          <div className="h-full w-full flex items-center justify-center bg-slate-100">
+            <Loader2 className="size-10 animate-spin text-slate-300" />
+          </div>
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-transparent to-slate-900/20 pointer-events-none" />
       </div>
 
