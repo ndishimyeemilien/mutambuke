@@ -33,8 +33,8 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const InputWrapper = ({ icon: Icon, children, className = "" }: { icon: any, children: React.ReactNode, className?: string }) => (
   <div className={`relative group ${className}`}>
-    <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-400 transition-colors">
-      <Icon size={24} />
+    <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-secondary transition-colors">
+      <Icon size={20} />
     </div>
     {children}
   </div>
@@ -72,10 +72,7 @@ export default function AuthPage() {
 
   useEffect(() => {
     if (isSuccess && user) {
-      const timer = setTimeout(() => {
-        router.replace('/');
-      }, 200);
-      return () => clearTimeout(timer);
+      router.replace('/');
     }
   }, [isSuccess, user, router]);
 
@@ -146,207 +143,142 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#121b24] flex flex-col items-center justify-center p-4 md:p-12 font-body text-white">
+    <div className="min-h-screen bg-[#0F172A] flex flex-col items-center justify-center p-4 font-body text-white">
       {isSuccess && (
-        <div className="fixed inset-0 z-[100] bg-[#121b24] flex flex-col items-center justify-center animate-in fade-in duration-200">
-          <div className="size-24 rounded-3xl bg-blue-500/20 flex items-center justify-center text-blue-500 mb-6 shadow-2xl">
-            <CheckCircle2 className="size-12 animate-bounce" />
+        <div className="fixed inset-0 z-[100] bg-[#0F172A] flex flex-col items-center justify-center animate-in fade-in duration-100">
+          <div className="size-20 rounded-2xl bg-secondary/20 flex items-center justify-center text-secondary mb-4 shadow-2xl">
+            <CheckCircle2 size={40} className="animate-bounce" />
           </div>
-          <h2 className="text-3xl font-black italic uppercase tracking-tighter text-white">SUCCESSFUL</h2>
+          <h2 className="text-2xl font-black italic uppercase tracking-tighter text-white">WELCOME</h2>
         </div>
       )}
 
-      <div className="max-w-4xl w-full space-y-8 bg-[#1a2632] p-8 md:p-14 rounded-[3rem] shadow-2xl border border-white/5">
+      <div className="max-w-md w-full space-y-6 bg-white/5 p-8 rounded-[2rem] shadow-2xl border border-white/5 backdrop-blur-sm">
         <div className="flex justify-between items-center">
-          <div className="relative w-16 h-16 md:w-20 md:h-20">
-            {logo && <Image src={logo.imageUrl} alt="MUTAMBUKE" fill className="object-contain" priority />}
+          <div className="relative w-12 h-12 overflow-hidden rounded-xl">
+            {logo ? (
+              <Image src={logo.imageUrl} alt="MUTAMBUKE" fill className="object-cover" priority />
+            ) : (
+              <div className="size-full bg-secondary flex items-center justify-center text-white font-black">M</div>
+            )}
           </div>
           <Select value={lang} onValueChange={(v: Language) => setLang(v)}>
-            <SelectTrigger className="w-[160px] h-12 rounded-2xl bg-slate-800/50 border-slate-700/50 text-sm font-black">
-              <Globe className="size-5 mr-3 text-blue-400" />
+            <SelectTrigger className="w-[120px] h-10 rounded-xl bg-white/5 border-white/10 text-[10px] font-black uppercase tracking-widest">
+              <Globe size={14} className="mr-2 text-secondary" />
               <SelectValue placeholder="Lang" />
             </SelectTrigger>
-            <SelectContent className="rounded-2xl border-slate-700 bg-slate-900 text-white">
-              <SelectItem value="rw" className="font-black">RWANDA</SelectItem>
-              <SelectItem value="en" className="font-black">ENGLISH</SelectItem>
-              <SelectItem value="fr" className="font-black">FRANÇAIS</SelectItem>
+            <SelectContent className="rounded-xl border-slate-700 bg-slate-900 text-white">
+              <SelectItem value="rw" className="font-black text-[10px]">Kinyarwanda</SelectItem>
+              <SelectItem value="en" className="font-black text-[10px]">English</SelectItem>
+              <SelectItem value="fr" className="font-black text-[10px]">Français</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
-        <div className="space-y-8">
-          <div className="text-center space-y-3">
-            <h1 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter text-white">MUTAMBUKE</h1>
-            <p className="text-slate-400 font-bold uppercase tracking-[0.4em] text-xs md:text-sm">Smart Urban Mobility System</p>
+        <div className="text-center space-y-1">
+          <h1 className="text-4xl font-black italic uppercase tracking-tighter text-white leading-none">MUTAMBUKE</h1>
+          <p className="text-slate-400 font-bold uppercase tracking-[0.3em] text-[8px]">Smart Urban Mobility</p>
+        </div>
+
+        {!isLogin && (
+          <div className="grid grid-cols-2 gap-4">
+            <Button 
+              onClick={() => setRole('passenger')}
+              className={`h-16 rounded-2xl border-2 flex flex-col items-center justify-center transition-all ${role === 'passenger' ? 'bg-secondary/10 border-secondary/50 text-secondary' : 'bg-white/5 border-white/5 text-slate-500'}`}
+            >
+              <User size={18} />
+              <span className="text-[8px] font-black uppercase tracking-widest mt-1">{t.passenger}</span>
+            </Button>
+            <Button 
+              onClick={() => setRole('driver')}
+              className={`h-16 rounded-2xl border-2 flex flex-col items-center justify-center transition-all ${role === 'driver' ? 'bg-secondary/10 border-secondary/50 text-secondary' : 'bg-white/5 border-white/5 text-slate-500'}`}
+            >
+              <ShieldCheck size={18} />
+              <span className="text-[8px] font-black uppercase tracking-widest mt-1">{t.rider}</span>
+            </Button>
+          </div>
+        )}
+
+        <form onSubmit={handleAuth} className="space-y-4">
+          <div className="space-y-3">
+            {!isLogin && (
+              <InputWrapper icon={User}>
+                <Input 
+                  placeholder={t.fullName} 
+                  className="h-14 pl-12 rounded-xl bg-white/5 border-white/10 focus:border-secondary transition-all font-bold placeholder:text-slate-500 text-sm" 
+                  value={name} 
+                  onChange={(e) => setName(e.target.value)} 
+                  required 
+                />
+              </InputWrapper>
+            )}
+
+            <InputWrapper icon={Phone}>
+              <Input 
+                placeholder={t.phone} 
+                className="h-14 pl-12 rounded-xl bg-white/5 border-white/10 focus:border-secondary transition-all font-bold placeholder:text-slate-500 text-sm" 
+                value={phone} 
+                onChange={(e) => setPhone(e.target.value)} 
+                required 
+              />
+            </InputWrapper>
+
+            <InputWrapper icon={Lock}>
+              <Input 
+                type={showPassword ? "text" : "password"}
+                placeholder={t.password} 
+                className="h-14 pl-12 pr-12 rounded-xl bg-white/5 border-white/10 focus:border-secondary transition-all font-bold placeholder:text-slate-500 text-sm" 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)} 
+                required 
+              />
+              <button 
+                type="button" 
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </InputWrapper>
           </div>
 
-          {!isLogin && (
-            <div className="grid grid-cols-2 gap-6">
-              <Button 
-                onClick={() => setRole('passenger')}
-                className={`h-28 md:h-36 rounded-[2rem] border-2 flex flex-col items-center justify-center gap-3 transition-all ${role === 'passenger' ? 'bg-blue-500/10 border-blue-500/50 text-blue-400 shadow-[0_0_30px_rgba(59,130,246,0.1)]' : 'bg-slate-800/30 border-slate-700/50 text-slate-500'}`}
-              >
-                <div className="size-12 rounded-full bg-slate-700/50 flex items-center justify-center overflow-hidden">
-                   <User className="size-8" />
-                </div>
-                <span className="text-xs md:text-sm font-black uppercase tracking-widest">{t.passenger}</span>
-              </Button>
-              <Button 
-                onClick={() => setRole('driver')}
-                className={`h-28 md:h-36 rounded-[2rem] border-2 flex flex-col items-center justify-center gap-3 transition-all ${role === 'driver' ? 'bg-blue-500/10 border-blue-500/50 text-blue-400 shadow-[0_0_30px_rgba(59,130,246,0.1)]' : 'bg-slate-800/30 border-slate-700/50 text-slate-500'}`}
-              >
-                <ShieldCheck className="size-12 md:size-14" />
-                <span className="text-xs md:text-sm font-black uppercase tracking-widest">{t.rider}</span>
-              </Button>
+          {!isLogin && role === 'driver' && (
+            <div className="space-y-3 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="flex items-center gap-3 text-[8px] font-black text-slate-500 uppercase tracking-widest">
+                <div className="h-px bg-white/5 flex-1" />
+                {t.driverDetails}
+                <div className="h-px bg-white/5 flex-1" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Input className="h-12 bg-white/5 border-white/10 rounded-xl text-xs font-bold" placeholder={t.plateNumber} value={plateNumber} onChange={(e) => setPlateNumber(e.target.value)} />
+                <Input className="h-12 bg-white/5 border-white/10 rounded-xl text-xs font-bold" placeholder={t.vehicleBrand} value={vehicleBrand} onChange={(e) => setVehicleBrand(e.target.value)} />
+              </div>
             </div>
           )}
 
-          <form onSubmit={handleAuth} className="space-y-8">
-            <div className="grid gap-6">
-              {!isLogin && (
-                <InputWrapper icon={User}>
-                  <Input 
-                    placeholder={t.fullName} 
-                    className="h-20 pl-16 rounded-[1.5rem] bg-slate-800/40 border-slate-700/50 focus:border-blue-500/50 transition-all font-bold placeholder:text-slate-500 text-xl" 
-                    value={name} 
-                    onChange={(e) => setName(e.target.value)} 
-                    required 
-                  />
-                </InputWrapper>
-              )}
-
-              <InputWrapper icon={Phone}>
-                <Input 
-                  placeholder={t.phone} 
-                  className="h-20 pl-16 rounded-[1.5rem] bg-slate-800/40 border-slate-700/50 focus:border-blue-500/50 transition-all font-bold placeholder:text-slate-500 text-xl" 
-                  value={phone} 
-                  onChange={(e) => setPhone(e.target.value)} 
-                  required 
-                />
-              </InputWrapper>
-
-              <InputWrapper icon={Lock}>
-                <Input 
-                  type={showPassword ? "text" : "password"}
-                  placeholder={t.password} 
-                  className="h-20 pl-16 pr-16 rounded-[1.5rem] bg-slate-800/40 border-slate-700/50 focus:border-blue-500/50 transition-all font-bold placeholder:text-slate-500 text-xl" 
-                  value={password} 
-                  onChange={(e) => setPassword(e.target.value)} 
-                  required 
-                />
-                <button 
-                  type="button" 
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
-                >
-                  {showPassword ? <EyeOff size={28} /> : <Eye size={28} />}
-                </button>
-              </InputWrapper>
-            </div>
-
-            {!isLogin && role === 'driver' && (
-              <div className="space-y-8 pt-6 animate-in fade-in slide-in-from-top-4 duration-300">
-                <div className="flex items-center justify-center gap-6">
-                   <div className="h-px bg-slate-700/50 flex-1" />
-                   <div className="flex items-center gap-3 text-sm font-black text-slate-400 uppercase tracking-[0.3em]">
-                      <CheckCircle2 size={20} className="text-blue-500" />
-                      {t.driverDetails}
-                   </div>
-                   <div className="h-px bg-slate-700/50 flex-1" />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <InputWrapper icon={User}>
-                    <Input 
-                      placeholder={t.gender} 
-                      className="h-20 pl-16 rounded-[1.5rem] bg-slate-800/40 border-slate-700/50 font-bold text-xl" 
-                      value={gender}
-                      onChange={(e) => setGender(e.target.value)}
-                    />
-                  </InputWrapper>
-                  <InputWrapper icon={Calendar}>
-                    <Input 
-                      placeholder={t.dob} 
-                      className="h-20 pl-16 rounded-[1.5rem] bg-slate-800/40 border-slate-700/50 font-bold text-xl" 
-                      value={dob}
-                      onChange={(e) => setDob(e.target.value)}
-                    />
-                  </InputWrapper>
-                  <InputWrapper icon={Car}>
-                    <Input 
-                      placeholder={t.vehicleBrand} 
-                      className="h-20 pl-16 rounded-[1.5rem] bg-slate-800/40 border-slate-700/50 font-bold text-xl" 
-                      value={vehicleBrand}
-                      onChange={(e) => setVehicleBrand(e.target.value)}
-                    />
-                  </InputWrapper>
-                  <InputWrapper icon={FileText}>
-                    <Input 
-                      placeholder={t.licenseCategory} 
-                      className="h-20 pl-16 rounded-[1.5rem] bg-slate-800/40 border-slate-700/50 font-bold text-xl" 
-                      value={licenseCategory}
-                      onChange={(e) => setLicenseCategory(e.target.value)}
-                    />
-                  </InputWrapper>
-                  <InputWrapper icon={Car}>
-                    <Input 
-                      placeholder={t.vehicleModel} 
-                      className="h-20 pl-16 rounded-[1.5rem] bg-slate-800/40 border-slate-700/50 font-bold text-xl" 
-                      value={vehicleModel}
-                      onChange={(e) => setVehicleModel(e.target.value)}
-                    />
-                  </InputWrapper>
-                  <InputWrapper icon={Languages}>
-                    <Input 
-                      placeholder={t.plateNumber} 
-                      className="h-20 pl-16 rounded-[1.5rem] bg-slate-800/40 border-slate-700/50 font-bold uppercase text-xl" 
-                      value={plateNumber}
-                      onChange={(e) => setPlateNumber(e.target.value)}
-                    />
-                  </InputWrapper>
-                  <InputWrapper icon={FileText}>
-                    <Input 
-                      placeholder={t.licenseNumber} 
-                      className="h-20 pl-16 rounded-[1.5rem] bg-slate-800/40 border-slate-700/50 font-bold text-xl" 
-                      value={licenseNumber}
-                      onChange={(e) => setLicenseNumber(e.target.value)}
-                    />
-                  </InputWrapper>
-                  <InputWrapper icon={Camera}>
-                    <Input 
-                      placeholder={t.profilePhoto} 
-                      className="h-20 pl-16 rounded-[1.5rem] bg-slate-800/40 border-slate-700/50 font-bold text-xl" 
-                      readOnly
-                    />
-                  </InputWrapper>
-                </div>
-              </div>
-            )}
-
-            <div className="pt-8">
-              <Button 
-                type="submit" 
-                className="w-full h-24 rounded-[2rem] bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-500 hover:to-blue-700 text-white text-3xl font-black italic shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-3 group"
-                disabled={isLoading || isSuccess}
-              >
-                {isLoading ? <Loader2 className="animate-spin size-8" /> : (
-                  <>
-                    {isLogin ? t.login : t.signup}
-                    <ArrowRight className="size-8 group-hover:translate-x-2 transition-transform" />
-                  </>
-                )}
-              </Button>
-            </div>
-          </form>
-
-          <div className="text-center pt-6">
-            <button 
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-lg md:text-xl font-black uppercase tracking-[0.25em] text-blue-400 hover:text-blue-300 transition-colors"
+          <div className="pt-4">
+            <Button 
+              type="submit" 
+              className="w-full h-16 rounded-2xl bg-secondary hover:bg-secondary/90 text-[#0F172A] text-lg font-black italic shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2 group"
+              disabled={isLoading || isSuccess}
             >
-              {isLogin ? "Kora konti nshya" : "Sanzwe ufite konti? Yinjira"}
-            </button>
+              {isLoading ? <Loader2 className="animate-spin size-6" /> : (
+                <>
+                  {isLogin ? t.login : t.signup}
+                  <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
+            </Button>
           </div>
+        </form>
+
+        <div className="text-center pt-2">
+          <button 
+            onClick={() => setIsLogin(!isLogin)}
+            className="text-[10px] font-black uppercase tracking-widest text-secondary/60 hover:text-secondary transition-colors"
+          >
+            {isLogin ? "Kora konti nshya" : "Sanzwe ufite konti? Yinjira"}
+          </button>
         </div>
       </div>
     </div>
