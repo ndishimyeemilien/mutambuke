@@ -34,6 +34,12 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'z-cdn-media.chatglm.cn',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
 };

@@ -1,42 +1,32 @@
-
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Bike, 
-  Car, 
-  LogOut, 
-  Navigation, 
-  User, 
-  Phone, 
-  DollarSign, 
-  Star,
-  Loader2,
-  TrendingUp,
-  MapPin,
-  Clock,
-  ShieldCheck
-} from 'lucide-react';
-import { collection, doc, updateDoc, query, where, serverTimestamp } from 'firebase/firestore';
+import { Bike, Car, LogOut, Navigation, User, Phone, Star, Loader2, ShieldCheck, MapPin, MessageSquare, Send, Satellite } from 'lucide-react';
+import { collection, doc, updateDoc, query, where, serverTimestamp, addDoc, orderBy } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '@/firebase';
 import { translations, Language } from '@/lib/translations';
-import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
+import { useToast } from '@/hooks/use-toast';
+import { Input } from '@/components/ui/input';
 
 const GOOGLE_MAPS_API_KEY = "AIzaSyBYd7EGaMpDouB0Br1yUSwRarQeToFuiiA";
-const containerStyle = { width: "100%", height: "100vh" };
+const containerStyle = { width: "100%", height: "100%" };
 const kigaliCenter = { lat: -1.9441, lng: 30.0619 };
 
 export default function DriverDashboard() {
   const { user } = useUser();
   const db = useFirestore();
   const auth = useAuth();
+  const { toast } = useToast();
   const [location, setLocation] = useState(kigaliCenter);
+  const [showChat, setShowChat] = useState(false);
+  const [chatMessage, setChatMessage] = useState('');
+  const [mapTypeId, setMapTypeId] = useState('roadmap');
 
   const { isLoaded } = useJsApiLoader({ googleMapsApiKey: GOOGLE_MAPS_API_KEY });
   const { data: profile } = useDoc(user ? `users/${user.uid}` : null);
@@ -64,9 +54,17 @@ export default function DriverDashboard() {
   const { data: activeRides } = useCollection(activeQuery);
   const currentRide = activeRides?.[0];
 
+  // Chat messages
+  const chatQuery = useMemoFirebase(() => {
+    if (!db || !currentRide) return null;
+    return query(collection(db, 'rides', currentRide.rideId, 'messages'), orderBy('createdAt', 'asc'));
+  }, [db, currentRide]);
+  const { data: messages } = useCollection(chatQuery);
+
   useEffect(() => {
+    let watchId: number;
     if (navigator.geolocation) {
-      const watchId = navigator.geolocation.watchPosition(
+      watchId = navigator.geolocation.watchPosition(
         (pos) => {
           const newLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
           setLocation(newLoc);
@@ -76,8 +74,10 @@ export default function DriverDashboard() {
         },
         null, { enableHighAccuracy: true }
       );
-      return () => navigator.geolocation.clearWatch(watchId);
     }
+    return () => {
+      if (watchId) navigator.geolocation.clearWatch(watchId);
+    };
   }, [db, user, isOnline, isBusy]);
 
   async function toggleStatus() {
@@ -87,253 +87,182 @@ export default function DriverDashboard() {
 
   async function acceptRide(rideId: string) {
     if (!db || !user) return;
-    await updateDoc(doc(db, 'rides', rideId), { 
-      status: 'accepted', 
-      driverId: user.uid, 
-      driverName: profile?.name || 'Umushoferi', 
-      driverPhone: profile?.phone || '' 
+    await updateDoc(doc(db, 'rides', rideId), {
+      status: 'accepted',
+      driverId: user.uid,
+      driverName: profile?.name || 'Umushoferi',
+      driverPhone: profile?.phone || ''
     });
     await updateDoc(doc(db, 'drivers', user.uid), { status: 'busy', updatedAt: serverTimestamp() });
   }
 
-  if (dLoading) return <div className="h-screen flex items-center justify-center bg-[#0F172A]"><Loader2 className="animate-spin text-secondary size-12" /></div>;
-
-  if (vehicleType === 'taxi') {
-    return (
-      <div className="min-h-screen bg-slate-50 flex font-body">
-        <aside className="w-96 bg-[#0F172A] text-white p-10 flex flex-col h-screen sticky top-0 overflow-y-auto no-scrollbar">
-          <div className="mb-12">
-            <h1 className="text-3xl font-black italic tracking-tighter uppercase text-accent">MUTAMBUKE</h1>
-            <p className="text-[10px] font-bold text-white/40 uppercase tracking-[0.4em] mt-1">Taxi Yihariye</p>
-          </div>
-
-          <div className="space-y-8 flex-1">
-            <div className="bg-white/5 rounded-3xl p-6 border border-white/10">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="size-12 rounded-2xl bg-secondary flex items-center justify-center">
-                  <User className="size-6" />
-                </div>
-                <div>
-                  <h4 className="font-black uppercase tracking-tighter text-lg">{profile?.name || 'Umushoferi'}</h4>
-                  <p className="text-xs text-slate-400 font-bold uppercase">{driver?.plateNumber}</p>
-                </div>
-              </div>
-              <div className="flex items-center justify-between pt-4 border-t border-white/10">
-                <div className="flex items-center gap-2">
-                  <Star className="size-4 fill-accent text-accent" />
-                  <span className="text-sm font-black italic">{driver?.rating || 'N/A'} Amanota</span>
-                </div>
-                <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${isOnline ? 'bg-secondary/20 text-secondary' : 'bg-red-500/20 text-red-400'}`}>
-                  {isOnline ? 'Uri ku kazi' : 'Nturi ku kazi'}
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white/5 p-4 rounded-3xl border border-white/10">
-                <DollarSign className="size-5 text-secondary mb-2" />
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Amafaranga</p>
-                <p className="text-xl font-black italic">{driver?.earnings || 0} FRW</p>
-              </div>
-              <div className="bg-white/5 p-4 rounded-3xl border border-white/10">
-                <Clock className="size-5 text-accent mb-2" />
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Amasaha</p>
-                <p className="text-xl font-black italic">{driver?.hoursActive || 0} hrs</p>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-3xl flex items-center justify-between shadow-2xl">
-              <span className="text-sm font-black uppercase text-[#0F172A]">{t.startWorking}</span>
-              <Switch checked={isOnline} onCheckedChange={toggleStatus} disabled={isBusy} className="data-[state=checked]:bg-secondary" />
-            </div>
-          </div>
-
-          <Button onClick={() => signOut(auth!)} className="mt-10 h-16 rounded-2xl bg-white/5 hover:bg-red-600/20 text-white font-black uppercase italic transition-all">
-            <LogOut className="size-5 mr-3" /> {t.logout}
-          </Button>
-        </aside>
-
-        <main className="flex-1 relative">
-          {isLoaded ? (
-            <GoogleMap mapContainerStyle={containerStyle} center={location} zoom={15} options={{ disableDefaultUI: true }}>
-              <Marker position={location} icon={{ url: 'https://cdn-icons-png.flaticon.com/512/3082/3082383.png', scaledSize: { width: 50, height: 50 } as any }} />
-            </GoogleMap>
-          ) : <div className="h-full w-full bg-slate-200 animate-pulse" />}
-          
-          <div className="absolute bottom-10 left-10 right-10 z-40">
-            {currentRide ? (
-              <Card className="rounded-[3rem] border-none shadow-3xl bg-white overflow-hidden max-w-2xl mx-auto animate-in slide-in-from-bottom-20">
-                <div className="bg-[#0F172A] p-10 text-white flex items-center justify-between">
-                  <div className="flex items-center gap-6">
-                    <div className="size-16 rounded-2xl bg-white/10 flex items-center justify-center">
-                      <User className="size-10" />
-                    </div>
-                    <div>
-                      <h3 className="text-3xl font-black italic uppercase">{currentRide.passengerName}</h3>
-                      <div className="flex items-center gap-2 text-accent mt-1">
-                        <Star className="size-4 fill-accent" /> <span className="text-sm font-bold">{currentRide.passengerRating || 'N/A'} • Umunyamuryango Premium</span>
-                      </div>
-                    </div>
-                  </div>
-                  <a href={`tel:${currentRide.passengerPhone}`} className="size-16 rounded-3xl bg-secondary text-white flex items-center justify-center shadow-xl hover:scale-110 transition-all">
-                    <Phone className="size-8" />
-                  </a>
-                </div>
-                <CardContent className="p-10 space-y-8">
-                  <div className="grid grid-cols-2 gap-10">
-                    <div>
-                      <div className="flex items-center gap-2 text-slate-400 mb-1">
-                        <MapPin className="size-4" />
-                        <p className="text-[10px] font-bold uppercase tracking-widest">Aho umufata</p>
-                      </div>
-                      <p className="text-xl font-black text-[#0F172A]">{currentRide.pickupLocation}</p>
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2 text-slate-400 mb-1">
-                        <Navigation className="size-4" />
-                        <p className="text-[10px] font-bold uppercase tracking-widest">Aho umujyana</p>
-                      </div>
-                      <p className="text-xl font-black text-[#0F172A]">{currentRide.destination}</p>
-                    </div>
-                  </div>
-                  <Button onClick={() => updateDoc(doc(db!, 'rides', currentRide.rideId), { status: currentRide.status === 'accepted' ? 'started' : 'completed' })} className="w-full h-20 rounded-[2rem] bg-[#0F172A] text-white text-2xl font-black italic uppercase tracking-tighter shadow-2xl hover:scale-[1.02] transition-all">
-                    {currentRide.status === 'accepted' ? t.startTrip : t.completeMission}
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : isOnline && requests?.length ? (
-              <div className="space-y-6">
-                {requests.map((req: any) => (
-                  <Card key={req.rideId} className="taxi-card max-w-2xl mx-auto flex items-center justify-between gap-6 animate-in slide-in-from-bottom-10">
-                    <div className="flex items-center gap-6">
-                      <div className="size-16 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400">
-                        <User size={32} />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                           <Badge variant="secondary" className="bg-secondary/10 text-secondary border-none uppercase text-[8px] font-black tracking-widest">Urugendo Rushya</Badge>
-                           <span className="text-xs font-bold text-slate-400">{req.estimatedFare || 'N/A'} FRW Gereranywa.</span>
-                        </div>
-                        <h3 className="text-2xl font-black text-[#0F172A] italic uppercase">{req.passengerName}</h3>
-                        <p className="text-sm font-bold text-slate-400 flex items-center gap-1">
-                          <MapPin size={12} /> {req.pickupLocation} → {req.destination}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex gap-4">
-                      <Button onClick={() => acceptRide(req.rideId)} className="h-16 px-10 rounded-2xl bg-secondary hover:bg-secondary/90 text-white font-black italic uppercase text-lg shadow-xl">
-                        {t.takeTrip}
-                      </Button>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            ) : null}
-          </div>
-        </main>
-      </div>
-    );
+  async function handleUpdateRideStatus(ride: any) {
+    if (!db || !user || !ride) return;
+    const rideRef = doc(db, 'rides', ride.rideId);
+    const driverRef = doc(db, 'drivers', user.uid);
+    if (ride.status === 'accepted') {
+      await updateDoc(rideRef, { status: 'started' });
+    } else if (ride.status === 'started') {
+      await updateDoc(rideRef, { status: 'completed', completedAt: serverTimestamp() });
+      await updateDoc(driverRef, { status: 'online' });
+    }
   }
 
+  async function sendMessage() {
+    if (!db || !currentRide || !chatMessage.trim()) return;
+    const msg = chatMessage;
+    setChatMessage('');
+    await addDoc(collection(db, 'rides', currentRide.rideId, 'messages'), {
+      text: msg,
+      senderId: user?.uid,
+      senderName: profile?.name,
+      createdAt: serverTimestamp()
+    });
+  }
+
+  if (dLoading) return <div className="h-screen flex items-center justify-center bg-[#070b14]"><Loader2 className="animate-spin text-secondary size-10" /></div>;
+  
+  if (!isApproved) return (
+    <div className="h-screen flex flex-col items-center justify-center bg-[#070b14] text-white p-10 text-center">
+        <ShieldCheck className="size-20 text-accent mb-6"/>
+        <h1 className="text-3xl font-black uppercase tracking-tighter mb-4">Konti iragenzurwa</h1>
+        <p className="text-white/40 max-w-md font-bold text-sm uppercase tracking-widest">Genzura amakuru yawe arimo kurangira. Murakoze kwihangana.</p>
+    </div>
+  )
+
   return (
-    <div className="h-screen w-screen overflow-hidden relative flex flex-col font-body bg-slate-50">
-      <div className="absolute inset-0 z-0">
-        {isLoaded ? (
-          <GoogleMap mapContainerStyle={containerStyle} center={location} zoom={15} options={{ disableDefaultUI: true }}>
-            <Marker position={location} icon={{ url: 'https://cdn-icons-png.flaticon.com/512/3194/3194514.png', scaledSize: { width: 50, height: 50 } as any }} />
-          </GoogleMap>
-        ) : <div className="h-full w-full bg-slate-200 animate-pulse" />}
-        <div className="absolute inset-0 pointer-events-none map-focused-overlay" />
+    <div className="h-screen w-screen overflow-hidden relative flex flex-col bg-[#070b14] text-white">
+      {isLoaded ? (
+        <GoogleMap 
+          mapContainerStyle={containerStyle} 
+          center={location} 
+          zoom={16} 
+          mapTypeId={mapTypeId}
+          options={{ 
+            disableDefaultUI: true, 
+            styles: [{featureType:"all",elementType:"all",stylers:[{invert_lightness:!0},{saturation:10},{lightness:30},{gamma:.9},{hue:"#435158"}]}] 
+          }}
+        >
+          <Marker position={location} icon={{ url: vehicleType === 'moto' ? 'https://cdn-icons-png.flaticon.com/512/3194/3194514.png' : 'https://cdn-icons-png.flaticon.com/512/3082/3082383.png', scaledSize: { width: 50, height: 50 } as any }} />
+          
+          {/* Passenger Tracking */}
+          {currentRide?.passengerLocation && (
+            <>
+               <Marker position={currentRide.passengerLocation} icon={{ url: 'https://cdn-icons-png.flaticon.com/512/684/684908.png', scaledSize: { width: 40, height: 40 } as any }} />
+               <InfoWindow position={currentRide.passengerLocation}>
+                  <div className="text-[10px] font-bold text-slate-900">{currentRide.passengerName}</div>
+               </InfoWindow>
+            </>
+          )}
+        </GoogleMap>
+      ) : <div className="h-full w-full bg-slate-900 animate-pulse" />}
+      
+      <div className="absolute top-4 inset-x-4 z-10 flex flex-col gap-2">
+        <div className="max-w-md mx-auto w-full bg-black/40 backdrop-blur-xl rounded-[2rem] p-4 border border-white/10 flex items-center justify-between shadow-2xl">
+            <div className="flex items-center gap-4">
+                <div className={`size-12 rounded-2xl flex items-center justify-center ${vehicleType === 'moto' ? 'bg-secondary/20 text-secondary' : 'bg-accent/20 text-accent'}`}>
+                    {vehicleType === 'moto' ? <Bike size={24}/> : <Car size={24}/>}
+                </div>
+                <div>
+                    <p className="font-black text-sm uppercase tracking-tight">{profile?.name || 'Umushoferi'}</p>
+                    <p className="text-[10px] font-black text-white/30 uppercase tracking-widest mt-0.5">{driver?.plateNumber}</p>
+                </div>
+            </div>
+            <div className="flex items-center gap-3">
+                <Button onClick={() => setMapTypeId(mapTypeId === 'roadmap' ? 'hybrid' : 'roadmap')} size="icon" variant="ghost" className="rounded-xl bg-white/5"><Satellite size={18}/></Button>
+                <Button onClick={() => signOut(auth!)} size="icon" variant="ghost" className="rounded-xl bg-white/5 text-red-500"><LogOut size={18}/></Button>
+            </div>
+        </div>
       </div>
 
-      <header className="absolute top-6 left-6 right-6 z-50 flex items-center justify-between">
-        <div className="bg-[#0F172A] p-4 rounded-3xl flex items-center gap-4 shadow-2xl text-white">
-          <div className="size-12 rounded-2xl bg-secondary flex items-center justify-center">
-            <Bike size={24} />
-          </div>
-          <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Umushoferi wa Moto</p>
-            <p className="text-lg font-black italic text-accent">{driver?.plateNumber}</p>
-          </div>
-        </div>
-        <div className={`bg-white px-8 py-4 rounded-3xl flex items-center gap-4 border-2 transition-all shadow-2xl ${isOnline ? 'border-secondary' : 'border-slate-100'}`}>
-          <span className="text-xs font-black uppercase text-[#0F172A] tracking-widest">{isOnline ? 'URI KU KAZI' : 'NTURI KU KAZI'}</span>
-          <Switch checked={isOnline} onCheckedChange={toggleStatus} disabled={isBusy} className="data-[state=checked]:bg-secondary" />
-        </div>
-      </header>
-
-      <main className="absolute bottom-10 left-6 right-6 z-40 max-w-4xl mx-auto w-full">
-        {currentRide ? (
-          <Card className="rounded-[2.5rem] border-none shadow-3xl overflow-hidden bg-white animate-in slide-in-from-bottom-10">
-            <div className="bg-[#0F172A] p-8 text-white flex items-center justify-between">
-              <div className="flex items-center gap-6">
-                <div className="size-14 rounded-2xl bg-white/10 flex items-center justify-center">
-                  <User className="size-8" />
+      <div className="absolute bottom-4 inset-x-4 z-10">
+        <div className="max-w-md mx-auto space-y-4">
+            {currentRide ? (
+               <div className="space-y-4">
+                  {showChat ? (
+                    <Card className="bg-black/60 backdrop-blur-2xl border-white/10 rounded-[2.5rem] p-4 h-[400px] flex flex-col text-white">
+                        <div className="flex justify-between items-center mb-4 px-2">
+                            <h3 className="font-black uppercase text-xs tracking-widest">{currentRide.passengerName}</h3>
+                            <Button variant="ghost" size="icon" onClick={() => setShowChat(false)}><X/></Button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto space-y-4 no-scrollbar">
+                           {messages?.map((m: any) => (
+                             <div key={m.id} className={`flex ${m.senderId === user?.uid ? 'justify-end' : 'justify-start'}`}>
+                                <div className={`p-3 rounded-2xl max-w-[80%] text-xs font-bold ${m.senderId === user?.uid ? 'bg-secondary' : 'bg-white/10'}`}>
+                                   {m.text}
+                                </div>
+                             </div>
+                           ))}
+                        </div>
+                        <div className="mt-4 flex gap-2">
+                            <Input value={chatMessage} onChange={e => setChatMessage(e.target.value)} placeholder="Andika..." className="bg-white/5 border-none h-12 rounded-xl text-xs font-bold" />
+                            <Button onClick={sendMessage} size="icon" className="bg-secondary rounded-xl h-12 w-12"><Send size={18}/></Button>
+                        </div>
+                    </Card>
+                  ) : (
+                    <Card className="rounded-[2.5rem] border-white/10 bg-black/60 backdrop-blur-2xl p-6 text-white animate-in slide-in-from-bottom-5">
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-4">
+                            <div className="size-14 rounded-2xl bg-secondary/10 flex items-center justify-center">
+                                <User size={28} className="text-secondary" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">Uruhetse</p>
+                                <h3 className="text-xl font-black uppercase tracking-tight">{currentRide.passengerName}</h3>
+                            </div>
+                        </div>
+                        <div className="flex gap-2">
+                            <Button onClick={() => setShowChat(true)} size="icon" className="size-12 rounded-2xl bg-accent text-accent-foreground"><MessageSquare size={20}/></Button>
+                            <a href={`tel:${currentRide.passengerPhone}`} className="size-12 rounded-2xl bg-secondary text-white flex items-center justify-center shadow-lg active:scale-95"><Phone size={20} /></a>
+                        </div>
+                      </div>
+                      <Button onClick={() => handleUpdateRideStatus(currentRide)} className="w-full h-16 rounded-2xl bg-secondary text-white font-black text-lg uppercase tracking-widest shadow-2xl active:scale-95 transition-all">
+                          {currentRide.status === 'accepted' ? 'TANGIRA URUGENDO' : 'SOZA URUGENDO'}
+                      </Button>
+                    </Card>
+                  )}
+               </div>
+            ) : isOnline ? (
+              requests?.length ? (
+                requests.map((req: any) => (
+                  <Card key={req.rideId} className="rounded-[2rem] border-white/10 bg-black/60 backdrop-blur-2xl p-6 flex items-center justify-between gap-4 animate-in slide-in-from-bottom-5 text-white">
+                    <div className="flex items-center gap-4">
+                      <div className="size-14 rounded-2xl bg-secondary/10 flex items-center justify-center">
+                        <User size={28} className="text-secondary" />
+                      </div>
+                      <div>
+                        <h3 className="font-black uppercase tracking-tight">{req.passengerName}</h3>
+                        <p className="text-[10px] font-black text-white/30 uppercase tracking-widest mt-1">Hafi yawe</p>
+                      </div>
+                    </div>
+                    <Button onClick={() => acceptRide(req.rideId)} className="h-14 px-8 rounded-2xl bg-secondary text-white font-black text-xs tracking-widest shadow-xl">
+                      FATA URUGENDO
+                    </Button>
+                  </Card>
+                ))
+              ) : (
+                <div className="bg-black/40 backdrop-blur-xl p-10 rounded-[2.5rem] text-center space-y-4 border border-white/10 shadow-2xl">
+                  <Navigation className="size-12 mx-auto animate-pulse text-secondary" />
+                  <h2 className="text-xl font-black uppercase tracking-tighter">Tegereje abagenzi...</h2>
+                  <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">Uri ku kazi, amasegonda arimo kubarwa.</p>
                 </div>
-                <div>
-                  <h3 className="text-2xl font-black italic uppercase leading-none">{currentRide.passengerName}</h3>
-                  <div className="flex items-center gap-2 text-accent mt-1">
-                    <Star className="size-4 fill-accent" /> <span className="text-sm font-bold">{currentRide.passengerRating || 'N/A'} Amanota</span>
+              )
+            ) : (
+              <div className="bg-black/40 backdrop-blur-xl p-6 rounded-[2.5rem] border border-white/10 flex items-center justify-between shadow-2xl">
+                  <div className="px-2">
+                      <p className="font-black text-lg uppercase tracking-tighter">Nturi ku kazi</p>
+                      <p className="text-[10px] font-black text-white/20 uppercase tracking-widest">Kanda hano uhindure</p>
                   </div>
-                </div>
-              </div>
-              <a href={`tel:${currentRide.passengerPhone}`} className="size-14 rounded-2xl bg-secondary text-white flex items-center justify-center hover:scale-110 transition-all shadow-xl">
-                <Phone className="size-6" />
-              </a>
-            </div>
-            <CardContent className="p-8 space-y-6">
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Aho umufata</p>
-                  <p className="text-lg font-black text-[#0F172A]">{currentRide.pickupLocation}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Aho umujyana</p>
-                  <p className="text-lg font-black text-[#0F172A]">{currentRide.destination}</p>
-                </div>
-              </div>
-              <Button onClick={() => updateDoc(doc(db!, 'rides', currentRide.rideId), { status: currentRide.status === 'accepted' ? 'started' : 'completed' })} className="w-full h-20 rounded-[2rem] bg-[#0F172A] text-white text-xl font-black italic uppercase tracking-tighter shadow-2xl">
-                {currentRide.status === 'accepted' ? t.startTrip : t.completeMission}
-              </Button>
-            </CardContent>
-          </Card>
-        ) : isOnline ? (
-          <div className="space-y-4">
-            {requests?.map((req: any) => (
-              <Card key={req.rideId} className="rounded-[2.5rem] border-none shadow-3xl bg-white p-8 flex items-center justify-between gap-6 animate-in slide-in-from-right-10">
-                <div className="flex items-center gap-6">
-                  <div className="size-14 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400">
-                    <User size={32} />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">Ubusabe Bushya</p>
-                    <h3 className="text-2xl font-black text-[#0F172A] italic uppercase">{req.passengerName}</h3>
-                    <p className="text-sm font-bold text-slate-400">{req.pickupLocation} → {req.destination}</p>
-                  </div>
-                </div>
-                <div className="flex gap-4">
-                   <Button onClick={() => acceptRide(req.rideId)} className="h-16 px-10 rounded-2xl bg-secondary hover:bg-secondary/90 text-white font-black italic uppercase text-lg shadow-xl">
-                    {t.takeTrip}
-                  </Button>
-                </div>
-              </Card>
-            ))}
-            {!requests?.length && (
-              <div className="bg-[#0F172A]/90 backdrop-blur-md p-10 rounded-[3rem] text-center text-white space-y-4 shadow-3xl">
-                <Navigation className="size-10 mx-auto animate-pulse text-secondary" />
-                <h2 className="text-2xl font-black italic uppercase">{t.readyToRide}</h2>
-                <p className="text-slate-400 font-bold">Ndirimo gushaka abagenzi...</p>
+                  <Switch 
+                      checked={isOnline} 
+                      onCheckedChange={toggleStatus} 
+                      disabled={isBusy}
+                      className="h-10 w-16 data-[state=checked]:bg-secondary"
+                  />
               </div>
             )}
-          </div>
-        ) : (
-          <div className="flex justify-center">
-            <Button onClick={toggleStatus} className="h-28 px-16 rounded-[4rem] bg-[#0F172A] text-white text-4xl font-black italic uppercase shadow-3xl hover:scale-105 transition-all">
-              {t.startWorking}
-            </Button>
-          </div>
-        )}
-      </main>
+        </div>
+      </div>
     </div>
   );
 }

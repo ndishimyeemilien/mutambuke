@@ -1,4 +1,4 @@
-export type Language = 'en' | 'rw' | 'fr';
+  export type Language = 'en' | 'rw' | 'fr';
 
 export const translations = {
   en: {
@@ -36,44 +36,52 @@ export const translations = {
     vehicleModel: "Vehicle Model",
     licenseNumber: "License Number",
     profilePhoto: "Profile Photo",
-    driverDetails: "Driver Registration"
+    driverDetails: "Driver Registration",
+    errorEmailInUse: "Email is already in use.",
+    errorInvalidAuth: "Invalid credentials. Please try again.",
+    errorGeneric: "An error occurred. Please try again.",
+    vehicleType: "Vehicle Type"
   },
   rw: {
     findRide: "Shaka Urugendo",
-    searching: "Gushaka umushoferi...",
-    riderComing: "Umushoferi ari mu nzira",
+    searching: "Gushakisha umushoferi...",
+    riderComing: "Umushoferi wawe ari mu nzira",
     startWorking: "Tangira Akazi",
     stopWorking: "Hagarika Akazi",
-    takeTrip: "Emera Urugendo",
-    pickupAt: "Hagurukira",
-    destination: "Urekeza he?",
+    takeTrip: "Fata Urugendo",
+    pickupAt: "Aho Udukurwa",
+    destination: "Urekeza He?",
     moto: "Moto",
-    taxi: "Taxi",
-    earnings: "Ayo Wakoreye",
+    taxi: "Imodoka (Taxi)",
+    earnings: "Ayo Winjije",
     trips: "Ingendo",
-    userControl: "Genzura Abakoresha",
-    verifyRiders: "Emeza Abashoferi",
+    userControl: "Igenzura ry'abakoresha",
+    verifyRiders: "Genzura Abashoferi",
     logout: "Sohoka",
     startTrip: "Tangira Urugendo",
     completeMission: "Soza Urugendo",
-    readyToRide: "Niteguye Gutwara",
-    acceptRide: "Emera Urugendo",
+    readyToRide: "Witeguye Gutwara",
+    acceptRide: "Emeza Urugendo",
     phone: "Nimero ya Telefone",
-    password: "Ijambo ry'Ibanga",
-    fullName: "Amazina Yose",
+    password: "Ijambo ry'ibanga",
+    fullName: "Amazina Yuzuye",
     passenger: "Umugenzi",
     rider: "Umushoferi",
-    login: "Yinjira",
-    signup: "Fungura Konti",
-    plateNumber: "Pulaque",
+    login: "Injira",
+    signup: "Iyandikishe",
+    plateNumber: "Plaque y'ikinyabiziga",
     gender: "Igitsina",
-    dob: "Itariki y'Amavuko",
-    vehicleBrand: "Ikinyabiziga",
+    dob: "Itariki y'amavuko",
+    vehicleBrand: "Ubwoko bw'ikinyabiziga",
     licenseCategory: "Icyiciro cya Perimi",
-    vehicleModel: "Ubwoko",
+    vehicleModel: "Moderi y'ikinyabiziga",
     licenseNumber: "Nimero ya Perimi",
-    profilePhoto: "Ifoto",
-    driverDetails: "Ibiranga Umushoferi"
+    profilePhoto: "Ifoto yawe",
+    driverDetails: "Amakuru y'umushoferi",
+    errorEmailInUse: "Iyi email isanzwe ikoreshwa",
+    errorInvalidAuth: "Amakuru winjije siyo. Ongera ugerageze.",
+    errorGeneric: "Habaye ikosa. Ongera ugerageze.",
+    vehicleType: "Ubwoko bw'ikinyabiziga"
   },
   fr: {
     findRide: "Trouver un trajet",
@@ -110,6 +118,10 @@ export const translations = {
     vehicleModel: "Modèle",
     licenseNumber: "Numéro de permis",
     profilePhoto: "Photo",
-    driverDetails: "Détails Chauffeur"
+    driverDetails: "Détails Chauffeur",
+    errorEmailInUse: "L'email est déjà utilisé.",
+    errorInvalidAuth: "Identifiants invalides. Veuillez réessayer.",
+    errorGeneric: "Une erreur est survenue. Veuillez réessayer.",
+    vehicleType: "Type de véhicule"
   }
 };
