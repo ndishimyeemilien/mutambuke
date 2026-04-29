@@ -87,11 +87,10 @@ export default function DriverDashboard() {
 
   async function acceptRide(rideId: string) {
     if (!db || !user) return;
-    // Providing fallback values to ensure no 'undefined' is sent to Firestore
     await updateDoc(doc(db, 'rides', rideId), { 
       status: 'accepted', 
       driverId: user.uid, 
-      driverName: profile?.name || 'Driver', 
+      driverName: profile?.name || 'Umushoferi', 
       driverPhone: profile?.phone || '' 
     });
     await updateDoc(doc(db, 'drivers', user.uid), { status: 'busy', updatedAt: serverTimestamp() });
@@ -105,7 +104,7 @@ export default function DriverDashboard() {
         <aside className="w-96 bg-[#0F172A] text-white p-10 flex flex-col h-screen sticky top-0 overflow-y-auto no-scrollbar">
           <div className="mb-12">
             <h1 className="text-3xl font-black italic tracking-tighter uppercase text-accent">MUTAMBUKE</h1>
-            <p className="text-[10px] font-bold text-white/40 uppercase tracking-[0.4em] mt-1">Taxi Premium</p>
+            <p className="text-[10px] font-bold text-white/40 uppercase tracking-[0.4em] mt-1">Taxi Yihariye</p>
           </div>
 
           <div className="space-y-8 flex-1">
@@ -115,17 +114,17 @@ export default function DriverDashboard() {
                   <User className="size-6" />
                 </div>
                 <div>
-                  <h4 className="font-black uppercase tracking-tighter text-lg">{profile?.name || 'Driver'}</h4>
+                  <h4 className="font-black uppercase tracking-tighter text-lg">{profile?.name || 'Umushoferi'}</h4>
                   <p className="text-xs text-slate-400 font-bold uppercase">{driver?.plateNumber}</p>
                 </div>
               </div>
               <div className="flex items-center justify-between pt-4 border-t border-white/10">
                 <div className="flex items-center gap-2">
                   <Star className="size-4 fill-accent text-accent" />
-                  <span className="text-sm font-black italic">4.95 Rating</span>
+                  <span className="text-sm font-black italic">{driver?.rating || 'N/A'} Amanota</span>
                 </div>
                 <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${isOnline ? 'bg-secondary/20 text-secondary' : 'bg-red-500/20 text-red-400'}`}>
-                  {isOnline ? 'Online' : 'Offline'}
+                  {isOnline ? 'Uri ku kazi' : 'Nturi ku kazi'}
                 </div>
               </div>
             </div>
@@ -133,18 +132,18 @@ export default function DriverDashboard() {
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-white/5 p-4 rounded-3xl border border-white/10">
                 <DollarSign className="size-5 text-secondary mb-2" />
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Earnings</p>
-                <p className="text-xl font-black italic">24,500 FRW</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Amafaranga</p>
+                <p className="text-xl font-black italic">{driver?.earnings || 0} FRW</p>
               </div>
               <div className="bg-white/5 p-4 rounded-3xl border border-white/10">
                 <Clock className="size-5 text-accent mb-2" />
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Hrs Active</p>
-                <p className="text-xl font-black italic">6.4 hrs</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Amasaha</p>
+                <p className="text-xl font-black italic">{driver?.hoursActive || 0} hrs</p>
               </div>
             </div>
 
             <div className="bg-white p-6 rounded-3xl flex items-center justify-between shadow-2xl">
-              <span className="text-sm font-black uppercase text-[#0F172A]">{isOnline ? t.startWorking : 'START WORKING'}</span>
+              <span className="text-sm font-black uppercase text-[#0F172A]">{t.startWorking}</span>
               <Switch checked={isOnline} onCheckedChange={toggleStatus} disabled={isBusy} className="data-[state=checked]:bg-secondary" />
             </div>
           </div>
@@ -172,7 +171,7 @@ export default function DriverDashboard() {
                     <div>
                       <h3 className="text-3xl font-black italic uppercase">{currentRide.passengerName}</h3>
                       <div className="flex items-center gap-2 text-accent mt-1">
-                        <Star className="size-4 fill-accent" /> <span className="text-sm font-bold">4.8 • Premium Member</span>
+                        <Star className="size-4 fill-accent" /> <span className="text-sm font-bold">{currentRide.passengerRating || 'N/A'} • Umunyamuryango Premium</span>
                       </div>
                     </div>
                   </div>
@@ -185,14 +184,14 @@ export default function DriverDashboard() {
                     <div>
                       <div className="flex items-center gap-2 text-slate-400 mb-1">
                         <MapPin className="size-4" />
-                        <p className="text-[10px] font-bold uppercase tracking-widest">Pickup</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest">Aho umufata</p>
                       </div>
                       <p className="text-xl font-black text-[#0F172A]">{currentRide.pickupLocation}</p>
                     </div>
                     <div>
                       <div className="flex items-center gap-2 text-slate-400 mb-1">
                         <Navigation className="size-4" />
-                        <p className="text-[10px] font-bold uppercase tracking-widest">Destination</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest">Aho umujyana</p>
                       </div>
                       <p className="text-xl font-black text-[#0F172A]">{currentRide.destination}</p>
                     </div>
@@ -212,8 +211,8 @@ export default function DriverDashboard() {
                       </div>
                       <div>
                         <div className="flex items-center gap-2 mb-1">
-                           <Badge variant="secondary" className="bg-secondary/10 text-secondary border-none uppercase text-[8px] font-black tracking-widest">New Ride</Badge>
-                           <span className="text-xs font-bold text-slate-400">12,500 FRW Est.</span>
+                           <Badge variant="secondary" className="bg-secondary/10 text-secondary border-none uppercase text-[8px] font-black tracking-widest">Urugendo Rushya</Badge>
+                           <span className="text-xs font-bold text-slate-400">{req.estimatedFare || 'N/A'} FRW Gereranywa.</span>
                         </div>
                         <h3 className="text-2xl font-black text-[#0F172A] italic uppercase">{req.passengerName}</h3>
                         <p className="text-sm font-bold text-slate-400 flex items-center gap-1">
@@ -253,12 +252,12 @@ export default function DriverDashboard() {
             <Bike size={24} />
           </div>
           <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Moto Driver</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Umushoferi wa Moto</p>
             <p className="text-lg font-black italic text-accent">{driver?.plateNumber}</p>
           </div>
         </div>
         <div className={`bg-white px-8 py-4 rounded-3xl flex items-center gap-4 border-2 transition-all shadow-2xl ${isOnline ? 'border-secondary' : 'border-slate-100'}`}>
-          <span className="text-xs font-black uppercase text-[#0F172A] tracking-widest">{isOnline ? 'WORKING' : 'OFFLINE'}</span>
+          <span className="text-xs font-black uppercase text-[#0F172A] tracking-widest">{isOnline ? 'URI KU KAZI' : 'NTURI KU KAZI'}</span>
           <Switch checked={isOnline} onCheckedChange={toggleStatus} disabled={isBusy} className="data-[state=checked]:bg-secondary" />
         </div>
       </header>
@@ -274,7 +273,7 @@ export default function DriverDashboard() {
                 <div>
                   <h3 className="text-2xl font-black italic uppercase leading-none">{currentRide.passengerName}</h3>
                   <div className="flex items-center gap-2 text-accent mt-1">
-                    <Star className="size-4 fill-accent" /> <span className="text-sm font-bold">4.8 Rating</span>
+                    <Star className="size-4 fill-accent" /> <span className="text-sm font-bold">{currentRide.passengerRating || 'N/A'} Amanota</span>
                   </div>
                 </div>
               </div>
@@ -285,11 +284,11 @@ export default function DriverDashboard() {
             <CardContent className="p-8 space-y-6">
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pickup</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Aho umufata</p>
                   <p className="text-lg font-black text-[#0F172A]">{currentRide.pickupLocation}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Destination</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Aho umujyana</p>
                   <p className="text-lg font-black text-[#0F172A]">{currentRide.destination}</p>
                 </div>
               </div>
@@ -307,7 +306,7 @@ export default function DriverDashboard() {
                     <User size={32} />
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">New Request</p>
+                    <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">Ubusabe Bushya</p>
                     <h3 className="text-2xl font-black text-[#0F172A] italic uppercase">{req.passengerName}</h3>
                     <p className="text-sm font-bold text-slate-400">{req.pickupLocation} → {req.destination}</p>
                   </div>
@@ -323,7 +322,7 @@ export default function DriverDashboard() {
               <div className="bg-[#0F172A]/90 backdrop-blur-md p-10 rounded-[3rem] text-center text-white space-y-4 shadow-3xl">
                 <Navigation className="size-10 mx-auto animate-pulse text-secondary" />
                 <h2 className="text-2xl font-black italic uppercase">{t.readyToRide}</h2>
-                <p className="text-slate-400 font-bold">Searching for missions...</p>
+                <p className="text-slate-400 font-bold">Ndirimo gushaka abagenzi...</p>
               </div>
             )}
           </div>

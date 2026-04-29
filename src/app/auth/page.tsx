@@ -58,7 +58,7 @@ export default function AuthPage() {
   
   const [gender, setGender] = useState('');
   const [dob, setDob] = useState('');
-  const [vehicleBrand, setVehicleBrand] = useState('');
+  const [vehicleType, setVehicleType] = useState<'moto' | 'taxi' | ''>('');
   const [licenseCategory, setLicenseCategory] = useState('');
   const [vehicleModel, setVehicleModel] = useState('');
   const [plateNumber, setPlateNumber] = useState('');
@@ -99,6 +99,7 @@ export default function AuthPage() {
         if (!name.trim()) throw new Error(t.fullName);
         if (!phone.trim()) throw new Error(t.phone);
         if (role === 'driver' && !plateNumber.trim()) throw new Error(t.plateNumber);
+        if (role === 'driver' && !vehicleType) throw new Error("Please select a vehicle type.");
 
         const userCredential = await createUserWithEmailAndPassword(auth, internalEmail, password);
         const newUser = userCredential.user;
@@ -120,7 +121,7 @@ export default function AuthPage() {
             driverId: newUser.uid,
             status: 'offline',
             verificationStatus: 'pending',
-            vehicleType: vehicleBrand.toLowerCase().includes('moto') ? 'moto' : 'taxi',
+            vehicleType: vehicleType,
             plateNumber: plateNumber.trim().toUpperCase(),
             gender,
             dob,
@@ -250,8 +251,16 @@ export default function AuthPage() {
                 <div className="h-px bg-white/5 flex-1" />
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <Input className="h-12 bg-white/5 border-white/10 rounded-xl text-xs font-bold" placeholder={t.plateNumber} value={plateNumber} onChange={(e) => setPlateNumber(e.target.value)} />
-                <Input className="h-12 bg-white/5 border-white/10 rounded-xl text-xs font-bold" placeholder={t.vehicleBrand} value={vehicleBrand} onChange={(e) => setVehicleBrand(e.target.value)} />
+                <Input className="h-12 bg-white/5 border-white/10 rounded-xl text-xs font-bold" placeholder={t.plateNumber} value={plateNumber} onChange={(e) => setPlateNumber(e.target.value)} required />
+                <Select value={vehicleType} onValueChange={(v: 'moto' | 'taxi' | '') => setVehicleType(v)} required>
+                  <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl text-xs font-bold text-slate-500">
+                    <SelectValue placeholder={t.vehicleType || "Vehicle Type"} />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-slate-700 bg-slate-900 text-white">
+                    <SelectItem value="moto" className="font-bold text-xs">Moto</SelectItem>
+                    <SelectItem value="taxi" className="font-bold text-xs">Taxi</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           )}
