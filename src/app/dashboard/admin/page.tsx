@@ -2,14 +2,14 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser, useFirestore, useCollection } from '@/firebase';
+import { useUser, useFirestore, useCollection, useDoc } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
   ShieldCheck, Users, LogOut, LayoutDashboard, Map as MapIcon, 
   Search, CheckCircle2, Clock, Bike, TrendingUp, Activity, 
-  Calendar, MoreVertical, ShieldAlert, Globe
+  Calendar, MoreVertical, ShieldAlert, Globe, Loader2
 } from 'lucide-react';
 import { collection, doc, updateDoc, query, where, orderBy, limit } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
@@ -19,38 +19,41 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 
 export default function AdminDashboard() {
-  const { user } = useUser();
+  const { user, loading: userLoading } = useUser();
   const db = useFirestore();
   const auth = useAuth();
   const router = useRouter();
   const [activeNav, setActiveNav] = useState('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const { data: pending } = useCollection(db ? query(collection(db, 'drivers'), where('verificationStatus', '==', 'pending')) : null);
-  const { data: allDrivers } = useCollection(db ? collection(db, 'drivers') : null);
-  const { data: allUsers } = useCollection(db ? collection(db, 'users') : null);
-  const { data: recentRides } = useCollection(db ? query(collection(db, 'rides'), orderBy('createdAt', 'desc'), limit(15)) : null);
+  const { data: userProfile, loading: profileLoading } = useDoc(user ? `users/${user.uid}` : null);
+  const isAdmin = userProfile?.role === 'admin';
+
+  const { data: pending } = useCollection(db && isAdmin ? query(collection(db, 'drivers'), where('verificationStatus', '==', 'pending')) : null);
+  const { data: allDrivers } = useCollection(db && isAdmin ? collection(db, 'drivers') : null);
+  const { data: allUsers } = useCollection(db && isAdmin ? collection(db, 'users') : null);
+  const { data: recentRides } = useCollection(db && isAdmin ? query(collection(db, 'rides'), orderBy('createdAt', 'desc'), limit(15)) : null);
 
   const stats = {
     totalDrivers: allDrivers?.length || 0,
     approvedDrivers: allDrivers?.filter((r: any) => r.verificationStatus === 'approved').length || 0,
-    pendingDrivers: allDrivers?.filter((r: any) => r.verificationStatus === 'pending').length || 0,
+    pendingDrivers: pending?.length || 0,
     totalUsers: allUsers?.length || 0,
     activeRides: recentRides?.filter((r: any) => ['requested', 'accepted', 'started'].includes(r.status)).length || 0
   };
 
   const chartData = [
-    { name: 'Mon', value: 40 },
-    { name: 'Tue', value: 30 },
-    { name: 'Wed', value: 60 },
-    { name: 'Thu', value: 45 },
-    { name: 'Fri', value: 70 },
-    { name: 'Sat', value: 90 },
-    { name: 'Sun', value: 55 },
+    { name: 'Mon', value: recentRides?.filter((r) => new Date(r.createdAt?.toDate()).getDay() === 1).length || 0 },
+    { name: 'Tue', value: recentRides?.filter((r) => new Date(r.createdAt?.toDate()).getDay() === 2).length || 0 },
+    { name: 'Wed', value: recentRides?.filter((r) => new Date(r.createdAt?.toDate()).getDay() === 3).length || 0 },
+    { name: 'Thu', value: recentRides?.filter((r) => new Date(r.createdAt?.toDate()).getDay() === 4).length || 0 },
+    { name: 'Fri', value: recentRides?.filter((r) => new Date(r.createdAt?.toDate()).getDay() === 5).length || 0 },
+    { name: 'Sat', value: recentRides?.filter((r) => new Date(r.createdAt?.toDate()).getDay() === 6).length || 0 },
+    { name: 'Sun', value: recentRides?.filter((r) => new Date(r.createdAt?.toDate()).getDay() === 0).length || 0 },
   ];
 
   async function updateVerification(id: string, status: 'approved' | 'rejected') {
-    if (db) await updateDoc(doc(db, 'drivers', id), { verificationStatus: status });
+    if (db && isAdmin) await updateDoc(doc(db, 'drivers', id), { verificationStatus: status });
   }
 
   async function handleLogout() {
@@ -59,9 +62,26 @@ export default function AdminDashboard() {
     router.replace('/lib/auth');
   }
 
+  if (userLoading || profileLoading) {
+    return <div className="h-screen w-screen flex items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-secondary size-12"/></div>;
+  }
+
   if (!user) {
     if (typeof window !== 'undefined') router.replace('/lib/auth');
     return null;
+  }
+
+  if (!isAdmin) {
+    return (
+        <div className="h-screen w-screen flex flex-col items-center justify-center bg-red-50 text-center p-8">
+            <ShieldAlert size={80} className="text-red-500 mb-6"/>
+            <h1 className="text-4xl font-black italic uppercase tracking-tighter text-red-800">Access Denied</h1>
+            <p className="text-red-600 font-bold text-sm uppercase tracking-widest mt-2 max-w-md">You do not have permissions to view this page. Please ensure you are an admin.</p>
+            <Button onClick={handleLogout} className="mt-8 h-14 rounded-2xl bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white font-black uppercase tracking-widest text-xs transition-all">
+                <LogOut className="size-5 mr-3" /> Log Out
+            </Button>
+        </div>
+    );
   }
 
   return (

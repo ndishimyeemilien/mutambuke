@@ -2,7 +2,6 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
     function isSignedIn() {
       return request.auth != null;
     }
@@ -11,23 +10,37 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Rules for Users collection
-    match /users/{userId} {
-      allow read, write: if isOwner(userId);
+    function isAdmin() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
     }
 
-    // Rules for Drivers collection
+    // Amategeko y'abakoresha (Users)
+    match /users/{userId} {
+      // Umuntu wese winjiye ashobora kureba profile y'undi (cyane cyane ku bashoferi n'abagenzi)
+      allow read: if isSignedIn();
+      // Nyiri konti cyangwa admin niwe ushobora guhindura amakuru
+      allow write: if isOwner(userId) || isAdmin();
+    }
+
+    // Amategeko y'abashoferi (Drivers)
     match /drivers/{driverId} {
       allow read: if isSignedIn();
-      allow write: if isOwner(driverId);
+      allow write: if isOwner(driverId) || isAdmin();
     }
 
-    // Rules for Rides collection
+    // Amategeko y'ingendo (Rides)
     match /rides/{rideId} {
-      allow read, write: if isSignedIn();
+      // Umuntu winjiye ashobora kureba ingendo (cyane cyane izimureba)
+      allow read: if isSignedIn();
+      // Umugenzi niwe utangira urugendo, umushoferi akaba yaruvugurura
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isAdmin();
     }
-    
-    // Rules for Chat Messages
+
+    // Amategeko y'ubutumwa (Messages)
     match /messages/{messageId} {
       allow read, write: if isSignedIn();
     }

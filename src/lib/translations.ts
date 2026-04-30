@@ -219,7 +219,7 @@ export const translations = {
       steps: [
         { title: "Demandez une course", desc: "Choisissez votre type de véhicule (Moto ou Taxi) et demandez un chauffeur à proximité." },
         { title: "Le chauffeur accepte", desc: "Votre chauffeur accepte instantanément la course et arrive rapidement." },
-        { title: "Commencez votre voyage", desc: "Montez, suivez votre trajet sur la carte et arrivez à destination en toute sécurité." },
+        { title: "Commencez votre voyage", desc: "Montez, suivez votre trajet sur la trajet sur la carte et arrivez à destination en toute sécurité." },
       ],
       footerTitles: { product: "Produit", company: "Entreprise", help: "Support" },
       footerLinks: {
