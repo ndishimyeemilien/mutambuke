@@ -2,51 +2,16 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /**
-     * MUTAMBUKE Security Rules Philosophy:
-     * 
-     * 1. Core Philosophy: This ruleset enforces a strict user-ownership and shared-collaborator model. 
-     *    Data access is restricted to the individuals directly involved in a transaction (Ride) or 
-     *    the individuals who own the profile data (UserProfile/DriverProfile).
-     * 
-     * 2. Data Structure: 
-     *    - /userProfiles/{userId}: Private core profile data.
-     *    - /driverProfiles/{driverId}: Private driver-specific operational data.
-     *    - /rides/{rideId}: Shared transactional data between a passenger and a driver.
-     * 
-     * 3. Key Security Decisions:
-     *    - Disallowing Global Listing: Users cannot list all profiles. Access is path-based or query-restricted.
-     *    - Authorization Independence: Critical IDs (passengerId, driverId) are denormalized onto Ride documents 
-     *      to allow for fast, standalone security checks without cross-document lookups.
-     *    - Immutability: Ownership and Relational fields (like 'id' or 'passengerId') are enforced as immutable 
-     *      during updates to prevent data hijacking.
-     * 
-     * 4. Denormalization for Authorization: 
-     *    To ensure performant rules, user IDs are stored directly within the documents they are meant to access. 
-     *    This avoids costly get() calls during rule evaluation.
-     */
-
     // --- Helper Functions ---
 
-    /** Checks if the requester is authenticated. */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /** Checks if the authenticated user matches the provided userId. */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    /** Checks if the authenticated user matches the provided userId and the document exists. */
-    function isExistingOwner(userId) {
-      return resource != null && isOwner(userId);
-    }
-
-    /** 
-     * Checks if the authenticated user is a participant in a ride.
-     * Uses denormalized IDs within the document data.
-     */
     function isRideParticipant(rideData) {
       return isSignedIn() && (request.auth.uid == rideData.passengerId || request.auth.uid == rideData.driverId);
     }
@@ -54,64 +19,29 @@ service cloud.firestore {
     // --- Collection Rules ---
 
     /**
-     * @description Rules for core user profile data. Users can only access and modify their own profile.
-     * @path /userProfiles/{userId}
-     * @allow (get, list) if request.auth.uid == userId
-     * @deny (get, list) if request.auth.uid != userId
-     * @principle Restricts access to a user's own data tree based on their Auth UID.
+     * Users collection: Profiles for all users.
      */
-    match /userProfiles/{userId} {
-      allow get, list: if isOwner(userId);
-      
-      // Relational Integrity: Force document 'id' field to match the path UID on creation.
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      
-      // Relational Integrity: Ensure the 'id' field remains immutable during updates.
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      
-      allow delete: if isExistingOwner(userId);
+    match /users/{userId} {
+      allow get, list, create, update, delete: if isOwner(userId);
     }
 
     /**
-     * @description Rules for driver-specific operational data. Drivers own their own profiles.
-     * @path /driverProfiles/{driverId}
-     * @allow (update) if request.auth.uid == driverId (e.g., updating location/status)
-     * @deny (create) if request.auth.uid != driverId
-     * @principle Enforces document ownership for operational status and location data.
+     * Drivers collection: Operational data for drivers.
+     * Passengers need to read this to see available drivers.
      */
-    match /driverProfiles/{driverId} {
-      allow get, list: if isOwner(driverId);
-      
-      // Relational Integrity: Force 'id' and 'userId' to match the driver's UID.
-      allow create: if isOwner(driverId) && request.resource.data.id == driverId && request.resource.data.userId == driverId;
-      
-      // Relational Integrity: Ensure the ownership link is immutable.
-      allow update: if isExistingOwner(driverId) && request.resource.data.id == resource.data.id;
-      
-      allow delete: if isExistingOwner(driverId);
+    match /drivers/{driverId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isOwner(driverId);
     }
 
     /**
-     * @description Rules for ride transactions. Shared access between the passenger and the assigned driver.
-     * @path /rides/{rideId}
-     * @allow (get) if request.auth.uid is the passenger or driver stored on the ride document.
-     * @deny (list) if query does not filter for passengerId or driverId matching the user's UID.
-     * @principle Shared access for closed collaborators using denormalized ID fields.
+     * Rides collection: Transactional data between passengers and drivers.
      */
     match /rides/{rideId} {
-      // Read access is granted only if the user is a participant.
-      // Note: Clients must use a query that filters by passengerId or driverId to pass the 'list' rule.
       allow get: if isRideParticipant(resource.data);
       allow list: if isSignedIn(); 
-
-      // Only the passenger can initiate a ride request.
       allow create: if isSignedIn() && request.resource.data.passengerId == request.auth.uid;
-
-      // Both passenger and driver can update (e.g., driver accepting, passenger cancelling).
-      // We enforce that the relationship fields (passengerId) remain immutable.
-      allow update: if isRideParticipant(resource.data) && request.resource.data.passengerId == resource.data.passengerId;
-
-      // Rides are generally archived or cancelled, not deleted from the client.
+      allow update: if isRideParticipant(resource.data);
       allow delete: if false;
     }
 
