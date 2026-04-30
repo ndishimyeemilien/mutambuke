@@ -2,10 +2,11 @@ export type Language = 'en' | 'rw' | 'fr';
 
 export const translations = {
   en: {
-    // Auth Page
     phone: "Phone Number",
     password: "Password",
+    confirmPassword: "Confirm Password",
     fullName: "Full Name",
+    nationalId: "National ID",
     passenger: "Passenger",
     rider: "Driver",
     login: "Login",
@@ -20,11 +21,12 @@ export const translations = {
     profilePhoto: "Profile Photo",
     driverDetails: "Driver Registration",
     vehicleType: "Vehicle Type",
+    motoInsuranceNumber: "Moto Insurance Number",
+    cooperativeName: "Cooperative Name",
+    emailOptional: "Email (Optional)",
     errorEmailInUse: "This phone number is already linked to an account.",
     errorInvalidAuth: "Invalid credentials. Please check your phone or password.",
     errorGeneric: "An error occurred. Please try again.",
-
-    // Dashboard
     searching: "Searching for drivers...",
     noDrivers: "No drivers available nearby",
     activeRide: "Active Trip",
@@ -33,8 +35,6 @@ export const translations = {
     chat: "Chat",
     call: "Call",
     logout: "LOG OUT",
-
-    // Landing Page
     landing: {
       tag: "Real-Time Smart Transport",
       title1: "SMART",
@@ -78,10 +78,11 @@ export const translations = {
     }
   },
   rw: {
-    // Auth Page
     phone: "Nimero ya Telefone",
     password: "Ijambo ry'ibanga",
+    confirmPassword: "Emeza ijambo ry'ibanga",
     fullName: "Amazina Yuzuye",
+    nationalId: "Indangamuntu",
     passenger: "Umugenzi",
     rider: "Umushoferi",
     login: "Injira",
@@ -96,11 +97,12 @@ export const translations = {
     profilePhoto: "Ifoto yawe",
     driverDetails: "Amakuru y'umushoferi",
     vehicleType: "Ubwoko bw'ikinyabiziga",
+    motoInsuranceNumber: "Ubwishingizi bwa Moto",
+    cooperativeName: "Izina rya koperative",
+    emailOptional: "Imeyili (Niba uyifite)",
     errorEmailInUse: "Iyi nimero ya telefone isanzwe ifite konti.",
     errorInvalidAuth: "Amakuru winjije siyo. Ongera ugerageze.",
     errorGeneric: "Habaye ikosa. Ongera ugerageze.",
-
-    // Dashboard
     searching: "Gushakisha umushoferi...",
     noDrivers: "Nta mushoferi uhari hafi yawe",
     activeRide: "Urugendo ruriho",
@@ -109,8 +111,6 @@ export const translations = {
     chat: "Andikira",
     call: "Hamagara",
     logout: "GUSOHOKA",
-
-    // Landing Page
     landing: {
       tag: "Gutwara Abantu mu Bwenge",
       title1: "INGENDO",
@@ -154,10 +154,11 @@ export const translations = {
     }
   },
   fr: {
-    // Auth Page
     phone: "Numéro de Téléphone",
     password: "Mot de passe",
+    confirmPassword: "Confirmer le mot de passe",
     fullName: "Nom Complet",
+    nationalId: "Carte d'identité",
     passenger: "Passager",
     rider: "Chauffeur",
     login: "Connexion",
@@ -172,11 +173,20 @@ export const translations = {
     profilePhoto: "Photo de profil",
     driverDetails: "Informations du Chauffeur",
     vehicleType: "Type de véhicule",
+    motoInsuranceNumber: "Numéro d'assurance",
+    cooperativeName: "Nom de la coopérative",
+    emailOptional: "Email (Optionnel)",
     errorEmailInUse: "Ce numéro de téléphone est déjà associé à un compte.",
     errorInvalidAuth: "Identifiants incorrects. Veuillez vérifier votre téléphone ou mot de passe.",
     errorGeneric: "Une erreur est survenue. Veuillez réessayer.",
-
-    // Landing Page
+    searching: "Recherche de chauffeurs...",
+    noDrivers: "Aucun chauffeur disponible à proximité",
+    activeRide: "Trajet actif",
+    pickup: "Point de départ",
+    distance: "Distance",
+    chat: "Chat",
+    call: "Appeler",
+    logout: "DÉCONNEXION",
     landing: {
       tag: "Transport Intelligent en Temps Réel",
       title1: "VOYAGE",
