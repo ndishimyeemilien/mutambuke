@@ -45,26 +45,26 @@ export default function RootPage() {
     // Fast fallback if profile takes too long (over 800ms)
     const fastFallback = setTimeout(() => {
       if (user && !redirecting.current && !profile) {
-        redirecting.current = true;
-        // Default to passenger if we don't know the role yet, or back to auth to ensure profile
+        // If we still don't have profile, try to ensure we are at least logged in properly
+        // Defaulting to passenger dashboard for now as it's the primary role
         router.replace('/dashboard/passenger');
       }
-    }, 800);
+    }, 1500);
 
     return () => clearTimeout(fastFallback);
   }, [user, authLoading, profile, profileLoading, router]);
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
+    <div className="min-h-screen bg-[#0F172A] flex flex-col items-center justify-center p-6">
       <div className="flex flex-col items-center gap-8 max-w-sm w-full animate-pulse">
         <div className="relative w-24 h-24">
-          {logo && <Image src={logo.imageUrl} alt="MUTAMBUKE" fill className="object-contain rounded-2xl" priority />}
+          <Image src="/logo.png" alt="MUTAMBUKE" fill className="object-contain rounded-2xl" priority />
         </div>
         <div className="space-y-2 text-center">
-          <h2 className="text-2xl font-black italic tracking-tighter text-slate-900 uppercase">
+          <h2 className="text-2xl font-black italic tracking-tighter text-white uppercase">
             MUTAMBUKE
           </h2>
-          <div className="flex items-center justify-center gap-2 text-primary font-black uppercase text-[10px]">
+          <div className="flex items-center justify-center gap-2 text-secondary font-black uppercase text-[10px]">
             <Loader2 className="size-3 animate-spin" />
             CONNECTING...
           </div>

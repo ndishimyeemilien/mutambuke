@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
 import {
   ShieldCheck,
   Clock,
@@ -16,7 +15,10 @@ import {
   TrendingUp,
   Phone,
   Globe,
-  Lock
+  Lock,
+  Sun,
+  Moon,
+  Satellite
 } from "lucide-react";
 import Link from "next/link";
 import { useUser, useDoc } from "@/firebase";
@@ -72,10 +74,6 @@ export default function LandingPage() {
     return () => observer.disconnect();
   }, []);
 
-  const setRef = (idx: number) => (el: HTMLDivElement | null) => {
-    sectionRefs.current[idx] = el;
-  };
-
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: animCSS }} />
@@ -85,7 +83,7 @@ export default function LandingPage() {
           <div className="absolute w-[500px] h-[500px] rounded-full bottom-[-150px] right-[-120px] opacity-12" style={{ background: 'radial-gradient(circle,#10b981,transparent)', animation: 'lpOrbDrift 24s ease-in-out infinite alternate-reverse' }} />
         </div>
 
-        <div className="fixed inset-0 pointer-events-none z-[1] opacity-[0.02]" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")` }} />
+        <div className="fixed inset-0 pointer-events-none z-[1] opacity-[0.02]" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")" }} />
 
         <div className="relative z-[2] flex flex-col min-h-screen">
           <header className={`fixed top-0 w-full z-[60] transition-all duration-500 ${scrolled ? 'bg-[#070b14]/90 backdrop-blur-2xl border-b border-white/[0.04]' : 'bg-transparent'}`}>
@@ -98,7 +96,7 @@ export default function LandingPage() {
               </Link>
 
               <nav className="hidden md:flex items-center gap-8">
-                {['Ibyo Ukora', 'Umuhanzi', 'Umutekano', 'Ibyinjira'].map((item, i) => (
+                {['Features', 'How it works', 'Security', 'Pricing'].map((item, i) => (
                   <a key={i} href={`#section-${i}`} className="text-[10px] font-bold text-white/30 uppercase tracking-[0.15em] hover:text-white/70 transition-colors">
                     {item}
                   </a>
