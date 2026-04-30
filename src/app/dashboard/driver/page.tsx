@@ -48,7 +48,6 @@ export default function DriverDashboard() {
   
   const [location, setLocation] = useState({ lat: -1.9441, lng: 30.0619 });
   const [activeView, setActiveView] = useState<'map' | 'profile' | 'history' | 'earnings'>('map');
-  const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
 
   const { isLoaded } = useJsApiLoader({ googleMapsApiKey: GOOGLE_MAPS_API_KEY });
   const { data: profile } = useDoc(user ? `users/${user.uid}` : null);
@@ -79,7 +78,10 @@ export default function DriverDashboard() {
           const newLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
           setLocation(newLoc);
           if (db && user && (isOnline || isBusy)) {
-            updateDoc(doc(db, 'drivers', user.uid), { currentLocation: newLoc, updatedAt: serverTimestamp() }).catch(() => {});
+            updateDoc(doc(db, 'drivers', user.uid), { 
+              currentLocation: newLoc, 
+              updatedAt: serverTimestamp() 
+            }).catch(() => {});
           }
         },
         (err) => console.error(err),
@@ -102,6 +104,7 @@ export default function DriverDashboard() {
       driverId: user.uid,
       driverName: profile?.name || 'Driver',
       driverPhone: profile?.phone || '',
+      driverPlate: driver?.plateNumber || '',
       acceptedAt: serverTimestamp()
     });
     await updateDoc(doc(db, 'drivers', user.uid), { status: 'busy', updatedAt: serverTimestamp() });
@@ -143,7 +146,7 @@ export default function DriverDashboard() {
 
       <main className="flex-1 p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-8 overflow-y-auto no-scrollbar">
          
-         {/* MAP CONTAINER - HYBRID */}
+         {/* MAP CONTAINER - HYBRID PER REQUEST */}
          <Card className="rounded-[2.5rem] border-none shadow-2xl overflow-hidden bg-[#0F172A] relative h-[400px]">
             {isLoaded ? (
               <GoogleMap
@@ -153,9 +156,14 @@ export default function DriverDashboard() {
                  mapTypeId="hybrid"
                  options={{ disableDefaultUI: true }}
               >
+                 {/* RED USER LOCATION MARKER */}
                  <Marker position={location} icon={{
-                    url: driver?.vehicleType === 'moto' ? 'https://cdn-icons-png.flaticon.com/512/3194/3194514.png' : 'https://cdn-icons-png.flaticon.com/512/3082/3082383.png',
-                    scaledSize: { width: 45, height: 45 } as any
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 9,
+                    fillColor: "#EF4444",
+                    fillOpacity: 1,
+                    strokeWeight: 5,
+                    strokeColor: "rgba(239, 68, 68, 0.3)",
                  }} />
               </GoogleMap>
             ) : <div className="size-full flex items-center justify-center"><Loader2 className="animate-spin text-secondary"/></div>}
@@ -163,23 +171,23 @@ export default function DriverDashboard() {
 
          {/* RIDE REQUESTS SECTION */}
          <div className="space-y-6">
-            <h2 className="text-xs font-black uppercase tracking-[0.4em] text-white/20">UBUTUMWA BUSHYA</h2>
+            <h2 className="text-xs font-black uppercase tracking-[0.4em] text-white/20 italic">UBUTUMWA BUSHYA</h2>
             
             {pendingRequest ? (
-               <Card className="rounded-[2.5rem] border-none bg-secondary/10 p-8 flex flex-col md:flex-row items-center justify-between gap-6 animate-in zoom-in-95 duration-500">
+               <Card className="rounded-[2.5rem] border-none bg-secondary/10 p-8 flex flex-col md:flex-row items-center justify-between gap-6 animate-in zoom-in-95 duration-500 shadow-2xl">
                   <div className="flex items-center gap-6">
-                     <div className="size-20 rounded-[2rem] bg-secondary/20 flex items-center justify-center text-secondary">
+                     <div className="size-20 rounded-[2rem] bg-secondary/20 flex items-center justify-center text-secondary shadow-inner">
                         <UserCircle size={50}/>
                      </div>
                      <div>
                         <p className="text-[10px] font-black text-secondary uppercase tracking-[0.3em] mb-1">URUGENDO RUSHURA</p>
-                        <h3 className="text-3xl font-black uppercase italic tracking-tighter">{pendingRequest.passengerName}</h3>
+                        <h3 className="text-3xl font-black uppercase italic tracking-tighter text-white">{pendingRequest.passengerName}</h3>
                         <p className="text-sm font-bold text-white/40 mt-1 flex items-center gap-2"><MapPin size={14}/> Kigali, hafi yawe</p>
                      </div>
                   </div>
                   <div className="flex items-center gap-4 w-full md:w-auto">
-                     <Button variant="ghost" className="flex-1 md:flex-none h-16 px-10 rounded-2xl bg-white/5 font-black uppercase text-xs">REJECT</Button>
-                     <Button onClick={() => acceptRide(pendingRequest.rideId)} className="flex-1 md:flex-none h-16 px-12 rounded-2xl bg-secondary text-[#0F172A] font-black uppercase text-xs italic tracking-widest shadow-xl shadow-secondary/20">EMERA URUGENDO</Button>
+                     <Button variant="ghost" className="flex-1 md:flex-none h-16 px-10 rounded-2xl bg-white/5 font-black uppercase text-xs hover:bg-white/10">REJECT</Button>
+                     <Button onClick={() => acceptRide(pendingRequest.rideId)} className="flex-1 md:flex-none h-16 px-12 rounded-2xl bg-secondary text-[#0F172A] font-black uppercase text-xs italic tracking-widest shadow-xl shadow-secondary/20 hover:scale-105 transition-transform">EMERA URUGENDO</Button>
                   </div>
                </Card>
             ) : (
@@ -193,7 +201,7 @@ export default function DriverDashboard() {
          </div>
 
          {/* EARNINGS SUMMARY */}
-         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-20">
             <StatsCard label="INYUNGU" value="8,400 Rwf" icon={Wallet} color="text-secondary" />
             <StatsCard label="INGENDO" value="12 Trips" icon={CheckCircle2} color="text-blue-500" />
             <StatsCard label="URUBATSO" value="4.9 Stars" icon={Star} color="text-accent" />
@@ -206,14 +214,14 @@ export default function DriverDashboard() {
 
 function StatsCard({ label, value, icon: Icon, color }: any) {
   return (
-    <Card className="rounded-[2.5rem] border-none bg-white/5 p-8 group hover:bg-white/10 transition-all">
+    <Card className="rounded-[2.5rem] border-none bg-white/5 p-8 group hover:bg-white/10 transition-all shadow-lg hover:translate-y-[-4px]">
        <div className="flex items-center gap-6">
-          <div className={`size-16 rounded-3xl bg-white/5 flex items-center justify-center ${color} group-hover:scale-110 transition-transform`}>
+          <div className={`size-16 rounded-3xl bg-white/5 flex items-center justify-center ${color} group-hover:scale-110 transition-transform shadow-inner`}>
              <Icon size={32}/>
           </div>
           <div>
              <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] mb-1">{label}</p>
-             <p className="text-2xl font-black italic tracking-tighter uppercase">{value}</p>
+             <p className="text-2xl font-black italic tracking-tighter uppercase text-white">{value}</p>
           </div>
        </div>
     </Card>
