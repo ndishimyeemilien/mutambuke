@@ -1,46 +1,35 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useUser, useFirestore, useCollection } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
-  ShieldCheck, 
-  Users, 
-  LogOut, 
-  LayoutDashboard, 
-  Map as MapIcon, 
-  Search,
-  CheckCircle2,
-  Clock,
-  Bike,
-  TrendingUp,
-  AlertCircle,
-  FileText,
-  Activity,
-  Calendar,
-  MoreVertical
+  ShieldCheck, Users, LogOut, LayoutDashboard, Map as MapIcon, 
+  Search, CheckCircle2, Clock, Bike, TrendingUp, Activity, 
+  Calendar, MoreVertical, ShieldAlert, Globe
 } from 'lucide-react';
-import { collection, doc, updateDoc, query, where, orderBy, limit, startAfter } from 'firebase/firestore';
+import { collection, doc, updateDoc, query, where, orderBy, limit } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '@/firebase';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 
 export default function AdminDashboard() {
   const { user } = useUser();
   const db = useFirestore();
   const auth = useAuth();
+  const router = useRouter();
   const [activeNav, setActiveNav] = useState('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
 
   const { data: pending } = useCollection(db ? query(collection(db, 'drivers'), where('verificationStatus', '==', 'pending')) : null);
   const { data: allDrivers } = useCollection(db ? collection(db, 'drivers') : null);
   const { data: allUsers } = useCollection(db ? collection(db, 'users') : null);
-  const { data: recentRides } = useCollection(db ? query(collection(db, 'rides'), orderBy('createdAt', 'desc'), limit(10)) : null);
+  const { data: recentRides } = useCollection(db ? query(collection(db, 'rides'), orderBy('createdAt', 'desc'), limit(15)) : null);
 
   const stats = {
     totalDrivers: allDrivers?.length || 0,
@@ -64,12 +53,20 @@ export default function AdminDashboard() {
     if (db) await updateDoc(doc(db, 'drivers', id), { verificationStatus: status });
   }
 
-  if (!user) return null;
+  async function handleLogout() {
+    if (!auth) return;
+    await signOut(auth);
+    router.replace('/lib/auth');
+  }
+
+  if (!user) {
+    if (typeof window !== 'undefined') router.replace('/lib/auth');
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 flex font-body">
-      {/* SIDEBAR */}
-      <aside className="w-80 bg-[#0F172A] text-white flex flex-col h-screen sticky top-0 shadow-2xl">
+      <aside className="w-80 bg-[#0F172A] text-white flex flex-col h-screen sticky top-0 shadow-2xl z-50">
         <div className="p-10">
           <h1 className="text-3xl font-black italic tracking-tighter uppercase text-accent">MUTAMBUKE</h1>
           <p className="text-[10px] font-bold text-white/20 uppercase tracking-[0.4em] mt-2">Systems Central</p>
@@ -79,27 +76,25 @@ export default function AdminDashboard() {
             { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
             { id: 'riders', icon: ShieldCheck, label: 'Verify Riders' },
             { id: 'users', icon: Users, label: 'User Control' },
-            { id: 'rides', icon: MapIcon, label: 'Monitor Rides' },
-            { id: 'stats', icon: Activity, label: 'Advanced Stats' }
+            { id: 'rides', icon: MapIcon, label: 'Monitor Rides' }
           ].map((item) => (
             <Button 
               key={item.id}
               variant="ghost" 
               onClick={() => setActiveNav(item.id)}
-              className={`w-full h-16 justify-start gap-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all ${activeNav === item.id ? 'bg-white/10 text-accent shadow-lg' : 'text-white/30 hover:text-white'}`}
+              className={`w-full h-16 justify-start gap-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all ${activeNav === item.id ? 'bg-white/10 text-accent' : 'text-white/30 hover:text-white'}`}
             >
               <item.icon className="size-5" /> {item.label}
             </Button>
           ))}
         </nav>
         <div className="p-10 border-t border-white/5">
-          <Button onClick={() => signOut(auth!)} className="w-full h-16 rounded-2xl bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white font-black uppercase tracking-widest text-xs transition-all">
+          <Button onClick={handleLogout} className="w-full h-16 rounded-2xl bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white font-black uppercase tracking-widest text-xs transition-all">
             <LogOut className="size-5 mr-3" /> Log Out
           </Button>
         </div>
       </aside>
 
-      {/* MAIN */}
       <main className="flex-1 p-12 overflow-y-auto no-scrollbar">
         <header className="flex justify-between items-center mb-12">
           <div className="space-y-1">
@@ -119,7 +114,6 @@ export default function AdminDashboard() {
           </div>
         </header>
 
-        {/* DASHBOARD CARDS */}
         <div className="grid grid-cols-4 gap-8 mb-12">
           <StatCard icon={Bike} label="Total Riders" value={stats.totalDrivers} color="text-slate-900" bg="bg-slate-100" />
           <StatCard icon={CheckCircle2} label="Approved" value={stats.approvedDrivers} color="text-secondary" bg="bg-secondary/10" />
@@ -158,16 +152,18 @@ export default function AdminDashboard() {
                      <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">Ride ID</TableHead>
                      <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">Passenger</TableHead>
                      <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">Driver</TableHead>
+                     <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">Vehicle</TableHead>
                      <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">Status</TableHead>
                      <TableHead className="text-right"></TableHead>
                    </TableRow>
                  </TableHeader>
                  <TableBody>
                    {recentRides?.map((r: any) => (
-                     <TableRow key={r.rideId} className="border-slate-50 hover:bg-slate-50/50 transition-all">
+                     <TableRow key={r.rideId} className="border-slate-50 hover:bg-slate-50/50">
                        <TableCell className="font-mono text-[10px] text-slate-400">{r.rideId.slice(0,8)}</TableCell>
                        <TableCell className="font-bold text-sm uppercase">{r.passengerName}</TableCell>
                        <TableCell className="font-bold text-sm uppercase">{r.driverName || '---'}</TableCell>
+                       <TableCell className="uppercase text-[10px] font-bold text-slate-400">{r.vehicleType}</TableCell>
                        <TableCell>
                          <Badge className={`uppercase text-[8px] font-black ${r.status === 'completed' ? 'bg-secondary/10 text-secondary' : r.status === 'cancelled' ? 'bg-red-50 text-red-500' : 'bg-accent/10 text-accent-foreground'}`}>
                            {r.status}
@@ -188,7 +184,7 @@ export default function AdminDashboard() {
           <div className="grid gap-6">
             <h3 className="text-2xl font-black italic uppercase text-slate-900">Verify Riders</h3>
             {pending?.map((r: any) => (
-              <Card key={r.driverId} className="rounded-[2.5rem] border-none shadow-xl bg-white p-8 flex items-center justify-between animate-in fade-in slide-in-from-bottom-4">
+              <Card key={r.driverId} className="rounded-[2.5rem] border-none shadow-xl bg-white p-8 flex items-center justify-between animate-in slide-in-from-bottom-5">
                 <div className="flex items-center gap-6">
                   <div className="size-16 rounded-3xl bg-slate-50 flex items-center justify-center text-slate-300">
                     {r.vehicleType === 'moto' ? <Bike size={32} /> : <MapIcon size={32} />}
@@ -208,7 +204,28 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* ... other nav sections (users, rides) similar detailed layout */}
+        {activeNav === 'rides' && (
+           <Card className="rounded-[3rem] border-none shadow-xl bg-white p-10">
+              <h3 className="text-xl font-black uppercase tracking-tighter mb-8 flex items-center gap-3"><Globe className="text-blue-500"/> Real-time Network Monitor</h3>
+              <div className="grid gap-4">
+                 {recentRides?.filter((r: any) => ['requested', 'accepted', 'started'].includes(r.status)).map((r: any) => (
+                    <div key={r.rideId} className="p-6 rounded-3xl bg-slate-50 flex items-center justify-between">
+                       <div className="flex items-center gap-4">
+                          <div className="size-12 rounded-2xl bg-white flex items-center justify-center shadow-sm">
+                             {r.vehicleType === 'moto' ? <Bike className="text-secondary"/> : <MapIcon className="text-accent"/>}
+                          </div>
+                          <div>
+                             <p className="text-xs font-black uppercase tracking-widest">{r.passengerName} • {r.status}</p>
+                             <p className="text-[10px] text-slate-400 font-bold">{r.pickupLocation?.address || 'Live Location'}</p>
+                          </div>
+                       </div>
+                       <Badge className="bg-blue-500 text-white font-black italic">LIVE</Badge>
+                    </div>
+                 ))}
+                 {stats.activeRides === 0 && <div className="py-20 text-center opacity-20 font-black uppercase text-xs tracking-widest">No active rides at the moment</div>}
+              </div>
+           </Card>
+        )}
       </main>
     </div>
   );

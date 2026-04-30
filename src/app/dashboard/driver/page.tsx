@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { Bike, Car, LogOut, Navigation, User, Phone, Star, Loader2, ShieldCheck, MapPin, MessageSquare, Send, Satellite, X, History, UserCircle, Mail } from 'lucide-react';
+import { Bike, Car, LogOut, Navigation, User, Phone, Star, Loader2, ShieldCheck, MapPin, MessageSquare, Send, Satellite, X, History, UserCircle, Mail, Upload } from 'lucide-react';
 import { collection, doc, updateDoc, query, where, serverTimestamp, addDoc, orderBy, limit } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '@/firebase';
@@ -23,12 +24,13 @@ export default function DriverDashboard() {
   const { user } = useUser();
   const db = useFirestore();
   const auth = useAuth();
+  const router = useRouter();
   const { toast } = useToast();
   const [location, setLocation] = useState(kigaliCenter);
   const [showChat, setShowChat] = useState(false);
   const [chatMessage, setChatMessage] = useState('');
   const [mapTypeId, setMapTypeId] = useState('roadmap');
-  const [activeView, setActiveView] = useState<'map' | 'profile' | 'history'>('map');
+  const [activeView, setActiveView] = useState<'map' | 'profile' | 'history' | 'documents'>('map');
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
   const [distance, setDistance] = useState<string | null>(null);
 
@@ -95,7 +97,6 @@ export default function DriverDashboard() {
     };
   }, [db, user, isOnline, isBusy]);
 
-  // Handle Directions & Distance to Passenger
   useEffect(() => {
     if (isLoaded && currentRide?.passengerLocation && location && isBusy) {
       const service = new google.maps.DirectionsService();
@@ -158,6 +159,12 @@ export default function DriverDashboard() {
     });
   }
 
+  async function handleLogout() {
+    if (!auth) return;
+    await signOut(auth);
+    router.replace('/lib/auth');
+  }
+
   if (dLoading) return <div className="h-screen flex items-center justify-center bg-[#070b14]"><Loader2 className="animate-spin text-secondary size-10" /></div>;
   
   if (!isApproved) return (
@@ -170,7 +177,6 @@ export default function DriverDashboard() {
 
   return (
     <div className="h-screen w-screen overflow-hidden relative flex flex-col bg-[#070b14] text-white">
-      {/* Map View */}
       {activeView === 'map' && (
         <>
           {isLoaded ? (
@@ -314,8 +320,7 @@ export default function DriverDashboard() {
         </>
       )}
 
-      {/* Profile & History Views */}
-      {(activeView === 'profile' || activeView === 'history') && (
+      {(activeView === 'profile' || activeView === 'history' || activeView === 'documents') && (
         <div className="flex-1 p-8 overflow-y-auto bg-[#070b14] animate-in slide-in-from-right-10 duration-500">
            <header className="flex items-center justify-between mb-10">
               <Button onClick={() => setActiveView('map')} variant="ghost" className="rounded-2xl bg-white/5 text-white"><ArrowRight className="rotate-180 mr-2"/> NYUMA</Button>
@@ -338,7 +343,10 @@ export default function DriverDashboard() {
                     <DriverInfoCard icon={Navigation} label="License" value={driver?.licenseNumber || '---'} />
                     <DriverInfoCard icon={Star} label="Rating" value={ (driver?.rating || 4.8).toFixed(1) } />
                 </div>
-                <Button onClick={() => signOut(auth!)} className="w-full h-16 rounded-[2rem] bg-red-500/10 text-red-500 font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all mt-8">
+                <Button onClick={() => setActiveView('documents')} className="w-full h-16 rounded-[2rem] bg-blue-500/10 text-blue-500 font-black uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-all mt-4">
+                   <Upload size={18} className="mr-2"/> OHereza ibyangombwa
+                </Button>
+                <Button onClick={handleLogout} className="w-full h-16 rounded-[2rem] bg-red-500/10 text-red-500 font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all mt-4">
                    <LogOut size={18} className="mr-2"/> GUSOHOKA
                 </Button>
              </div>
@@ -370,6 +378,19 @@ export default function DriverDashboard() {
                 )}
              </div>
            )}
+
+            {activeView === 'documents' && (
+                <div className="max-w-md mx-auto space-y-6">
+                    <h3 className="text-xl font-black uppercase tracking-tighter">Ohereza ibyangombwa</h3>
+                    <p className="text-sm text-white/40">Ohereza fotokopi y'ibyangombwa byawe kugirango wemererwe gutwara.</p>
+                    
+                    <div className="space-y-4">
+                        <DocumentUploadCard title="Indangamuntu" status="missing" />
+                        <DocumentUploadCard title="Uruhushya rwo gutwara" status="missing" />
+                        <DocumentUploadCard title="Icyemezo cy'ubwishingizi" status="uploaded" />
+                    </div>
+                </div>
+            )}
         </div>
       )}
     </div>
@@ -388,4 +409,22 @@ function DriverInfoCard({ icon: Icon, label, value }: any) {
        </div>
     </div>
   );
+}
+
+function DocumentUploadCard({ title, status }: { title: string, status: 'missing' | 'uploaded' | 'pending' }) {
+    const statusMap = {
+        missing: { text: 'Ohereza', color: 'text-red-400', icon: <Upload size={16} /> },
+        uploaded: { text: 'Byoherejwe', color: 'text-green-400', icon: <CheckCircle2 size={16} /> },
+        pending: { text: 'Biracyasuzumwa', color: 'text-yellow-400', icon: <Loader2 size={16} className="animate-spin" /> },
+    };
+
+    return (
+        <Card className="bg-white/5 border-white/5 rounded-2xl p-5 flex items-center justify-between">
+            <span className="font-bold text-sm uppercase tracking-wider">{title}</span>
+            <Button variant="ghost" className={`text-xs font-black uppercase ${statusMap[status].color}`}>
+                {statusMap[status].icon}
+                <span className="ml-2">{statusMap[status].text}</span>
+            </Button>
+        </Card>
+    )
 }
