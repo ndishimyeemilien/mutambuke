@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -40,21 +39,24 @@
   body { @apply bg-background text-foreground font-body antialiased; }
 }
 
-.map-focused-overlay {
-  background: linear-gradient(to bottom, rgba(15, 23, 42, 0.4) 0%, rgba(15, 23, 42, 0) 25%, rgba(15, 23, 42, 0) 75%, rgba(15, 23, 42, 0.4) 100%);
-}
-
-.floating-card {
-  @apply bg-white/95 backdrop-blur-lg border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.1)];
-}
-
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-.pill-input {
-  @apply h-14 rounded-full bg-slate-100 border-none px-6 font-bold focus-visible:ring-2 focus-visible:ring-secondary/20 transition-all;
+/* Custom Animations for Panels */
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
-.taxi-card {
-  @apply bg-white rounded-3xl p-6 shadow-xl border border-slate-100 hover:border-secondary/30 transition-all;
+.animate-slide-up {
+  animation: slideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Glassmorphism utils */
+.glass-panel {
+  @apply bg-white/90 backdrop-blur-xl border border-white/20;
+}
+
+.glass-nav {
+  @apply bg-black/30 backdrop-blur-md border border-white/10;
 }
