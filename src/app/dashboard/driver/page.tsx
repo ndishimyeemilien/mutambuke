@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
@@ -19,28 +19,21 @@ import {
   MapPin, 
   MessageSquare, 
   Send, 
-  Satellite, 
   X, 
   History, 
   UserCircle, 
-  Mail, 
-  Upload,
-  Bell,
   Wallet,
   ArrowRight,
   AlertTriangle,
   CheckCircle2,
-  Clock,
-  MoreVertical
+  Clock
 } from 'lucide-react';
 import { collection, doc, updateDoc, query, where, serverTimestamp, addDoc, orderBy, limit } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '@/firebase';
-import { translations, Language } from '@/lib/translations';
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow, DirectionsRenderer } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker, DirectionsRenderer } from '@react-google-maps/api';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
-import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 
 const GOOGLE_MAPS_API_KEY = "AIzaSyBYd7EGaMpDouB0Br1yUSwRarQeToFuiiA";
@@ -48,15 +41,15 @@ const containerStyle = { width: "100%", height: "100%" };
 const kigaliCenter = { lat: -1.9441, lng: 30.0619 };
 
 const DARK_MAP_STYLE = [
-  { "elementType": "geometry", "stylers": [{ "color": "#212121" }] },
+  { "elementType": "geometry", "stylers": [{ "color": "#1e293b" }] },
   { "elementType": "labels.icon", "stylers": [{ "visibility": "off" }] },
-  { "elementType": "labels.text.fill", "stylers": [{ "color": "#757575" }] },
-  { "elementType": "labels.text.stroke", "stylers": [{ "color": "#212121" }] },
-  { "feature": "administrative", "elementType": "geometry", "stylers": [{ "color": "#757575" }] },
-  { "feature": "poi", "elementType": "geometry", "stylers": [{ "color": "#181818" }] },
-  { "feature": "road", "elementType": "geometry.fill", "stylers": [{ "color": "#2c2c2c" }] },
-  { "feature": "road", "elementType": "labels.text.fill", "stylers": [{ "color": "#8a8a8a" }] },
-  { "feature": "water", "elementType": "geometry", "stylers": [{ "color": "#000000" }] }
+  { "elementType": "labels.text.fill", "stylers": [{ "color": "#94a3b8" }] },
+  { "elementType": "labels.text.stroke", "stylers": [{ "color": "#1e293b" }] },
+  { "feature": "administrative", "elementType": "geometry", "stylers": [{ "color": "#334155" }] },
+  { "feature": "poi", "elementType": "geometry", "stylers": [{ "color": "#1e293b" }] },
+  { "feature": "road", "elementType": "geometry.fill", "stylers": [{ "color": "#334155" }] },
+  { "feature": "road", "elementType": "labels.text.fill", "stylers": [{ "color": "#64748b" }] },
+  { "feature": "water", "elementType": "geometry", "stylers": [{ "color": "#0f172a" }] }
 ];
 
 export default function DriverDashboard() {
@@ -78,16 +71,13 @@ export default function DriverDashboard() {
   const { data: profile } = useDoc(user ? `users/${user.uid}` : null);
   const { data: driver, loading: dLoading } = useDoc(user ? `drivers/${user.uid}` : null);
 
-  const lang = (profile?.language as Language) || 'rw';
-  const t = translations[lang];
-
   const status = driver?.status || 'offline';
   const isOnline = status === 'online';
   const isBusy = status === 'busy';
   const isApproved = driver?.verificationStatus === 'approved';
   const vehicleType = driver?.vehicleType || 'moto';
 
-  // Real-time ride requests (only when online)
+  // Real-time ride requests
   const requestsQuery = useMemoFirebase(() => {
     if (!db || !isOnline || !isApproved) return null;
     return query(
@@ -100,7 +90,7 @@ export default function DriverDashboard() {
   const { data: requests } = useCollection(requestsQuery);
   const pendingRequest = requests?.[0];
 
-  // Active trip for this driver
+  // Active trip
   const activeQuery = useMemoFirebase(() => {
     if (!db || !user) return null;
     return query(collection(db, 'rides'), where('driverId', '==', user.uid), where('status', 'in', ['accepted', 'started', 'arrived']));
@@ -108,14 +98,13 @@ export default function DriverDashboard() {
   const { data: activeRides } = useCollection(activeQuery);
   const currentRide = activeRides?.[0];
 
-  // Chat messages for current ride
+  // Chat
   const chatQuery = useMemoFirebase(() => {
     if (!db || !currentRide) return null;
     return query(collection(db, 'rides', currentRide.rideId, 'messages'), orderBy('createdAt', 'asc'));
   }, [db, currentRide]);
   const { data: messages } = useCollection(chatQuery);
 
-  // Update Location
   useEffect(() => {
     let watchId: number;
     if (navigator.geolocation) {
@@ -124,7 +113,7 @@ export default function DriverDashboard() {
           const newLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
           setLocation(newLoc);
           if (db && user && (isOnline || isBusy)) {
-            updateDoc(doc(db, 'drivers', user.uid), { currentLocation: newLoc, updatedAt: serverTimestamp() });
+            updateDoc(doc(db, 'drivers', user.uid), { currentLocation: newLoc, updatedAt: serverTimestamp() }).catch(() => {});
           }
         },
         (err) => console.error(err),
@@ -134,10 +123,9 @@ export default function DriverDashboard() {
     return () => { if (watchId) navigator.geolocation.clearWatch(watchId); };
   }, [db, user, isOnline, isBusy]);
 
-  // Route drawing & Distance calculation
   useEffect(() => {
     if (isLoaded && currentRide && location) {
-      const destination = currentRide.status === 'started' ? currentRide.destinationLocation : currentRide.pickupLocation;
+      const destination = currentRide.status === 'started' ? (currentRide.destinationLocation || currentRide.pickupLocation) : currentRide.pickupLocation;
       if (!destination) return;
 
       const service = new google.maps.DirectionsService();
@@ -200,15 +188,15 @@ export default function DriverDashboard() {
     await addDoc(collection(db, 'rides', currentRide.rideId, 'messages'), {
       text: msg,
       senderId: user?.uid,
-      senderName: profile?.name,
+      senderName: profile?.name || 'Driver',
       createdAt: serverTimestamp()
     });
   }
 
-  if (dLoading) return <div className="h-screen flex items-center justify-center bg-[#070b14]"><Loader2 className="animate-spin text-secondary size-10" /></div>;
+  if (dLoading) return <div className="h-screen flex items-center justify-center bg-[#0F172A]"><Loader2 className="animate-spin text-secondary size-10" /></div>;
   
   if (!isApproved) return (
-    <div className="h-screen flex flex-col items-center justify-center bg-[#070b14] text-white p-10 text-center">
+    <div className="h-screen flex flex-col items-center justify-center bg-[#0F172A] text-white p-10 text-center">
         <ShieldCheck className="size-20 text-accent mb-6 animate-pulse"/>
         <h1 className="text-3xl font-black uppercase tracking-tighter mb-4 italic text-accent">KONTI IRAGENZURWA</h1>
         <p className="text-white/40 max-w-md font-bold text-sm uppercase tracking-widest leading-relaxed">Genzura amakuru yawe arimo kurangira. Murakoze kwihangana mu gihe MUTAMBUKE irimo kwemeza ibyangombwa byanyu.</p>
@@ -216,9 +204,8 @@ export default function DriverDashboard() {
   );
 
   return (
-    <div className="h-screen w-screen overflow-hidden relative flex flex-col bg-[#070b14] text-white font-body">
+    <div className="h-screen w-screen overflow-hidden relative flex flex-col bg-[#0F172A] text-white font-body">
       
-      {/* MAP VIEW */}
       {activeView === 'map' && (
         <>
           {isLoaded ? (
@@ -231,7 +218,6 @@ export default function DriverDashboard() {
                 styles: DARK_MAP_STYLE 
               }}
             >
-              {/* Driver Marker */}
               <Marker 
                 position={location} 
                 icon={{ 
@@ -240,29 +226,28 @@ export default function DriverDashboard() {
                 }} 
               />
               
-              {/* Target Marker (Pickup or Destination) */}
               {currentRide && (
                 <Marker 
-                  position={currentRide.status === 'started' ? currentRide.destinationLocation : currentRide.pickupLocation} 
+                  position={currentRide.status === 'started' ? (currentRide.destinationLocation || currentRide.pickupLocation) : currentRide.pickupLocation} 
                   icon={{ url: 'https://cdn-icons-png.flaticon.com/512/684/684908.png', scaledSize: { width: 35, height: 35 } as any }} 
                 />
               )}
 
               {directions && <DirectionsRenderer directions={directions} options={{ suppressMarkers: true, polylineOptions: { strokeColor: '#22C55E', strokeWeight: 6 } }} />}
             </GoogleMap>
-          ) : <div className="h-full w-full bg-[#070b14] flex items-center justify-center"><Loader2 className="animate-spin text-secondary"/></div>}
+          ) : <div className="h-full w-full bg-[#0F172A] flex items-center justify-center"><Loader2 className="animate-spin text-secondary"/></div>}
           
           {/* TOP BAR: Status & Earnings */}
           <div className="absolute top-4 inset-x-4 z-20">
             <div className="max-w-md mx-auto flex items-center gap-3">
-               <div className={`flex-1 h-14 rounded-full backdrop-blur-xl border border-white/10 flex items-center justify-between px-6 transition-all ${isOnline ? 'bg-secondary/10 border-secondary/20' : 'bg-black/40'}`}>
+               <div className={`flex-1 h-14 rounded-full backdrop-blur-xl border border-white/10 flex items-center justify-between px-6 transition-all ${isOnline ? 'bg-secondary/20 border-secondary/40' : 'bg-black/60'}`}>
                   <div className="flex items-center gap-3">
                      <div className={`size-3 rounded-full animate-pulse ${isOnline ? 'bg-secondary shadow-[0_0_10px_#22C55E]' : 'bg-red-500'}`} />
                      <p className="text-[10px] font-black uppercase tracking-widest">{isOnline ? 'URI ONLINE' : 'URI OFFLINE'}</p>
                   </div>
                   <Switch checked={isOnline} onCheckedChange={toggleStatus} disabled={isBusy} className="data-[state=checked]:bg-secondary" />
                </div>
-               <div className="h-14 aspect-square rounded-full bg-black/40 backdrop-blur-xl border border-white/10 flex items-center justify-center text-accent relative">
+               <div className="h-14 aspect-square rounded-full bg-black/60 backdrop-blur-xl border border-white/10 flex items-center justify-center text-accent relative shadow-2xl">
                   <Wallet size={20} />
                   <div className="absolute -top-1 -right-1 bg-red-500 text-[8px] font-black px-1.5 py-0.5 rounded-full">2</div>
                </div>
@@ -270,14 +255,14 @@ export default function DriverDashboard() {
             
             {/* Earnings Quick View */}
             <div className="max-w-md mx-auto mt-2 grid grid-cols-2 gap-2">
-                <Card className="bg-black/60 backdrop-blur-xl border-white/5 p-3 rounded-2xl flex items-center justify-between">
+                <Card className="bg-black/60 backdrop-blur-xl border-white/5 p-3 rounded-2xl flex items-center justify-between shadow-2xl">
                     <div>
                         <p className="text-[8px] font-black text-white/30 uppercase tracking-widest">Inyungu</p>
                         <p className="text-sm font-black text-secondary uppercase">8,400 Rwf</p>
                     </div>
                     <Star className="text-accent" size={14} />
                 </Card>
-                <Card className="bg-black/60 backdrop-blur-xl border-white/5 p-3 rounded-2xl flex items-center justify-between">
+                <Card className="bg-black/60 backdrop-blur-xl border-white/5 p-3 rounded-2xl flex items-center justify-between shadow-2xl">
                     <div>
                         <p className="text-[8px] font-black text-white/30 uppercase tracking-widest">Ingendo</p>
                         <p className="text-sm font-black text-white uppercase">12 Trips</p>
@@ -287,23 +272,22 @@ export default function DriverDashboard() {
             </div>
           </div>
 
-          {/* EMERGENCY / SOS BUTTON */}
+          {/* EMERGENCY / SOS */}
           <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-3">
               <Button size="icon" className="size-12 rounded-2xl bg-red-500/20 text-red-500 border border-red-500/20 shadow-2xl backdrop-blur-md">
                  <AlertTriangle size={24} />
               </Button>
-              <Button onClick={() => setActiveView('profile')} size="icon" className="size-12 rounded-2xl bg-black/40 text-white border border-white/10 shadow-2xl backdrop-blur-md">
+              <Button onClick={() => setActiveView('profile')} size="icon" className="size-12 rounded-2xl bg-black/60 text-white border border-white/10 shadow-2xl backdrop-blur-md">
                  <UserCircle size={24} />
               </Button>
           </div>
 
-          {/* BOTTOM PANEL: Requests & Active Trip */}
+          {/* BOTTOM PANEL */}
           <div className="absolute bottom-6 inset-x-6 z-20">
              <div className="max-w-md mx-auto space-y-4">
                 
-                {/* NEW RIDE REQUEST POPUP */}
                 {pendingRequest && !currentRide && (
-                  <Card className="bg-black/80 backdrop-blur-2xl border-secondary/30 rounded-[2.5rem] p-6 text-white shadow-2xl animate-in slide-in-from-bottom-5">
+                  <Card className="bg-black/90 backdrop-blur-2xl border-secondary/30 rounded-[2.5rem] p-6 text-white shadow-2xl animate-in slide-in-from-bottom-5">
                       <div className="flex items-center justify-between mb-6">
                          <div className="flex items-center gap-4">
                             <div className="size-14 rounded-2xl bg-secondary/20 flex items-center justify-center text-secondary relative">
@@ -313,7 +297,7 @@ export default function DriverDashboard() {
                             <div>
                                <h3 className="text-xl font-black uppercase tracking-tight leading-none">{pendingRequest.passengerName}</h3>
                                <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mt-1.5 flex items-center gap-2">
-                                  <MapPin size={10} className="text-secondary"/> 2.4 km hafi yawe
+                                  <MapPin size={10} className="text-secondary"/> hafi yawe
                                </p>
                             </div>
                          </div>
@@ -324,17 +308,16 @@ export default function DriverDashboard() {
                       </div>
                       
                       <div className="grid grid-cols-2 gap-3">
-                         <Button variant="ghost" className="h-16 rounded-2xl bg-white/5 border border-white/5 font-black uppercase text-xs tracking-widest text-white/40 hover:bg-white/10 transition-all">REJECT</Button>
-                         <Button onClick={() => acceptRide(pendingRequest.rideId)} className="h-16 rounded-2xl bg-secondary text-[#0F172A] font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-secondary/20 active:scale-95 transition-all">ACCEPT TRIP</Button>
+                         <Button variant="ghost" className="h-16 rounded-2xl bg-white/5 border border-white/5 font-black uppercase text-xs tracking-widest text-white/40 hover:bg-white/10">REJECT</Button>
+                         <Button onClick={() => acceptRide(pendingRequest.rideId)} className="h-16 rounded-2xl bg-secondary text-[#0F172A] font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-secondary/20">ACCEPT TRIP</Button>
                       </div>
                   </Card>
                 )}
 
-                {/* ACTIVE TRIP PANEL */}
                 {currentRide && (
                   <div className="space-y-4">
                      {showChat ? (
-                        <Card className="bg-black/80 backdrop-blur-3xl border-white/10 rounded-[2.5rem] p-4 h-[450px] flex flex-col text-white shadow-2xl overflow-hidden">
+                        <Card className="bg-black/90 backdrop-blur-3xl border-white/10 rounded-[2.5rem] p-4 h-[450px] flex flex-col text-white shadow-2xl">
                             <div className="flex justify-between items-center mb-4 px-2">
                                 <div className="flex items-center gap-3">
                                    <Button variant="ghost" size="icon" onClick={() => setShowChat(false)} className="rounded-xl bg-white/5"><ArrowRight className="rotate-180" size={18}/></Button>
@@ -342,23 +325,16 @@ export default function DriverDashboard() {
                                 </div>
                                 <a href={`tel:${currentRide.passengerPhone}`} className="size-10 rounded-xl bg-secondary/10 text-secondary flex items-center justify-center"><Phone size={18}/></a>
                             </div>
-                            
-                            <div className="flex-1 overflow-y-auto space-y-4 no-scrollbar px-2 py-4">
+                            <div className="flex-1 overflow-y-auto space-y-4 px-2 py-4 no-scrollbar">
                                {messages?.map((m: any) => (
                                  <div key={m.id} className={`flex ${m.senderId === user?.uid ? 'justify-end' : 'justify-start'}`}>
-                                    <div className={`p-4 rounded-[1.5rem] max-w-[85%] text-xs font-bold leading-relaxed ${m.senderId === user?.uid ? 'bg-secondary text-[#0F172A] rounded-tr-none' : 'bg-white/10 rounded-tl-none'}`}>
+                                    <div className={`p-4 rounded-[1.5rem] max-w-[85%] text-xs font-bold ${m.senderId === user?.uid ? 'bg-secondary text-[#0F172A] rounded-tr-none' : 'bg-white/10 rounded-tl-none'}`}>
                                        {m.text}
                                     </div>
                                  </div>
                                ))}
                             </div>
-
                             <div className="p-2 space-y-3">
-                               <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-                                  {["Ndi hafi", "Ndaje", "Mbere gato", "Ntinda gato"].map(q => (
-                                    <button key={q} onClick={() => sendMessage(q)} className="whitespace-nowrap px-4 py-2 rounded-full bg-white/5 border border-white/5 text-[9px] font-black uppercase tracking-widest text-white/40 hover:text-white hover:bg-white/10 transition-all">{q}</button>
-                                  ))}
-                               </div>
                                <div className="flex gap-2">
                                    <Input value={chatMessage} onChange={e => setChatMessage(e.target.value)} placeholder="Andika..." className="bg-white/5 border-none h-14 rounded-2xl text-xs font-bold px-6" />
                                    <Button onClick={() => sendMessage()} size="icon" className="bg-secondary text-[#0F172A] rounded-2xl h-14 w-14 shadow-xl"><Send size={20}/></Button>
@@ -366,13 +342,12 @@ export default function DriverDashboard() {
                             </div>
                         </Card>
                      ) : (
-                        <Card className="rounded-[2.5rem] border-white/10 bg-black/60 backdrop-blur-2xl p-6 text-white shadow-2xl relative overflow-hidden">
+                        <Card className="rounded-[2.5rem] border-white/10 bg-black/80 backdrop-blur-2xl p-6 text-white shadow-2xl relative">
                            <div className="absolute top-0 right-0 p-4">
                               <Badge className="bg-blue-500/20 text-blue-400 border-none font-black italic text-[8px] tracking-widest">
                                  {currentRide.status.toUpperCase()}
                               </Badge>
                            </div>
-                           
                            <div className="flex items-center gap-5 mb-8">
                               <div className="size-16 rounded-3xl bg-secondary/10 flex items-center justify-center text-secondary">
                                  <UserCircle size={45} strokeWidth={1}/>
@@ -384,19 +359,18 @@ export default function DriverDashboard() {
                               </div>
                               <div className="flex gap-2">
                                  <Button onClick={() => setShowChat(true)} size="icon" className="size-12 rounded-2xl bg-accent/20 text-accent border border-accent/20"><MessageSquare size={22}/></Button>
-                                 <a href={`tel:${currentRide.passengerPhone}`} className="size-12 rounded-2xl bg-secondary text-[#0F172A] flex items-center justify-center shadow-lg active:scale-95 transition-all"><Phone size={22} /></a>
+                                 <a href={`tel:${currentRide.passengerPhone}`} className="size-12 rounded-2xl bg-secondary text-[#0F172A] flex items-center justify-center shadow-lg"><Phone size={22} /></a>
                               </div>
                            </div>
-
                            <div className="space-y-3">
                               {currentRide.status === 'accepted' && (
-                                <Button onClick={() => updateRideStatus('arrived')} className="w-full h-16 rounded-2xl bg-white text-[#0F172A] font-black text-lg uppercase tracking-widest shadow-2xl active:scale-95 transition-all italic">NAGEZE AHO URI</Button>
+                                <Button onClick={() => updateRideStatus('arrived')} className="w-full h-16 rounded-2xl bg-white text-[#0F172A] font-black text-lg uppercase tracking-widest shadow-2xl italic">NAGEZE AHO URI</Button>
                               )}
                               {currentRide.status === 'arrived' && (
-                                <Button onClick={() => updateRideStatus('started')} className="w-full h-16 rounded-2xl bg-secondary text-[#0F172A] font-black text-lg uppercase tracking-widest shadow-2xl active:scale-95 transition-all italic">TANGIRA URUGENDO</Button>
+                                <Button onClick={() => updateRideStatus('started')} className="w-full h-16 rounded-2xl bg-secondary text-[#0F172A] font-black text-lg uppercase tracking-widest shadow-2xl italic">TANGIRA URUGENDO</Button>
                               )}
                               {currentRide.status === 'started' && (
-                                <Button onClick={() => updateRideStatus('completed')} className="w-full h-16 rounded-2xl bg-accent text-[#0F172A] font-black text-lg uppercase tracking-widest shadow-2xl active:scale-95 transition-all italic">SOZA URUGENDO</Button>
+                                <Button onClick={() => updateRideStatus('completed')} className="w-full h-16 rounded-2xl bg-accent text-[#0F172A] font-black text-lg uppercase tracking-widest shadow-2xl italic">SOZA URUGENDO</Button>
                               )}
                            </div>
                         </Card>
@@ -404,9 +378,8 @@ export default function DriverDashboard() {
                   </div>
                 )}
 
-                {/* IDLE STATUS (OFFLINE OR NO REQUESTS) */}
                 {!currentRide && !pendingRequest && (
-                  <div className="bg-black/40 backdrop-blur-xl p-10 rounded-[3rem] text-center space-y-5 border border-white/5 shadow-2xl">
+                  <div className="bg-black/60 backdrop-blur-xl p-10 rounded-[3rem] text-center space-y-5 border border-white/5 shadow-2xl">
                     <div className="relative size-20 mx-auto">
                         <div className={`absolute inset-0 rounded-full animate-ping opacity-20 ${isOnline ? 'bg-secondary' : 'bg-red-500'}`} />
                         <div className={`size-full rounded-full flex items-center justify-center ${isOnline ? 'bg-secondary/10 text-secondary' : 'bg-red-500/10 text-red-500'}`}>
@@ -420,8 +393,8 @@ export default function DriverDashboard() {
                         </p>
                     </div>
                     <div className="flex justify-center gap-2">
-                        <Button onClick={() => setActiveView('history')} variant="ghost" className="h-10 px-6 rounded-full bg-white/5 text-[9px] font-black uppercase tracking-widest text-white/40 hover:text-white transition-all">AMATEKA</Button>
-                        <Button onClick={() => setActiveView('earnings')} variant="ghost" className="h-10 px-6 rounded-full bg-white/5 text-[9px] font-black uppercase tracking-widest text-white/40 hover:text-white transition-all">INYUNGU</Button>
+                        <Button onClick={() => setActiveView('history')} variant="ghost" className="h-10 px-6 rounded-full bg-white/5 text-[9px] font-black uppercase tracking-widest text-white/40 hover:text-white">AMATEKA</Button>
+                        <Button onClick={() => setActiveView('earnings')} variant="ghost" className="h-10 px-6 rounded-full bg-white/5 text-[9px] font-black uppercase tracking-widest text-white/40 hover:text-white">INYUNGU</Button>
                     </div>
                   </div>
                 )}
@@ -430,14 +403,13 @@ export default function DriverDashboard() {
         </>
       )}
 
-      {/* PROFILE, HISTORY, EARNINGS OVERLAYS */}
-      {(activeView !== 'map') && (
-        <div className="fixed inset-0 z-50 bg-[#070b14] overflow-y-auto animate-in slide-in-from-right-10 duration-500 pb-20">
-           <header className="h-20 flex items-center justify-between px-8 border-b border-white/5 sticky top-0 bg-[#070b14]/80 backdrop-blur-xl z-10">
+      {activeView !== 'map' && (
+        <div className="fixed inset-0 z-50 bg-[#0F172A] overflow-y-auto animate-in slide-in-from-right-10 duration-500 pb-20">
+           <header className="h-20 flex items-center justify-between px-8 border-b border-white/5 sticky top-0 bg-[#0F172A]/80 backdrop-blur-xl z-10">
               <Button onClick={() => setActiveView('map')} variant="ghost" className="rounded-2xl bg-white/5 text-white font-black uppercase text-[10px] tracking-widest gap-2">
                  <ArrowRight className="rotate-180" size={16}/> NYUMA
               </Button>
-              <h2 className="text-xl font-black uppercase tracking-tighter italic text-accent">{activeView}</h2>
+              <h2 className="text-xl font-black uppercase tracking-tighter italic text-accent">{activeView === 'profile' ? 'UMWIRONDORO' : activeView === 'earnings' ? 'INYUNGU' : 'IBYATAMBUTSE'}</h2>
               <div className="size-10" />
            </header>
 
@@ -448,7 +420,7 @@ export default function DriverDashboard() {
                       <div className="size-28 mx-auto rounded-[2.5rem] bg-accent/20 flex items-center justify-center text-accent mb-6 shadow-xl relative z-10">
                          <User size={60} strokeWidth={1.5}/>
                       </div>
-                      <h3 className="text-3xl font-black uppercase tracking-tighter">{profile?.name}</h3>
+                      <h3 className="text-3xl font-black uppercase tracking-tighter">{profile?.name || 'User'}</h3>
                       <p className="text-xs font-bold text-white/30 uppercase tracking-[0.4em] mt-2">{profile?.phone}</p>
                       <div className="absolute top-0 right-0 size-40 bg-accent/5 rounded-full -mr-20 -mt-20" />
                    </div>
@@ -466,44 +438,21 @@ export default function DriverDashboard() {
                 </div>
               )}
 
-              {activeView === 'history' && (
-                <div className="space-y-4">
-                   <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] mb-6">Ingendo zose zageze iyo zijya</p>
-                   {[1,2,3,4,5].map(i => (
-                     <Card key={i} className="bg-white/5 border-white/5 p-5 rounded-[2rem] shadow-xl flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                           <div className="size-12 rounded-2xl bg-secondary/10 flex items-center justify-center text-secondary">
-                              <CheckCircle2 size={24} />
-                           </div>
-                           <div>
-                              <p className="text-sm font-black uppercase">Umugenzi {i}</p>
-                              <p className="text-[9px] font-bold text-white/20 uppercase">Apirili 28, 2024 • 14:20</p>
-                           </div>
-                        </div>
-                        <div className="text-right">
-                           <p className="text-sm font-black text-accent">1,200 Rwf</p>
-                           <p className="text-[8px] font-bold text-white/20 uppercase">3.2 km</p>
-                        </div>
-                     </Card>
-                   ))}
-                </div>
-              )}
-
               {activeView === 'earnings' && (
                 <div className="space-y-8">
-                   <div className="p-10 rounded-[3rem] bg-secondary/10 border border-secondary/20 text-center relative overflow-hidden">
-                      <p className="text-[10px] font-black text-secondary uppercase tracking-[0.4em] mb-4">Total Balance</p>
+                   <div className="p-10 rounded-[3rem] bg-secondary/10 border border-secondary/20 text-center relative overflow-hidden shadow-2xl">
+                      <p className="text-[10px] font-black text-secondary uppercase tracking-[0.4em] mb-4">Urubatso Rwose</p>
                       <h3 className="text-5xl font-black tracking-tighter text-white italic">42,800 <span className="text-xl">Rwf</span></h3>
-                      <Button className="mt-8 h-12 rounded-2xl bg-secondary text-[#0F172A] font-black uppercase text-[10px] tracking-widest px-8">Withdraw Funds</Button>
+                      <Button className="mt-8 h-12 rounded-2xl bg-secondary text-[#0F172A] font-black uppercase text-[10px] tracking-widest px-8">KURAHO AMAFARANGA</Button>
                    </div>
                    
                    <div className="grid grid-cols-2 gap-4">
                       <Card className="bg-white/5 border-white/5 p-6 rounded-[2.5rem] text-center">
-                         <p className="text-[8px] font-black text-white/20 uppercase tracking-widest mb-2">Today</p>
+                         <p className="text-[8px] font-black text-white/20 uppercase tracking-widest mb-2">Uyu munsi</p>
                          <p className="text-xl font-black text-accent italic">8,400 <span className="text-[10px]">Rwf</span></p>
                       </Card>
                       <Card className="bg-white/5 border-white/5 p-6 rounded-[2.5rem] text-center">
-                         <p className="text-[8px] font-black text-white/20 uppercase tracking-widest mb-2">This Week</p>
+                         <p className="text-[8px] font-black text-white/20 uppercase tracking-widest mb-2">Iyi Cyumweru</p>
                          <p className="text-xl font-black text-white italic">124,500 <span className="text-[10px]">Rwf</span></p>
                       </Card>
                    </div>

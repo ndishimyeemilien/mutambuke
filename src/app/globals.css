@@ -4,33 +4,24 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 222 47% 11%; /* #0F172A Dark Blue */
-    --primary-foreground: 210 40% 98%;
+    --background: 222 47% 11%; /* #0F172A Dark Blue */
+    --foreground: 210 40% 98%;
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 142 70% 45%; /* #22C55E Green */
+    --primary-foreground: 222 47% 11%;
     --secondary: 142 70% 45%; /* #22C55E Green */
-    --secondary-foreground: 210 40% 98%;
+    --secondary-foreground: 222 47% 11%;
     --accent: 47 95% 53%; /* #FACC15 Yellow */
     --accent-foreground: 222 47% 11%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 222 47% 11%;
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 142 70% 45%;
     --radius: 1.5rem;
-  }
-
-  .dark {
-    --background: 222 47% 6%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 8%;
-    --card-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222 47% 11%;
   }
 }
 
@@ -42,7 +33,7 @@
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-/* Custom Animations for Panels */
+/* Custom Animations */
 @keyframes slideUp {
   from { transform: translateY(100%); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
@@ -52,11 +43,6 @@
   animation: slideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Glassmorphism utils */
 .glass-panel {
-  @apply bg-white/90 backdrop-blur-xl border border-white/20;
-}
-
-.glass-nav {
-  @apply bg-black/30 backdrop-blur-md border border-white/10;
+  @apply bg-white/5 backdrop-blur-xl border border-white/10;
 }

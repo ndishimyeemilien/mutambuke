@@ -12,7 +12,6 @@ import {
 import { collection, doc, setDoc, query, where, serverTimestamp, updateDoc, addDoc, orderBy, limit } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '@/firebase';
-import { translations, Language } from '@/lib/translations';
 import { useToast } from '@/hooks/use-toast';
 import { GoogleMap, useJsApiLoader, Marker, DirectionsRenderer } from '@react-google-maps/api';
 import Image from 'next/image';
@@ -24,9 +23,16 @@ import { Badge } from '@/components/ui/badge';
 const GOOGLE_MAPS_API_KEY = "AIzaSyBYd7EGaMpDouB0Br1yUSwRarQeToFuiiA";
 const kigaliCenter = { lat: -1.9441, lng: 30.0619 };
 
-const MAP_LIGHT_STYLE = [
-  { "featureType": "poi", "elementType": "labels", "stylers": [{ "visibility": "off" }] },
-  { "featureType": "transit", "elementType": "labels.icon", "stylers": [{ "visibility": "off" }] }
+const DARK_MAP_STYLE = [
+  { "elementType": "geometry", "stylers": [{ "color": "#1e293b" }] },
+  { "elementType": "labels.icon", "stylers": [{ "visibility": "off" }] },
+  { "elementType": "labels.text.fill", "stylers": [{ "color": "#94a3b8" }] },
+  { "elementType": "labels.text.stroke", "stylers": [{ "color": "#1e293b" }] },
+  { "feature": "administrative", "elementType": "geometry", "stylers": [{ "color": "#334155" }] },
+  { "feature": "poi", "elementType": "geometry", "stylers": [{ "color": "#1e293b" }] },
+  { "feature": "road", "elementType": "geometry.fill", "stylers": [{ "color": "#334155" }] },
+  { "feature": "road", "elementType": "labels.text.fill", "stylers": [{ "color": "#64748b" }] },
+  { "feature": "water", "elementType": "geometry", "stylers": [{ "color": "#0f172a" }] }
 ];
 
 export default function PassengerDashboard() {
@@ -39,8 +45,6 @@ export default function PassengerDashboard() {
   const [activeTab, setActiveTab] = useState<'home' | 'history' | 'profile'>('home');
   const [isRequesting, setIsRequesting] = useState(false);
   const [passengerLocation, setPassengerLocation] = useState(kigaliCenter);
-  const [pickupAddress, setPickupLocation] = useState('Enter pickup location');
-  const [destination, setDestination] = useState('');
   const [vehicleType, setVehicleType] = useState<'moto' | 'taxi'>('moto');
   
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -57,7 +61,7 @@ export default function PassengerDashboard() {
     return query(
       collection(db, 'rides'),
       where('passengerId', '==', user.uid),
-      where('status', 'in', ['requested', 'accepted', 'started'])
+      where('status', 'in', ['requested', 'accepted', 'started', 'arrived'])
     );
   }, [db, user]);
   const { data: activeRides } = useCollection(activeRideQuery);
@@ -70,7 +74,7 @@ export default function PassengerDashboard() {
       where('passengerId', '==', user.uid),
       where('status', '==', 'completed'),
       orderBy('createdAt', 'desc'),
-      limit(10)
+      limit(15)
     );
   }, [db, user]);
   const { data: rideHistory } = useCollection(rideHistoryQuery);
@@ -109,7 +113,7 @@ export default function PassengerDashboard() {
         passengerName: userProfile?.name || 'User',
         passengerPhone: userProfile?.phone || '',
         pickupLocation: passengerLocation,
-        destination: destination || 'Selected Destination',
+        destination: 'Not specified',
         status: 'requested',
         vehicleType: vehicleType,
         createdAt: serverTimestamp()
@@ -128,26 +132,26 @@ export default function PassengerDashboard() {
     router.replace('/lib/auth');
   }
 
-  if (authLoading || profileLoading) return <div className="h-screen flex items-center justify-center bg-white"><Loader2 className="animate-spin text-secondary size-10" /></div>;
+  if (authLoading || profileLoading) return <div className="h-screen flex items-center justify-center bg-[#0F172A]"><Loader2 className="animate-spin text-secondary size-10" /></div>;
 
   return (
-    <div className="h-screen w-screen overflow-hidden flex flex-col bg-slate-50 relative">
+    <div className="h-screen w-screen overflow-hidden flex flex-col bg-[#0F172A] relative text-white font-body">
       
       {/* TOP HEADER */}
-      <header className="absolute top-0 inset-x-0 h-16 flex items-center justify-between px-4 z-50 bg-white shadow-sm">
-        <Button variant="ghost" size="icon" className="text-slate-600">
+      <header className="absolute top-0 inset-x-0 h-16 flex items-center justify-between px-4 z-50 bg-[#0F172A]/80 backdrop-blur-md border-b border-white/5 shadow-2xl">
+        <Button variant="ghost" size="icon" className="text-white">
           <Menu size={24} />
         </Button>
         <div className="flex items-center gap-2">
           <div className="relative w-8 h-8">
-            <Image src="/logo.png" alt="MUTAMBUKE" fill className="object-contain" />
+            <Image src="/logo.png" alt="MUTAMBUKE" fill className="object-contain" priority />
           </div>
-          <span className="font-black text-lg tracking-tight text-[#0F172A]">MUTAMBUKE</span>
+          <span className="font-black text-lg tracking-tighter text-white italic">MUTAMBUKE</span>
         </div>
         <div className="relative">
-          <Button variant="ghost" size="icon" className="text-slate-600">
+          <Button variant="ghost" size="icon" className="text-white">
             <Bell size={24} />
-            <div className="absolute top-2 right-2 size-2 bg-red-500 rounded-full border-2 border-white" />
+            <div className="absolute top-2 right-2 size-2 bg-red-500 rounded-full border-2 border-[#0F172A]" />
           </Button>
         </div>
       </header>
@@ -163,21 +167,19 @@ export default function PassengerDashboard() {
                 zoom={15}
                 options={{
                   disableDefaultUI: true,
-                  styles: MAP_LIGHT_STYLE
+                  styles: DARK_MAP_STYLE
                 }}
                 onLoad={(map) => { mapRef.current = map; }}
               >
-                {/* User Current Location (Blue Dot) */}
                 <Marker position={passengerLocation} icon={{
                   path: google.maps.SymbolPath.CIRCLE,
                   scale: 8,
-                  fillColor: "#3B82F6",
+                  fillColor: "#22C55E",
                   fillOpacity: 1,
                   strokeWeight: 4,
-                  strokeColor: "rgba(59, 130, 246, 0.2)",
+                  strokeColor: "rgba(34, 197, 94, 0.2)",
                 }} />
 
-                {/* Draw nearby drivers */}
                 {availableDrivers?.map((d: any) => (
                   <Marker 
                     key={d.driverId}
@@ -189,35 +191,33 @@ export default function PassengerDashboard() {
                   />
                 ))}
               </GoogleMap>
-            ) : <div className="size-full bg-slate-100" />}
+            ) : <div className="size-full bg-[#0F172A]" />}
 
-            {/* Top Location Selection Card */}
             <div className="absolute top-20 inset-x-4 z-20">
-               <Card className="p-4 flex items-center justify-between shadow-xl border-none rounded-2xl bg-white">
+               <Card className="p-4 flex items-center justify-between shadow-2xl border-none rounded-2xl bg-white/10 backdrop-blur-xl border-white/5">
                   <div className="flex items-center gap-3">
-                     <div className="size-2 rounded-full bg-secondary" />
+                     <div className="size-2 rounded-full bg-secondary shadow-[0_0_10px_#22C55E]" />
                      <div>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-none mb-1">Aho uri</p>
-                        <p className="text-sm font-black text-[#0F172A]">Kigali, Rwanda</p>
+                        <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest leading-none mb-1">Aho uri</p>
+                        <p className="text-sm font-black text-white">Kigali, Rwanda</p>
                      </div>
                   </div>
-                  <ChevronDown className="text-slate-400" size={20} />
+                  <ChevronDown className="text-white/40" size={20} />
                </Card>
             </div>
 
-            {/* Locate Me Button */}
             <Button 
               onClick={() => mapRef.current?.panTo(passengerLocation)} 
               size="icon" 
-              className="absolute bottom-[44%] right-4 z-20 rounded-full bg-white shadow-xl text-slate-600 hover:bg-slate-50 border-none"
+              className="absolute bottom-[48%] right-4 z-20 rounded-full bg-[#0F172A]/80 backdrop-blur-md shadow-2xl text-white hover:bg-[#0F172A] border-white/5"
             >
               <LocateFixed size={20} />
             </Button>
 
             {/* Floating Bottom Ride Panel */}
             <div className="absolute bottom-16 inset-x-0 z-40">
-              <div className="w-full bg-white rounded-t-[2.5rem] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] p-6 pb-8 border-t border-slate-100">
-                <div className="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-6" />
+              <div className="w-full bg-[#0F172A] rounded-t-[2.5rem] shadow-[0_-10px_40px_rgba(0,0,0,0.4)] p-6 pb-8 border-t border-white/5">
+                <div className="w-12 h-1 bg-white/10 rounded-full mx-auto mb-6" />
                 
                 {currentRide ? (
                   <div className="space-y-6">
@@ -227,75 +227,47 @@ export default function PassengerDashboard() {
                               {currentRide.vehicleType === 'moto' ? <Bike size={32}/> : <CarIcon size={32}/>}
                            </div>
                            <div>
-                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{currentRide.status === 'requested' ? 'GUSHAKISHA...' : 'UMUSHOFERI ARI MU NZIRA'}</p>
-                              <h3 className="text-lg font-black text-[#0F172A]">{currentRide.driverName || 'Finding Driver...'}</h3>
+                              <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">{currentRide.status === 'requested' ? 'GUSHAKISHA...' : 'ARI MU NZIRA'}</p>
+                              <h3 className="text-lg font-black text-white uppercase italic">{currentRide.driverName || 'Finding Driver...'}</h3>
+                              {currentRide.driverPhone && <p className="text-xs font-bold text-secondary">{currentRide.driverPhone}</p>}
                            </div>
                         </div>
-                        <Button variant="ghost" size="icon" onClick={() => updateDoc(doc(db!, 'rides', currentRide.rideId), { status: 'cancelled' })} className="text-red-500"><X size={24}/></Button>
+                        <Button variant="ghost" size="icon" onClick={() => updateDoc(doc(db!, 'rides', currentRide.rideId), { status: 'cancelled' })} className="text-red-500 hover:bg-red-500/10"><X size={24}/></Button>
                      </div>
-                     <div className="p-8 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-100">
-                        <Loader2 className="animate-spin text-secondary mx-auto mb-2" />
-                        <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Turagushakira umumotari uri hafi...</p>
+                     <div className="p-8 text-center bg-white/5 rounded-2xl border-2 border-dashed border-white/5">
+                        <Loader2 className="animate-spin text-secondary mx-auto mb-4 size-8" />
+                        <p className="text-sm font-bold text-white/60 uppercase tracking-widest leading-relaxed">Turagushakira umumotari uri hafi yawe ako kanya...</p>
                      </div>
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    {/* Location Form */}
-                    <div className="relative space-y-0.5">
-                      <div className="flex items-center gap-4 p-3 hover:bg-slate-50 rounded-xl transition-colors">
-                        <div className="size-2.5 rounded-full bg-secondary ring-4 ring-secondary/10" />
-                        <div className="flex-1">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Aho uva</p>
-                          <p className="text-sm font-bold text-slate-300">Enter pickup location</p>
-                        </div>
-                        <Plus className="text-slate-300" size={18} />
-                      </div>
-                      
-                      <div className="absolute left-4 top-1/2 -translate-y-1/2 w-0.5 h-8 bg-slate-100" />
-                      
-                      <div className="flex items-center gap-4 p-3 hover:bg-slate-50 rounded-xl transition-colors">
-                        <MapPin className="text-orange-500" size={14} />
-                        <div className="flex-1">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Aho ujya?</p>
-                          <Input 
-                            placeholder="Enter destination"
-                            value={destination}
-                            onChange={(e) => setDestination(e.target.value)}
-                            className="h-6 p-0 border-none bg-transparent shadow-none focus-visible:ring-0 text-sm font-bold text-[#0F172A] placeholder:text-slate-300"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Ride Options */}
                     <div className="grid grid-cols-2 gap-3">
                       <button 
                         onClick={() => setVehicleType('moto')}
-                        className={`p-4 rounded-2xl flex items-center gap-4 transition-all ${vehicleType === 'moto' ? 'bg-secondary/5 border-2 border-secondary' : 'bg-slate-50 border-2 border-transparent'}`}
+                        className={`p-5 rounded-2xl flex flex-col items-center gap-3 transition-all ${vehicleType === 'moto' ? 'bg-secondary text-white shadow-xl shadow-secondary/20' : 'bg-white/5 border border-white/5 text-white/40'}`}
                       >
-                        <Bike className={vehicleType === 'moto' ? 'text-secondary' : 'text-slate-400'} size={24} />
-                        <div className="text-left">
-                          <p className="text-xs font-black text-[#0F172A]">Moto</p>
-                          <p className="text-[10px] font-bold text-slate-400">From 1,200 RWF</p>
+                        <Bike size={32} />
+                        <div className="text-center">
+                          <p className="text-xs font-black uppercase">Moto</p>
+                          <p className="text-[9px] font-bold opacity-60">1,200 RWF</p>
                         </div>
                       </button>
                       <button 
                         onClick={() => setVehicleType('taxi')}
-                        className={`p-4 rounded-2xl flex items-center gap-4 transition-all ${vehicleType === 'taxi' ? 'bg-secondary/5 border-2 border-secondary' : 'bg-slate-50 border-2 border-transparent'}`}
+                        className={`p-5 rounded-2xl flex flex-col items-center gap-3 transition-all ${vehicleType === 'taxi' ? 'bg-accent text-[#0F172A] shadow-xl shadow-accent/20' : 'bg-white/5 border border-white/5 text-white/40'}`}
                       >
-                        <CarIcon className={vehicleType === 'taxi' ? 'text-secondary' : 'text-slate-400'} size={24} />
-                        <div className="text-left">
-                          <p className="text-xs font-black text-[#0F172A]">Taxi</p>
-                          <p className="text-[10px] font-bold text-slate-400">From 2,500 RWF</p>
+                        <CarIcon size={32} />
+                        <div className="text-center">
+                          <p className="text-xs font-black uppercase">Taxi</p>
+                          <p className="text-[9px] font-bold opacity-60">2,500 RWF</p>
                         </div>
                       </button>
                     </div>
 
-                    {/* Action Button */}
                     <Button 
                       onClick={handleFindRide}
                       disabled={isRequesting}
-                      className="w-full h-14 rounded-2xl bg-secondary hover:bg-secondary/90 text-white font-black text-sm uppercase tracking-widest shadow-lg shadow-secondary/20"
+                      className="w-full h-16 rounded-2xl bg-secondary hover:bg-secondary/90 text-white font-black text-lg uppercase tracking-widest shadow-2xl active:scale-95 transition-all italic"
                     >
                       {isRequesting ? <Loader2 className="animate-spin" /> : 'SHAKA URUGENDO'}
                     </Button>
@@ -305,97 +277,103 @@ export default function PassengerDashboard() {
             </div>
           </>
         ) : activeTab === 'history' ? (
-          <div className="p-6 space-y-6 overflow-y-auto h-full pb-32">
-             <h2 className="text-2xl font-black text-[#0F172A] uppercase tracking-tight">IBYATAMBUTSE</h2>
+          <div className="p-6 space-y-6 overflow-y-auto h-full pb-32 no-scrollbar">
+             <h2 className="text-2xl font-black text-white uppercase tracking-tighter italic">IBYATAMBUTSE</h2>
              <div className="grid gap-4">
                 {rideHistory?.map((ride: any) => (
-                   <Card key={ride.id} className="p-4 rounded-2xl border-none bg-white shadow-sm flex items-center justify-between">
+                   <Card key={ride.id} className="p-5 rounded-2xl border-none bg-white/5 shadow-xl flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <div className="size-12 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400">
+                        <div className="size-12 rounded-xl bg-white/5 flex items-center justify-center text-white/40">
                            {ride.vehicleType === 'moto' ? <Bike size={24}/> : <CarIcon size={24}/>}
                         </div>
                         <div>
-                           <p className="font-bold text-[#0F172A] text-sm uppercase">{ride.driverName || 'Driver'}</p>
-                           <p className="text-[10px] text-slate-400 font-bold uppercase">{ride.createdAt?.toDate ? format(ride.createdAt.toDate(), 'MMM dd, p') : 'Recent'}</p>
+                           <p className="font-black text-white text-sm uppercase italic">{ride.driverName || 'Driver'}</p>
+                           <p className="text-[10px] text-white/40 font-bold uppercase">{ride.createdAt?.toDate ? format(ride.createdAt.toDate(), 'MMM dd, p') : 'Recent'}</p>
                         </div>
                       </div>
                       <div className="text-right">
                          <p className="text-xs font-black text-secondary uppercase">Completed</p>
-                         <p className="text-[10px] font-bold text-slate-400">800 RWF</p>
+                         <p className="text-[10px] font-bold text-accent italic">1,200 RWF</p>
                       </div>
                    </Card>
                 ))}
                 {!rideHistory?.length && (
-                  <div className="py-20 text-center opacity-20">
-                    <History size={64} className="mx-auto mb-4 text-slate-400" />
-                    <p className="font-black uppercase text-xs tracking-widest">Nta mateka ahari</p>
+                  <div className="py-24 text-center opacity-20">
+                    <History size={64} className="mx-auto mb-4" />
+                    <p className="font-black uppercase text-xs tracking-[0.4em]">Nta mateka ahari</p>
                   </div>
                 )}
              </div>
           </div>
         ) : (
-          <div className="p-6 space-y-8 overflow-y-auto h-full pb-32">
-             <div className="text-center py-10">
-                <div className="size-24 rounded-[2rem] bg-secondary/10 flex items-center justify-center text-secondary mx-auto mb-4 border-2 border-secondary/20">
+          <div className="p-6 space-y-8 overflow-y-auto h-full pb-32 no-scrollbar">
+             <div className="text-center py-10 relative overflow-hidden rounded-[3rem] bg-white/5 border border-white/5 shadow-2xl">
+                <div className="size-24 rounded-[2rem] bg-secondary/10 flex items-center justify-center text-secondary mx-auto mb-4 border-2 border-secondary/20 shadow-xl">
                    <User size={48} strokeWidth={1.5} />
                 </div>
-                <h2 className="text-2xl font-black text-[#0F172A] uppercase tracking-tight">{userProfile?.name}</h2>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">{userProfile?.phone}</p>
+                <h2 className="text-3xl font-black text-white uppercase tracking-tighter italic">{userProfile?.name}</h2>
+                <p className="text-xs font-bold text-white/30 uppercase tracking-[0.4em] mt-1">{userProfile?.phone}</p>
+                <div className="absolute top-0 right-0 size-32 bg-secondary/5 rounded-full -mr-16 -mt-16" />
              </div>
              
-             <div className="grid gap-4">
-                <div className="p-5 rounded-2xl bg-white shadow-sm flex items-center justify-between">
-                   <div className="flex items-center gap-4">
-                      <div className="size-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400"><Star size={20}/></div>
-                      <p className="text-xs font-black text-[#0F172A] uppercase">Rating</p>
-                   </div>
-                   <span className="font-black text-secondary">4.8</span>
-                </div>
-                <div className="p-5 rounded-2xl bg-white shadow-sm flex items-center justify-between">
-                   <div className="flex items-center gap-4">
-                      <div className="size-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400"><History size={20}/></div>
-                      <p className="text-xs font-black text-[#0F172A] uppercase">Total Rides</p>
-                   </div>
-                   <span className="font-black text-[#0F172A]">{rideHistory?.length || 0}</span>
-                </div>
+             <div className="grid gap-3">
+                <ProfileInfoRow icon={Star} label="Rating" value="4.8 Stars" color="text-accent" />
+                <ProfileInfoRow icon={History} label="Ingendo Zose" value={rideHistory?.length || 0} color="text-secondary" />
+                <ProfileInfoRow icon={Navigation} label="Kigali, Rwanda" value="Umujyi" color="text-blue-400" />
              </div>
 
              <Button 
                onClick={handleLogout}
                variant="outline" 
-               className="w-full h-14 rounded-2xl border-red-100 text-red-500 font-black text-xs uppercase tracking-widest hover:bg-red-50"
+               className="w-full h-16 rounded-[2rem] border-red-500/20 bg-red-500/5 text-red-500 font-black text-xs uppercase tracking-[0.3em] hover:bg-red-500 hover:text-white transition-all shadow-xl"
              >
-               <LogOut size={18} className="mr-2" /> GUSOHOKA
+               <LogOut size={18} className="mr-3" /> GUSOHOKA
              </Button>
           </div>
         )}
       </main>
 
       {/* BOTTOM TAB NAVIGATION */}
-      <nav className="h-16 bg-white border-t border-slate-100 flex items-center justify-around px-4 z-50">
+      <nav className="h-20 bg-[#0F172A] border-t border-white/5 flex items-center justify-around px-6 z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
         <button 
           onClick={() => setActiveTab('home')}
-          className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'home' ? 'text-secondary' : 'text-slate-300'}`}
+          className={`flex flex-col items-center gap-1.5 transition-all ${activeTab === 'home' ? 'text-secondary' : 'text-white/20 hover:text-white/40'}`}
         >
           <Home size={22} fill={activeTab === 'home' ? 'currentColor' : 'none'} />
-          <span className="text-[10px] font-black uppercase tracking-widest">Home</span>
+          <span className="text-[9px] font-black uppercase tracking-widest">UMUGENZI</span>
         </button>
         <button 
           onClick={() => setActiveTab('history')}
-          className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'history' ? 'text-secondary' : 'text-slate-300'}`}
+          className={`flex flex-col items-center gap-1.5 transition-all ${activeTab === 'history' ? 'text-secondary' : 'text-white/20 hover:text-white/40'}`}
         >
           <History size={22} />
-          <span className="text-[10px] font-black uppercase tracking-widest">Trips</span>
+          <span className="text-[9px] font-black uppercase tracking-widest">IBYATAMBUTSE</span>
         </button>
         <button 
           onClick={() => setActiveTab('profile')}
-          className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'profile' ? 'text-secondary' : 'text-slate-300'}`}
+          className={`flex flex-col items-center gap-1.5 transition-all ${activeTab === 'profile' ? 'text-secondary' : 'text-white/20 hover:text-white/40'}`}
         >
           <User size={22} fill={activeTab === 'profile' ? 'currentColor' : 'none'} />
-          <span className="text-[10px] font-black uppercase tracking-widest">Profile</span>
+          <span className="text-[9px] font-black uppercase tracking-widest">UMWIRONDORO</span>
         </button>
       </nav>
 
+    </div>
+  );
+}
+
+function ProfileInfoRow({ icon: Icon, label, value, color }: any) {
+  return (
+    <div className="p-6 rounded-[2rem] bg-white/5 border border-white/5 flex items-center justify-between shadow-lg">
+       <div className="flex items-center gap-4">
+          <div className={`size-10 rounded-xl bg-white/5 flex items-center justify-center ${color}`}>
+             <Icon size={20}/>
+          </div>
+          <div>
+             <p className="text-[9px] font-black text-white/20 uppercase tracking-widest">{label}</p>
+             <p className="font-black text-sm uppercase italic">{value}</p>
+          </div>
+       </div>
     </div>
   );
 }
