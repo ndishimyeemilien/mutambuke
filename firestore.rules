@@ -10,34 +10,23 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    function isAdmin() {
-      return isSignedIn() &&
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
-    }
-
     // Amategeko y'abakoresha (Users)
     match /users/{userId} {
-      // Umuntu wese winjiye ashobora kureba profile y'undi (cyane cyane ku bashoferi n'abagenzi)
       allow read: if isSignedIn();
-      // Nyiri konti cyangwa admin niwe ushobora guhindura amakuru
-      allow write: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId);
     }
 
     // Amategeko y'abashoferi (Drivers)
     match /drivers/{driverId} {
       allow read: if isSignedIn();
-      allow write: if isOwner(driverId) || isAdmin();
+      allow write: if isOwner(driverId);
     }
 
     // Amategeko y'ingendo (Rides)
     match /rides/{rideId} {
-      // Umuntu winjiye ashobora kureba ingendo (cyane cyane izimureba)
-      allow read: if isSignedIn();
-      // Umugenzi niwe utangira urugendo, umushoferi akaba yaruvugurura
-      allow create: if isSignedIn();
-      allow update: if isSignedIn();
-      allow delete: if isAdmin();
+      // Abagenzi n'abashoferi bakeneye gusoma amakuru y'ingendo
+      allow read, create, update: if isSignedIn();
+      allow delete: if false;
     }
 
     // Amategeko y'ubutumwa (Messages)
