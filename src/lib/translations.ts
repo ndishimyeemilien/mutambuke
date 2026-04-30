@@ -94,7 +94,7 @@ export const translations = {
     licenseCategory: "Icyiciro cya Perimi",
     vehicleModel: "Moderi y'ikinyabiziga",
     licenseNumber: "Nimero ya Perimi",
-    profilePhoto: "Ifoto yawe",
+    profilePhoto: "Ifoto yayawe",
     driverDetails: "Amakuru y'umushoferi",
     vehicleType: "Ubwoko bw'ikinyabiziga",
     motoInsuranceNumber: "Ubwishingizi bwa Moto",
